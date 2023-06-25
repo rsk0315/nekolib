@@ -38,3 +38,14 @@ jobs:
         run: |
           cd gh-pages
           git status
+          git add .
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -m '[auto-generated]' --allow-empty
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GA_TOKEN }}
+          branch: gh-pages
+          directory: gh-pages
