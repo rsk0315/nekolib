@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["qux"],"mod":["qux"]};
+window.SIDEBAR_ITEMS = {"macro":["qux1"],"mod":["qux"]};
