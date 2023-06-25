@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["qux"],"mod":["bar","baz","foo","macros","qux"]};
+window.SIDEBAR_ITEMS = {"mod":["bar","baz","foo","macros"]};
