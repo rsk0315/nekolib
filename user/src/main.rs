@@ -1,7 +1,7 @@
-use nekolib::{foo::foo1_fn, macros::qux};
+use nekolib::{foo::foo1_fn, macros::qux1};
 
 fn main() {
     println!("Hello, world!");
-    qux!();
+    qux1!();
     foo1_fn()
 }
