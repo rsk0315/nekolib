@@ -1,2 +1,5 @@
-#[doc(inline)]
-pub use bar1;
+use inner::doc_inline_reexport;
+
+doc_inline_reexport! {
+    bar1,
+}

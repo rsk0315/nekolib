@@ -1,2 +1,6 @@
-#[doc(inline)]
-pub use {foo1, foo2};
+use inner::doc_inline_reexport;
+
+doc_inline_reexport! {
+    foo1,
+    foo2,
+}
