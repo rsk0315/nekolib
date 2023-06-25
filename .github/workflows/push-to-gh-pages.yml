@@ -1,0 +1,36 @@
+name: Push to gh-pages
+on:
+  push:
+    branches:
+      - feature/poc2
+  workflow_dispatch:
+
+jobs:
+  push-to-gh-pages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: feature/poc2
+
+      - name: Install latest Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Build documents
+        run: |
+          pwd
+          ls
+          cargo doc --no-deps --manifest-path=nekolib-doc/Cargo.toml
+          git switch gh-pages
+          rm -rf docs
+          mv nekolib-doc/target/doc docs
+          git status
+
+      - name: Commit changes
+        run: |
+          git branch
+
