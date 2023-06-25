@@ -9,3 +9,4 @@ edition = "2021"
 foo = { path = "../nekolib-src/foo" }
 bar = { path = "../nekolib-src/bar" }
 baz = { path = "../nekolib-src/baz" }
+macros = { path = "../nekolib-src/macros" }
