@@ -10,3 +10,4 @@ foo = { path = "../nekolib-src/foo" }
 bar = { path = "../nekolib-src/bar" }
 baz = { path = "../nekolib-src/baz" }
 macros = { path = "../nekolib-src/macros" }
+num-bigint = "0.4.3"
