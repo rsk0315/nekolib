@@ -10,6 +10,7 @@ macro_rules! qux_test {
     () => {};
 }
 
+#[allow(unused)]
 macro_rules! qux_internal {
     ( $($fn:ident,)* ) => { $(
         fn $fn() -> i32 {
