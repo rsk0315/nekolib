@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["baz1_fn"],"mod":["baz1"]};

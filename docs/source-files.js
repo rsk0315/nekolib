@@ -1,4 +1,19 @@
 var sourcesIndex = JSON.parse('{\
-"nekolib_doc":["",[],["lib.rs"]]\
+"bar":["",[],["lib.rs"]],\
+"bar1":["",[],["lib.rs"]],\
+"baz":["",[],["lib.rs"]],\
+"baz1":["",[],["lib.rs"]],\
+"foo":["",[],["lib.rs"]],\
+"foo1":["",[],["lib.rs"]],\
+"foo2":["",[],["lib.rs"]],\
+"inner":["",[],["lib.rs"]],\
+"katex_support":["",[],["lib.rs"]],\
+"macros":["",[],["lib.rs"]],\
+"nekolib_doc":["",[],["lib.rs"]],\
+"num_bigint":["",[["bigint",[],["addition.rs","bits.rs","convert.rs","division.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]],["biguint",[],["addition.rs","bits.rs","convert.rs","division.rs","iter.rs","monty.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]]],["bigint.rs","biguint.rs","lib.rs","macros.rs"]],\
+"num_integer":["",[],["average.rs","lib.rs","roots.rs"]],\
+"num_traits":["",[["ops",[],["checked.rs","euclid.rs","inv.rs","mod.rs","mul_add.rs","overflowing.rs","saturating.rs","wrapping.rs"]]],["bounds.rs","cast.rs","float.rs","identities.rs","int.rs","lib.rs","macros.rs","pow.rs","real.rs","sign.rs"]],\
+"poc":["",[],["lib.rs"]],\
+"qux":["",[],["lib.rs"]]\
 }');
 createSourceSidebar();

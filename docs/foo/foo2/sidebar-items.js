@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["foo2_fn"]};
