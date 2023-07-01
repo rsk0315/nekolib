@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["foo1_fn","foo2_fn"],"mod":["foo1","foo2"]};

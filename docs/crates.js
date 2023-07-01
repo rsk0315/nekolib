@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["bar","bar1","baz","baz1","foo","foo1","foo2","inner","katex_support","macros","nekolib_doc","num_bigint","num_integer","num_traits","poc","qux"];
+window.ALL_CRATES = ["nekolib_doc"];
