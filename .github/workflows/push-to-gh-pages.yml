@@ -32,7 +32,7 @@ jobs:
         run: |
           pwd
           ls
-          cargo doc --no-deps --manifest-path=main/nekolib-doc/Cargo.toml
+          cargo d --manifest-path=main/nekolib-doc/Cargo.toml
           rm -rf gh-pages/docs
           mv main/nekolib-doc/target/doc gh-pages/docs
 
