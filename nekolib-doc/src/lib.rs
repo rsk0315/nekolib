@@ -1,2 +1,8 @@
 #[doc(inline)]
-pub use {bar, baz, foo, macros, poc};
+pub use {
+    bar,
+    baz,
+    foo,
+    macros,
+    poc,
+};
