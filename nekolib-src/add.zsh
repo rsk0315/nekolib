@@ -4,7 +4,7 @@ mod="$1"
 crate="$2"
 
 show_usage() {
-    echo "$0 mod [crate]"
+    echo "Usage: add.zsh mod [crate]"
 }
 
 if [[ -z "$mod" ]]; then
