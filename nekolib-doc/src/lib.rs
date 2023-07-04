@@ -2,6 +2,7 @@
 pub use {
     bar,
     baz,
+    fmt,
     foo,
     macros,
     poc,
