@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["bar","baz","fmt","foo","integer","macros","math","poc"]};
+window.SIDEBAR_ITEMS = {"mod":["fmt","integer","macros","math","poc"]};
