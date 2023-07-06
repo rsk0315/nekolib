@@ -10,7 +10,7 @@ use bin_iter::BinIter;
 pub struct StaticModInt<const MOD: u32>(u32);
 
 impl<const MOD: u32> StaticModInt<MOD> {
-    pub fn new(x: u32) -> Self { Self(x % MOD) }
+    pub fn new(val: impl RemEuclidU32) -> Self { Self::from(val) }
     pub fn modulus() -> u32 { MOD }
 }
 
@@ -121,6 +121,36 @@ impl<const MOD: u32> fmt::Debug for StaticModInt<MOD> {
     }
 }
 
+pub trait RemEuclidU32 {
+    fn rem_euclid_u32(&self, rem: u32) -> u32;
+}
+
+macro_rules! impl_rem_euclid_u32 {
+    ( $( ($lhs:ty, $common:ty) ),* ) => { $(
+        impl RemEuclidU32 for $lhs {
+            fn rem_euclid_u32(&self, rem: u32) -> u32 {
+                (*self as $common).rem_euclid(rem as $common) as u32
+            }
+        }
+    )* }
+}
+
+macro_rules! impl_rem_euclid_u32_small {
+    ( $($lhs:ty)* ) => { impl_rem_euclid_u32! { $( ($lhs, u32) ),* } }
+}
+
+macro_rules! impl_rem_euclid_u32_large {
+    ( $($lhs:ty)* ) => { impl_rem_euclid_u32! { $( ($lhs, $lhs) ),* } }
+}
+
+impl_rem_euclid_u32_small! { u8 u16 u32 }
+impl_rem_euclid_u32_large! { i64 i128 u64 u128 }
+impl_rem_euclid_u32! { (i8, i32), (i16, i32), (i32, i64), (isize, isize), (usize, usize) }
+
+impl<const MOD: u32, I: RemEuclidU32> From<I> for StaticModInt<MOD> {
+    fn from(val: I) -> Self { Self(val.rem_euclid_u32(MOD)) }
+}
+
 macro_rules! impl_folding_inner {
     ( $(
         impl<$($lt:lifetime,)? _> $op_trait:ident<$(&$ltr:lifetime)? Self> for Self {
@@ -200,4 +230,37 @@ fn fmt() {
     assert_eq!(format!("{}", one), "1");
     assert_eq!(format!("{:?}", one), "1 mod 998244353");
     assert_eq!(format!("{:?}", [one; 2]), "[1 mod 998244353, 1 mod 998244353]");
+}
+
+#[test]
+fn conversion() {
+    type Mi = ModInt998244353;
+
+    assert_eq!(Mi::new(-1_i8).0, 998244352);
+    assert_eq!(Mi::new(-1_i16).0, 998244352);
+    assert_eq!(Mi::new(-1_i32).0, 998244352);
+    assert_eq!(Mi::new(-1_i64).0, 998244352);
+    assert_eq!(Mi::new(-1_i128).0, 998244352);
+
+    assert_eq!(Mi::new(998244354_i32).0, 1);
+    assert_eq!(Mi::new(998244354_i64).0, 1);
+    assert_eq!(Mi::new(998244354_i128).0, 1);
+
+    assert_eq!(Mi::new(998244354_u32).0, 1);
+    assert_eq!(Mi::new(998244354_u64).0, 1);
+    assert_eq!(Mi::new(998244354_u128).0, 1);
+
+    assert_eq!(Mi::new(10_i8).0, 10);
+    assert_eq!(Mi::new(10_i16).0, 10);
+    assert_eq!(Mi::new(10_i32).0, 10);
+    assert_eq!(Mi::new(10_i64).0, 10);
+    assert_eq!(Mi::new(10_i128).0, 10);
+    assert_eq!(Mi::new(10_isize).0, 10);
+
+    assert_eq!(Mi::new(10_u8).0, 10);
+    assert_eq!(Mi::new(10_u16).0, 10);
+    assert_eq!(Mi::new(10_u32).0, 10);
+    assert_eq!(Mi::new(10_u64).0, 10);
+    assert_eq!(Mi::new(10_u128).0, 10);
+    assert_eq!(Mi::new(10_usize).0, 10);
 }
