@@ -1,5 +1,6 @@
+use std::iter::{Product, Sum};
 use std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
 use bin_iter::BinIter;
@@ -59,14 +60,14 @@ impl<const MOD: u32> StaticModInt<MOD> {
 macro_rules! impl_bin_op_inner {
     ( $(
         impl<_> $op_trait:ident<$(&$ltr:lifetime)? Self> for $(&$ltl:lifetime)? Self {
-            fn $op:ident(..) -> _ { self.$op_assign:ident($($deref:tt)?) }
+            fn $op:ident(..) -> _ { self.$op_assign:ident() }
         }
     )* ) => { $(
         impl<const MOD: u32> $op_trait<$(&$ltr)? StaticModInt<MOD>> for $(&$ltl)? StaticModInt<MOD> {
             type Output = StaticModInt<MOD>;
             fn $op(self, rhs: $(&$ltr)? StaticModInt<MOD>) -> Self::Output {
                 let mut tmp = self.to_owned();
-                tmp.$op_assign($($deref)? rhs);
+                tmp.$op_assign(rhs);
                 tmp
             }
         }
@@ -77,9 +78,9 @@ macro_rules! impl_bin_op {
     ( $( ($op:ident, $op_trait:ident, $op_assign:ident, $op_assign_trait:ident), )* ) => { $(
         impl_bin_op_inner! {
             impl<_> $op_trait<Self> for Self { fn $op(..) -> _ { self.$op_assign() } }
-            impl<_> $op_trait<&'_ Self> for Self { fn $op(..) -> _ { self.$op_assign(*) } }
+            impl<_> $op_trait<&'_ Self> for Self { fn $op(..) -> _ { self.$op_assign() } }
             impl<_> $op_trait<Self> for &'_ Self { fn $op(..) -> _ { self.$op_assign() } }
-            impl<_> $op_trait<&'_ Self> for &'_ Self { fn $op(..) -> _ { self.$op_assign(*) } }
+            impl<_> $op_trait<&'_ Self> for &'_ Self { fn $op(..) -> _ { self.$op_assign() } }
         }
         impl<const MOD: u32> $op_assign_trait<&Self> for StaticModInt<MOD> {
             fn $op_assign(&mut self, rhs: &Self) { self.$op_assign(rhs.to_owned()) }
@@ -92,6 +93,55 @@ impl_bin_op! {
     ( sub, Sub, sub_assign, SubAssign ),
     ( mul, Mul, mul_assign, MulAssign ),
     ( div, Div, div_assign, DivAssign ),
+}
+
+impl<const MOD: u32> Neg for StaticModInt<MOD> {
+    type Output = StaticModInt<MOD>;
+    fn neg(self) -> Self::Output {
+        if self.0 == 0 { self } else { StaticModInt(MOD - self.0) }
+    }
+}
+
+impl<const MOD: u32> Neg for &StaticModInt<MOD> {
+    type Output = StaticModInt<MOD>;
+    fn neg(self) -> Self::Output {
+        if self.0 == 0 { *self } else { StaticModInt(MOD - self.0) }
+    }
+}
+
+macro_rules! impl_folding_inner {
+    ( $(
+        impl<$($lt:lifetime,)? _> $op_trait:ident<$(&$ltr:lifetime)? Self> for Self {
+            fn $op:ident(..) -> _ { $unit:literal; self.$op_assign:ident($($deref:tt)?) }
+        }
+    )* ) => { $(
+        impl<$($lt,)? const MOD: u32> $op_trait<$(&$ltr)? StaticModInt<MOD>> for StaticModInt<MOD> {
+            fn $op<I>(iter: I) -> StaticModInt<MOD>
+            where
+                I: Iterator<Item = $(&$ltr)? StaticModInt<MOD>>,
+            {
+                let mut res = StaticModInt::new($unit);
+                for x in iter {
+                    res.$op_assign(x);
+                }
+                res
+            }
+        }
+    )* };
+}
+
+macro_rules! impl_folding {
+    ( $( ($op:ident, $op_trait:ident, $op_assign:ident, $unit:literal), )* ) => { $(
+        impl_folding_inner! {
+            impl<_> $op_trait<Self> for Self { fn $op(..) -> _ { $unit; self.$op_assign() } }
+            impl<'a, _> $op_trait<&'a Self> for Self { fn $op(..) -> _ { $unit; self.$op_assign() } }
+        }
+    )* }
+}
+
+impl_folding! {
+    ( sum, Sum, add_assign, 0 ),
+    ( product, Product, mul_assign, 1 ),
 }
 
 pub type ModInt998244353 = StaticModInt<998244353>;
@@ -110,20 +160,18 @@ fn arithmetic() {
     assert_eq!(one - half, half);
     assert_eq!(half * two, one);
     assert_eq!(one / two, half);
-    assert_eq!(two.pow(998244352), one);
+    assert_eq!(two.pow(998244352_u64), one);
 }
 
-// #[test]
-// fn fold() {
-//     type Mi = ModInt998244353;
+#[test]
+fn folding() {
+    type Mi = ModInt998244353;
 
-//     let a: Vec<_> = [1, 2, 3, 4].iter().copied().map(Mi::new).collect();
-
-//     let sum = Mi::new(6);
-//     let prod = Mi::new(24);
-
-//     assert_eq!(a.iter().sum::<Mi>(), sum);
-//     assert_eq!(a.iter().product::<Mi>(), prod);
-//     assert_eq!(a.iter().copied().sum::<Mi>(), sum);
-//     assert_eq!(a.iter().copied().product::<Mi>(), prod);
-// }
+    let a: Vec<_> = [1, 2, 3, 4].iter().copied().map(Mi::new).collect();
+    let sum = Mi::new(10);
+    let prod = Mi::new(24);
+    assert_eq!(a.iter().sum::<Mi>(), sum);
+    assert_eq!(a.iter().product::<Mi>(), prod);
+    assert_eq!(a.iter().copied().sum::<Mi>(), sum);
+    assert_eq!(a.iter().copied().product::<Mi>(), prod);
+}
