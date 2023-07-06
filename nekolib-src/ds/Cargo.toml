@@ -9,3 +9,4 @@ edition = "2021"
 inner = { path = "../inner" }
 union-find = { path = "union-find" }
 vec_segtree = { path = "vec_segtree" }
+foldable_queue = { path = "foldable_queue" }

@@ -3,6 +3,7 @@ use std::ops::{Add, Neg};
 
 use monoid::{Associative, BinaryOp, Commutative, Identity, Recip};
 
+#[derive(Debug)]
 pub struct OpAdd<T>(std::marker::PhantomData<fn(&T) -> T>);
 
 impl<T> Default for OpAdd<T> {
