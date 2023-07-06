@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["str_sep"],"struct":["PerLine","SpaceSep","StrSep"]};
+window.SIDEBAR_ITEMS = {"mod":["str_sep"],"struct":["PerLine","PerLineUsize1","SpaceSep","SpaceSepUsize1","StrSep","StrSepUsize1"]};
