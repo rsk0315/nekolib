@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["StaticModInt"],"type":["ModInt1000000007","ModInt998244353"]};
+window.SIDEBAR_ITEMS = {"struct":["StaticModInt"],"trait":["RemEuclidU32"],"type":["ModInt1000000007","ModInt998244353"]};
