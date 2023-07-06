@@ -4,6 +4,7 @@ pub use {
     baz,
     fmt,
     foo,
+    integer,
     macros,
     poc,
 };
