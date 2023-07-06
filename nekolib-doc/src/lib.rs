@@ -6,5 +6,6 @@ pub use {
     io,
     macros,
     math,
+    ops,
     poc,
 };

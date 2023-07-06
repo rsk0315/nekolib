@@ -1,6 +1,7 @@
 use inner::doc_inline_reexport;
 
 doc_inline_reexport! {
-    union_find,
-    vec_segtree,
+    monoid,
+    op_add,
+    usize_bounds,
 }

@@ -1,11 +1,9 @@
 [package]
-name = "ds"
+name = "op_add"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-inner = { path = "../inner" }
-union-find = { path = "union-find" }
-vec_segtree = { path = "vec_segtree" }
+monoid = { path = "../monoid" }

@@ -1,5 +1,5 @@
 [package]
-name = "ds"
+name = "ops"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 inner = { path = "../inner" }
-union-find = { path = "union-find" }
-vec_segtree = { path = "vec_segtree" }
+monoid = { path = "monoid" }
+usize_bounds = { path = "usize_bounds" }
+op_add = { path = "op_add" }
