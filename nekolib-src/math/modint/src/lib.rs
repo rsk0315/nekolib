@@ -1,4 +1,5 @@
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::iter::{Product, Sum};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -184,6 +185,10 @@ macro_rules! impl_folding {
 impl_folding! {
     ( sum, Sum, add_assign, 0 ),
     ( product, Product, mul_assign, 1 ),
+}
+
+impl<const MOD: u32> Hash for StaticModInt<MOD> {
+    fn hash<H: Hasher>(&self, state: &mut H) { self.0.hash(state) }
 }
 
 pub type ModInt998244353 = StaticModInt<998244353>;
