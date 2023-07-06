@@ -6,5 +6,6 @@ pub use {
     foo,
     integer,
     macros,
+    math,
     poc,
 };
