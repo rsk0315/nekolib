@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["Associative","BinaryOp","Commutative","CommutativeGroup","CommutativeMonoid","Group","Identity","Magma","Monoid","Recip","Semigroup"]};

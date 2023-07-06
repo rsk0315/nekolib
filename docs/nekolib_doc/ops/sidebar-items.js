@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["UsizeOob"],"mod":["monoid","op_add","usize_bounds"],"struct":["OpAdd"],"trait":["Associative","BinaryOp","Commutative","CommutativeGroup","CommutativeMonoid","Group","Identity","Magma","Monoid","Recip","Semigroup","UsizeBounds"]};
