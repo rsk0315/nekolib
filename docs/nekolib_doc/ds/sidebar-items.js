@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["union_find","vec_segtree"],"struct":["PeekMutTmp","UnionFind","VecSegtree"]};
+window.SIDEBAR_ITEMS = {"mod":["foldable_queue","union_find","vec_segtree"],"struct":["FoldableQueue","PeekMutTmp","UnionFind","VecSegtree"]};
