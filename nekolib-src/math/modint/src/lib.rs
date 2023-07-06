@@ -196,6 +196,8 @@ fn folding() {
 fn fmt() {
     type Mi = ModInt998244353;
 
-    assert_eq!(format!("{}", Mi::new(1)), "1");
-    assert_eq!(format!("{:?}", Mi::new(1)), "1 mod 998244353");
+    let one = Mi::new(1);
+    assert_eq!(format!("{}", one), "1");
+    assert_eq!(format!("{:?}", one), "1 mod 998244353");
+    assert_eq!(format!("{:?}", [one; 2]), "[1 mod 998244353, 1 mod 998244353]");
 }
