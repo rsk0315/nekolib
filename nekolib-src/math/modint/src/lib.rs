@@ -1,3 +1,4 @@
+use std::fmt;
 use std::iter::{Product, Sum};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
@@ -5,11 +6,12 @@ use std::ops::{
 
 use bin_iter::BinIter;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct StaticModInt<const MOD: u32>(u32);
 
 impl<const MOD: u32> StaticModInt<MOD> {
     pub fn new(x: u32) -> Self { Self(x % MOD) }
+    pub fn modulus() -> u32 { MOD }
 }
 
 impl<const MOD: u32> AddAssign for StaticModInt<MOD> {
@@ -109,6 +111,16 @@ impl<const MOD: u32> Neg for &StaticModInt<MOD> {
     }
 }
 
+impl<const MOD: u32> fmt::Display for StaticModInt<MOD> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { self.0.fmt(f) }
+}
+
+impl<const MOD: u32> fmt::Debug for StaticModInt<MOD> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} mod {}", self, MOD)
+    }
+}
+
 macro_rules! impl_folding_inner {
     ( $(
         impl<$($lt:lifetime,)? _> $op_trait:ident<$(&$ltr:lifetime)? Self> for Self {
@@ -155,6 +167,7 @@ fn arithmetic() {
     let half = Mi::new(499122177);
     let one = Mi::new(1);
     let two = Mi::new(2);
+    assert_eq!(Mi::new(Mi::modulus()), zero);
     assert_eq!(half + half, one);
     assert_eq!(zero - half, -half);
     assert_eq!(one - half, half);
@@ -174,4 +187,12 @@ fn folding() {
     assert_eq!(a.iter().product::<Mi>(), prod);
     assert_eq!(a.iter().copied().sum::<Mi>(), sum);
     assert_eq!(a.iter().copied().product::<Mi>(), prod);
+}
+
+#[test]
+fn fmt() {
+    type Mi = ModInt998244353;
+
+    assert_eq!(format!("{}", Mi::new(1)), "1");
+    assert_eq!(format!("{:?}", Mi::new(1)), "1 mod 998244353");
 }
