@@ -18,7 +18,7 @@ if [[ -n "$crate" ]] && [[ -d "$mod/$crate" ]]; then
     cat Cargo.toml
     vim -N -i NONE -u NONE -s <(print '/\\[dependencies\\]/\nj/\\<'"${crate}"'\\>\nddZZ') Cargo.toml &>/dev/null
     cat Cargo.toml
-    vim -N -i NONE -u NONE -s <(print 'G%j/\\<'"${crate}"'\\>\nddZZ') src/lib.rs &>/dev/null
+    vim -N -i NONE -u NONE -s <(print 'G%j/\\<'"${crate//-/_}"'\\>\nddZZ') src/lib.rs &>/dev/null
     cat src/lib.rs
     popd
 fi
@@ -28,7 +28,7 @@ if [[ -d "$mod" ]] && [[ -z "$crate" ]]; then
     pushd ../nekolib-doc
     vim -N -i NONE -u NONE -s <(print '/\\[dependencies\\]/\nj/\\<'"${mod}"'\\>\nddZZ') Cargo.toml &>/dev/null
     cat Cargo.toml
-    vim -N -i NONE -u NONE -s <(print 'G%j0/\\<'"${mod}"'\\>\nddZZ') src/lib.rs &>/dev/null
+    vim -N -i NONE -u NONE -s <(print 'G%j0/\\<'"${mod//-/_}"'\\>\nddZZ') src/lib.rs &>/dev/null
     cat src/lib.rs
     popd
 fi

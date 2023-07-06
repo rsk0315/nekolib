@@ -18,7 +18,7 @@ if ! [[ -d "$mod" ]]; then
     print 'use inner::doc_inline_reexport;\n\ndoc_inline_reexport! {\n}' >| "$mod/src/lib.rs"
     pushd ../nekolib-doc
     echo "$mod = { path = \"../nekolib-src/$mod\" }" >> Cargo.toml
-    vim -N -i NONE -u NONE -s <(print "jf{a${mod},\x1bZZ") src/lib.rs &>/dev/null
+    vim -N -i NONE -u NONE -s <(print "jf{a${mod//-/_},\x1bZZ") src/lib.rs &>/dev/null
     rustfmt src/lib.rs
     cat src/lib.rs
     popd
@@ -28,7 +28,7 @@ if [[ -n "$crate" ]] && ! [[ -d "$mod/$crate" ]]; then
     pushd "$mod"
     cargo new --lib "$crate"
     echo "$crate = { path = \"$crate\" }" >> Cargo.toml
-    vim -N -i NONE -u NONE -s <(print "G$%a\n    ${crate},\x1bVGk!sort\nZZ") src/lib.rs &>/dev/null
+    vim -N -i NONE -u NONE -s <(print "G$%a\n    ${crate//-/_},\x1bVGk!sort\nZZ") src/lib.rs &>/dev/null
     cat src/lib.rs
     popd
 fi
