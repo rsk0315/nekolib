@@ -6,9 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-foo = { path = "../nekolib-src/foo" }
-bar = { path = "../nekolib-src/bar" }
-baz = { path = "../nekolib-src/baz" }
 macros = { path = "../nekolib-src/macros" }
 poc = { path = "../nekolib-src/poc" }
 fmt = { path = "../nekolib-src/fmt" }
