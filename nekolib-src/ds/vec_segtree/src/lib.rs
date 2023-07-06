@@ -44,6 +44,96 @@ impl<M: Monoid> VecSegtree<M> {
         let index = self.tree.len() / 2 + i;
         PeekMutTmp { self_: self, index }
     }
+
+    fn roots(
+        &self,
+        Range { start, end }: Range<usize>,
+    ) -> impl Iterator<Item = usize> + DoubleEndedIterator {
+        let n = self.tree.len() / 2;
+        let (mut il, mut ir) = (n + start, n + end);
+        let (mut vl, mut vr) = (vec![], vec![]);
+        while il < ir {
+            if il & 1 != 0 {
+                vl.push(il);
+                il += 1;
+            }
+            if ir & 1 != 0 {
+                ir -= 1;
+                vr.push(ir);
+            }
+            il >>= 1;
+            ir >>= 1;
+        }
+        vl.into_iter().chain(vr.into_iter().rev())
+    }
+    pub fn fold_bisect_from<F>(&self, l: usize, pred: F) -> (usize, M::Set)
+    where
+        F: Fn(&M::Set) -> bool,
+    {
+        let n = self.tree.len() / 2;
+        assert!((0..=n).contains(&l));
+
+        let monoid = &self.monoid;
+        let mut x = monoid.id();
+        assert!(pred(&x), "`pred(id)` must hold");
+        match self.fold(l..) {
+            x if pred(&x) => return (n, x),
+            _ => {}
+        }
+
+        for v in self.roots(l..n) {
+            let tmp = monoid.op(&x, &self.tree[v]);
+            if pred(&tmp) {
+                x = tmp;
+                continue;
+            }
+            let mut v = v;
+            while v < n {
+                v *= 2;
+                let tmp = monoid.op(&x, &self.tree[v]);
+                if pred(&tmp) {
+                    x = tmp;
+                    v += 1;
+                }
+            }
+            return (v - n, x);
+        }
+        unreachable!();
+    }
+    pub fn fold_bisect_to<F>(&self, r: usize, pred: F) -> (usize, M::Set)
+    where
+        F: Fn(&M::Set) -> bool,
+    {
+        let n = self.tree.len() / 2;
+        assert!((0..=n).contains(&r));
+
+        let monoid = &self.monoid;
+        let mut x = monoid.id();
+        assert!(pred(&x), "`pred(id)` must hold");
+        match self.fold(..r) {
+            x if pred(&x) => return (0, x),
+            _ => {}
+        }
+
+        for v in self.roots(0..r) {
+            let tmp = monoid.op(&self.tree[v], &x);
+            if pred(&tmp) {
+                x = tmp;
+                continue;
+            }
+            let mut v = v;
+            while v < n {
+                v = 2 * v + 1;
+                let tmp = monoid.op(&self.tree[v], &x);
+                if pred(&tmp) {
+                    x = tmp;
+                    v -= 1;
+                }
+            }
+            return (v - n + 1, x);
+        }
+        unreachable!();
+    }
 }
 
 impl<M: Monoid + Default> From<Vec<M::Set>> for VecSegtree<M> {
@@ -96,6 +186,20 @@ impl<M: Monoid> Drop for PeekMutTmp<'_, M> {
             i >>= 1;
             tree[i] = monoid.op(&tree[2 * i], &tree[2 * i + 1]);
         }
+    }
+}
+
+impl<M: Monoid> From<VecSegtree<M>> for Vec<M::Set> {
+    fn from(mut self_: VecSegtree<M>) -> Vec<M::Set> {
+        let n = self_.tree.len() / 2;
+        self_.tree.split_off(n)
+    }
+}
+
+impl<M: Monoid + Default> FromIterator<M::Set> for VecSegtree<M> {
+    fn from_iter<I: IntoIterator<Item = M::Set>>(iter: I) -> Self {
+        let buf: Vec<_> = iter.into_iter().collect();
+        buf.into()
     }
 }
 
