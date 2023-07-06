@@ -11,3 +11,4 @@ poc = { path = "../nekolib-src/poc" }
 fmt = { path = "../nekolib-src/fmt" }
 integer = { path = "../nekolib-src/integer" }
 math = { path = "../nekolib-src/math" }
+ds = { path = "../nekolib-src/ds" }
