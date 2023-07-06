@@ -187,6 +187,9 @@ fn folding() {
     assert_eq!(a.iter().product::<Mi>(), prod);
     assert_eq!(a.iter().copied().sum::<Mi>(), sum);
     assert_eq!(a.iter().copied().product::<Mi>(), prod);
+
+    let two = Mi::new(2);
+    assert_eq!(two.pow(100_u32), [two; 100].iter().product());
 }
 
 #[test]
