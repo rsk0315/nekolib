@@ -8,5 +8,6 @@ pub use {
     math,
     ops,
     poc,
+    seq,
     uslice,
 };

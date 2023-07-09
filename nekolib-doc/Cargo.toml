@@ -15,3 +15,4 @@ ds = { path = "../nekolib-src/ds" }
 io = { path = "../nekolib-src/io" }
 ops = { path = "../nekolib-src/ops" }
 uslice = { path = "../nekolib-src/uslice" }
+seq = { path = "../nekolib-src/seq" }
