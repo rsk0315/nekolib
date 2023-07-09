@@ -1,5 +1,6 @@
 #[doc(inline)]
 pub use {
+    algo,
     ds,
     fmt,
     integer,
