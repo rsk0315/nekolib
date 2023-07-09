@@ -1,11 +1,8 @@
 [package]
-name = "integer"
+name = "pdep_pext"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-inner = { path = "../inner" }
-bin_iter = { path = "bin_iter" }
-pdep_pext = { path = "pdep_pext" }
