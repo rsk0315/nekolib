@@ -14,3 +14,4 @@ math = { path = "../nekolib-src/math" }
 ds = { path = "../nekolib-src/ds" }
 io = { path = "../nekolib-src/io" }
 ops = { path = "../nekolib-src/ops" }
+uslice = { path = "../nekolib-src/uslice" }
