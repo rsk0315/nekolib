@@ -2,10 +2,10 @@ use std::io::BufRead;
 
 use input::{Readable, Source};
 
-enum Usize1 {}
-enum Isize1 {}
-enum Chars {}
-enum Bytes {}
+pub enum Usize1 {}
+pub enum Isize1 {}
+pub enum Chars {}
+pub enum Bytes {}
 
 impl Readable for Usize1 {
     type Output = usize;
