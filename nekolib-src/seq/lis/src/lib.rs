@@ -41,12 +41,14 @@ pub trait Lis {
         strict: bool,
         mp: impl LisMapProj<Self::Item>,
     ) -> Vec<Self::Item>;
+    fn lis_len(&self, strict: bool) -> usize {
+        self.lis(strict, Rightmost).len()
+    }
 }
 
 impl<T: Ord + Clone> Lis for [T] {
     type Item = T;
-    fn lis(&self, strict: bool, mp: impl LisMapProj<T>) -> Vec<Self::Item>
-where {
+    fn lis(&self, strict: bool, mp: impl LisMapProj<T>) -> Vec<Self::Item> {
         if self.is_empty() {
             return vec![];
         }
@@ -62,12 +64,10 @@ where {
         };
         let mut dp = FenwickTree::from(vec![None; n]);
         let mut prev = vec![None; n];
-        let mut len = vec![0; n];
         for &i in &ord {
             let max = dp.max(..i).unwrap_or(None);
             let max_len = max.as_ref().map(|x: &(usize, _)| x.0).unwrap_or(0);
             dp.update(i, Some((max_len + 1, mp.map(i, &self[i]))));
-            len[i] = max_len + 1;
             prev[i] = max.map(|(_, x)| mp.proj(&x));
         }
         let mut last =
@@ -79,6 +79,27 @@ where {
         }
         res.reverse();
         res
+    }
+    fn lis_len(&self, strict: bool) -> usize {
+        if self.is_empty() {
+            return 0;
+        }
+
+        let n = self.len();
+        let ord = {
+            let mut ord: Vec<_> = (0..n).collect();
+            if strict {
+                ord.reverse();
+            }
+            ord.sort_by_key(|&i| &self[i]);
+            ord
+        };
+        let mut dp = FenwickTree::from(vec![0; n]);
+        for &i in &ord {
+            let max_len = dp.max(..i).unwrap_or(0);
+            dp.update(i, max_len + 1);
+        }
+        dp.max(..n).unwrap_or(0)
     }
 }
 
@@ -238,8 +259,10 @@ fn check() {
             .take(7)
             .collect::<Vec<_>>()
     }) {
+        assert_eq!(ai.lis(true, Rightmost).len(), ai.lis_len(true));
         assert_eq!(ai.lis(true, Smallest), ai.lis(true, Rightmost));
         assert_eq!(ai.lis(true, Largest), ai.lis(true, Leftmost));
+        assert_eq!(ai.lis(false, Rightmost).len(), ai.lis_len(false));
         assert_eq!(ai.lis(false, Smallest), ai.lis(false, Rightmost));
         assert_eq!(ai.lis(false, Largest), ai.lis(false, Leftmost));
     }
