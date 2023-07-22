@@ -7,6 +7,7 @@ pub use {
     io,
     macros,
     math,
+    naive,
     ops,
     poc,
     seq,

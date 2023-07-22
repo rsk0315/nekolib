@@ -49,40 +49,11 @@ impl UnionFind {
     pub fn partition_len(&self) -> usize { self.1 }
 }
 
-#[cfg(test)]
-mod naive {
-    pub struct UnionFind(Vec<usize>);
-
-    impl UnionFind {
-        pub fn new(n: usize) -> Self { Self((0..n).collect()) }
-        pub fn unite(&mut self, u: usize, v: usize) -> bool {
-            if self.0[u] == self.0[v] {
-                return false;
-            }
-            let n = self.0.len();
-            for i in 0..n {
-                if self.0[i] == self.0[u] {
-                    self.0[i] = self.0[v];
-                }
-            }
-            true
-        }
-        pub fn equiv(&self, u: usize, v: usize) -> bool {
-            self.repr(u) == self.repr(v)
-        }
-        pub fn repr(&self, u: usize) -> usize { self.0[u] }
-        pub fn count(&self, u: usize) -> usize {
-            let n = self.0.len();
-            (0..n).filter(|&i| self.0[i] == self.0[u]).count()
-        }
-    }
-}
-
 #[test]
 fn sanity_check() {
     let n = 10;
     let mut actual = UnionFind::new(n);
-    let mut expected = naive::UnionFind::new(n);
+    let mut expected = naive::DisjointSet::new(n);
 
     let f = |(u, v)| 2_u128.pow(u as _) * 3_u128.pow(v as _) % 625;
     let query = {

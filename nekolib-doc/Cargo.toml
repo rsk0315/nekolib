@@ -17,3 +17,4 @@ ops = { path = "../nekolib-src/ops" }
 uslice = { path = "../nekolib-src/uslice" }
 seq = { path = "../nekolib-src/seq" }
 algo = { path = "../nekolib-src/algo" }
+naive = { path = "../nekolib-src/naive" }
