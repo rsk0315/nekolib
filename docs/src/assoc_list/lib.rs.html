@@ -296,26 +296,71 @@
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 
 </span><span class="kw">use </span>std::borrow::Borrow;
-<span class="kw">use </span>std::marker::PhantomData;
-
-<span class="kw">use </span>borrow::DormantMutRef;
 
 <span class="kw">pub struct </span>AssocList&lt;K, V&gt;(Vec&lt;(K, V)&gt;);
-<span class="kw">pub enum </span>Entry&lt;<span class="lifetime">&#39;a</span>, K: <span class="lifetime">&#39;a</span>, V: <span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">pub enum </span>Entry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
     Vacant(VacantEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt;),
     Occupied(OccupiedEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt;),
 }
 <span class="kw">pub struct </span>VacantEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
     key: K,
-    dormant_map: DormantMutRef&lt;<span class="lifetime">&#39;a</span>, AssocList&lt;K, V&gt;&gt;,
-    _marker: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>(K, V)&gt;,
+    map: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>AssocList&lt;K, V&gt;,
 }
 <span class="kw">pub struct </span>OccupiedEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
-    item: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>(K, V),
-    dormant_map: DormantMutRef&lt;<span class="lifetime">&#39;a</span>, AssocList&lt;K, V&gt;&gt;,
+    key: K,
+    map: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>AssocList&lt;K, V&gt;,
 }
 
 <span class="kw">impl</span>&lt;K: Eq, V&gt; AssocList&lt;K, V&gt; {
@@ -323,6 +368,14 @@
 
     <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="self">self</span>.<span class="number">0</span>.is_empty() }
     <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="self">self</span>.<span class="number">0</span>.len() }
+
+    <span class="kw">pub fn </span>get&lt;Q&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: Q) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>V&gt;
+    <span class="kw">where
+        </span>Q: Borrow&lt;K&gt;,
+        K: PartialEq&lt;Q&gt;,
+    {
+        <span class="self">self</span>.<span class="number">0</span>.iter().find(|(k, <span class="kw">_</span>)| k == <span class="kw-2">&amp;</span>key).map(|(<span class="kw">_</span>, v)| v)
+    }
 
     <span class="kw">pub fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K, value: V) -&gt; <span class="prelude-ty">Option</span>&lt;V&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, v)) = <span class="self">self</span>.<span class="number">0</span>.iter_mut().find(|(k, <span class="kw">_</span>)| k == <span class="kw-2">&amp;</span>key) {
@@ -343,12 +396,11 @@
             .map(|i| <span class="self">self</span>.<span class="number">0</span>.remove(i).<span class="number">1</span>)
     }
 
-    <span class="kw">pub fn </span>entry(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; Entry&lt;<span class="lifetime">&#39;_</span>, K, V&gt; {
-        <span class="kw">let </span>(map, dormant_map) = DormantMutRef::new(<span class="self">self</span>);
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(item) = map.<span class="number">0</span>.iter_mut().find(|(k, <span class="kw">_</span>)| k == <span class="kw-2">&amp;</span>key) {
-            Entry::occupied(item, dormant_map)
+    <span class="kw">pub fn </span>entry(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; Entry&lt;K, V&gt; {
+        <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.iter().any(|(k, <span class="kw">_</span>)| k == <span class="kw-2">&amp;</span>key) {
+            Entry::occupied(key, <span class="self">self</span>)
         } <span class="kw">else </span>{
-            Entry::vacant(key, dormant_map)
+            Entry::vacant(key, <span class="self">self</span>)
         }
     }
 }
@@ -357,18 +409,12 @@
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{ <span class="self">Self</span>::new() }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: <span class="lifetime">&#39;a </span>+ Eq, V: <span class="lifetime">&#39;a</span>&gt; Entry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>vacant(
-        key: K,
-        dormant_map: DormantMutRef&lt;<span class="lifetime">&#39;a</span>, AssocList&lt;K, V&gt;&gt;,
-    ) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>::Vacant(VacantEntry { key, dormant_map, _marker: PhantomData })
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: Eq, V&gt; Entry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>vacant(key: K, map: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>AssocList&lt;K, V&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::Vacant(VacantEntry { key, map })
     }
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>occupied(
-        item: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>(K, V),
-        dormant_map: DormantMutRef&lt;<span class="lifetime">&#39;a</span>, AssocList&lt;K, V&gt;&gt;,
-    ) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>::Occupied(OccupiedEntry { item, dormant_map })
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>occupied(key: K, map: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>AssocList&lt;K, V&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::Occupied(OccupiedEntry { key, map })
     }
 
     <span class="kw">pub fn </span>and_modify&lt;F: FnOnce(<span class="kw-2">&amp;mut </span>V)&gt;(<span class="self">self</span>, f: F) -&gt; Entry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
@@ -422,23 +468,75 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: <span class="lifetime">&#39;a </span>+ Eq, V: <span class="lifetime">&#39;a</span>&gt; VacantEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: Eq, V&gt; VacantEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
     <span class="kw">pub fn </span>into_key(<span class="self">self</span>) -&gt; K { <span class="self">self</span>.key }
     <span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K { <span class="kw-2">&amp;</span><span class="self">self</span>.key }
-
-    <span class="kw">pub fn </span>insert(<span class="self">self</span>, _value: V) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>V { <span class="macro">todo!</span>() }
+    <span class="kw">pub fn </span>insert(<span class="self">self</span>, value: V) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>V {
+        <span class="kw">let </span><span class="self">Self </span>{ key, map } = <span class="self">self</span>;
+        map.<span class="number">0</span>.push((key, value));
+        <span class="kw-2">&amp;mut </span>map.<span class="number">0</span>.last_mut().unwrap().<span class="number">1
+    </span>}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: <span class="lifetime">&#39;a </span>+ Eq, V: <span class="lifetime">&#39;a</span>&gt; OccupiedEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: Eq, V&gt; OccupiedEntry&lt;<span class="lifetime">&#39;a</span>, K, V&gt; {
     <span class="kw">pub fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: V) -&gt; V {
         std::mem::replace(<span class="self">self</span>.get_mut(), value)
     }
+    <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>V {
+        <span class="kw">let </span><span class="self">Self </span>{ key, map } = <span class="self">self</span>;
+        map.<span class="number">0</span>.iter().find(|(k, <span class="kw">_</span>)| k == key).map(|(<span class="kw">_</span>, v)| v).unwrap()
+    }
+    <span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>V {
+        <span class="kw">let </span><span class="self">Self </span>{ key, map } = <span class="self">self</span>;
+        map.<span class="number">0</span>.iter_mut().find(|(k, <span class="kw">_</span>)| k == key).map(|(<span class="kw">_</span>, v)| v).unwrap()
+    }
+    <span class="kw">pub fn </span>into_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>V {
+        <span class="kw">let </span><span class="self">Self </span>{ key, map } = <span class="self">self</span>;
+        map.<span class="number">0</span>.iter_mut().find(|(k, <span class="kw">_</span>)| k == <span class="kw-2">&amp;</span>key).map(|(<span class="kw">_</span>, v)| v).unwrap()
+    }
+    <span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K { <span class="kw-2">&amp;</span><span class="self">self</span>.key }
+    <span class="kw">pub fn </span>remove(<span class="self">self</span>) -&gt; V { <span class="self">self</span>.remove_entry().<span class="number">1 </span>}
+    <span class="kw">pub fn </span>remove_entry(<span class="self">self</span>) -&gt; (K, V) {
+        <span class="kw">let </span><span class="self">Self </span>{ key, map } = <span class="self">self</span>;
+        <span class="kw">let </span>i = (<span class="number">0</span>..map.len()).find(|<span class="kw-2">&amp;</span>i| key == map.<span class="number">0</span>[i].<span class="number">0</span>).unwrap();
+        map.<span class="number">0</span>.remove(i)
+    }
+}
 
-    <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>V { <span class="macro">todo!</span>() }
-    <span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>V { <span class="macro">todo!</span>() }
-    <span class="kw">pub fn </span>into_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>V { <span class="macro">todo!</span>() }
-    <span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K { <span class="macro">todo!</span>() }
-    <span class="kw">pub fn </span>remove(<span class="self">self</span>) -&gt; V { <span class="macro">todo!</span>() }
-    <span class="kw">pub fn </span>remove_entry(<span class="self">self</span>) -&gt; (K, V) { <span class="macro">todo!</span>() }
+<span class="attr">#[test]
+</span><span class="kw">fn </span>sanity_check() {
+    <span class="kw">let </span><span class="kw-2">mut </span>alist = AssocList::new();
+
+    <span class="macro">assert_eq!</span>(alist.entry(<span class="number">0</span>).key(), <span class="kw-2">&amp;</span><span class="number">0</span>);
+
+    alist.entry(<span class="number">0</span>).or_insert(<span class="string">&quot;zero&quot;</span>);
+    <span class="macro">assert_eq!</span>(alist.get(<span class="number">0</span>).unwrap(), <span class="kw-2">&amp;</span><span class="string">&quot;zero&quot;</span>);
+    <span class="macro">assert_eq!</span>(alist.len(), <span class="number">1</span>);
+
+    alist.entry(<span class="number">0</span>).or_insert_with(|| <span class="string">&quot;xxx&quot;</span>);
+    <span class="macro">assert_eq!</span>(alist.get(<span class="number">0</span>).unwrap(), <span class="kw-2">&amp;</span><span class="string">&quot;zero&quot;</span>);
+    <span class="macro">assert_eq!</span>(alist.len(), <span class="number">1</span>);
+
+    alist.entry(<span class="number">2</span>).or_insert_with_key(|<span class="kw">_</span>| <span class="string">&quot;two&quot;</span>);
+    <span class="macro">assert!</span>(alist.get(<span class="number">1</span>).is_none());
+    <span class="macro">assert_eq!</span>(alist.get(<span class="number">2</span>).unwrap(), <span class="kw-2">&amp;</span><span class="string">&quot;two&quot;</span>);
+    <span class="macro">assert_eq!</span>(alist.len(), <span class="number">2</span>);
+
+    alist.entry(<span class="number">2</span>).and_modify(|v| <span class="kw-2">*</span>v = <span class="string">&quot;second&quot;</span>);
+    <span class="macro">assert_eq!</span>(alist.len(), <span class="number">2</span>);
+
+    <span class="kw">if let </span>Entry::Occupied(o) = alist.entry(<span class="number">2</span>) {
+        <span class="macro">assert_eq!</span>(o.get(), <span class="kw-2">&amp;</span><span class="string">&quot;second&quot;</span>);
+        <span class="macro">assert_eq!</span>(o.remove(), <span class="string">&quot;second&quot;</span>);
+        <span class="macro">assert_eq!</span>(alist.len(), <span class="number">1</span>);
+    }
+
+    alist.entry(<span class="number">1</span>).or_default();
+    <span class="macro">assert_eq!</span>(alist.len(), <span class="number">2</span>);
+    <span class="macro">assert!</span>(alist.get(<span class="number">1</span>).unwrap().is_empty());
+    <span class="kw">if let </span>Entry::Occupied(<span class="kw-2">mut </span>o) = alist.entry(<span class="number">1</span>) {
+        o.insert(<span class="string">&quot;first&quot;</span>);
+        <span class="macro">assert_eq!</span>(o.get(), <span class="kw-2">&amp;</span><span class="string">&quot;first&quot;</span>);
+    }
 }
 </code></pre></div></section></main></body></html>
