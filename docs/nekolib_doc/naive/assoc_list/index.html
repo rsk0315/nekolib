@@ -43,8 +43,54 @@
 <script>
   'use strict';
 
-    const cratesLs = ;
-    document.addEventListener('DOMContentLoaded', () => {
+  const cratesLs = {
+    "algo": [
+      "bisect"
+    ],
+    "ds": [
+      "foldable_queue",
+      "union-find",
+      "vec_segtree"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "pdep_pext"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "modint"
+    ],
+    "naive": [
+      "assoc-list",
+      "disjoint-set"
+    ],
+    "ops": [
+      "monoid",
+      "op_add",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support"
+    ],
+    "seq": [
+      "inversion",
+      "lis"
+    ],
+    "uslice": [
+      "permutation"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
     const crates = [...document.getElementsByClassName('block crate')][0];
 
     const links = new Map([...crates.querySelectorAll('a')].map((e) => [
