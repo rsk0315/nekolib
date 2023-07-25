@@ -1,3 +1,5 @@
-#! /bin/sh
+#! /bin/bash
 
-vim -i NONE -u NONE -s crates-ls.vim crates-ls.html
+set -eu
+
+TERM=dumb vim -N -i NONE -u NONE -s crates-ls.vim crates-ls.html
