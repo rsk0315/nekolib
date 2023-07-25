@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::borrow::Borrow;
 use std::marker::PhantomData;
 
@@ -126,7 +128,7 @@ impl<'a, K: 'a + Eq, V: 'a> VacantEntry<'a, K, V> {
     pub fn into_key(self) -> K { self.key }
     pub fn key(&self) -> &K { &self.key }
 
-    pub fn insert(self, value: V) -> &'a mut V { todo!() }
+    pub fn insert(self, _value: V) -> &'a mut V { todo!() }
 }
 
 impl<'a, K: 'a + Eq, V: 'a> OccupiedEntry<'a, K, V> {
