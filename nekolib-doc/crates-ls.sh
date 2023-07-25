@@ -1,6 +1,5 @@
-#! /bin/sh
+#! /bin/bash
 
 set -eu
-export TERM=dumb
 
-vim -N -i NONE -u NONE -s crates-ls.vim crates-ls.html
+TERM=dumb vim -N -i NONE -u NONE -s crates-ls.vim crates-ls.html

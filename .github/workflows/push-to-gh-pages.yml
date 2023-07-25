@@ -45,7 +45,7 @@ jobs:
           pwd
           ls
           pushd main/nekolib-doc
-          sh crates-ls.sh
+          bash crates-ls.sh
           RUSTDOCFLAGS="--html-in-header=$PWD/katex.html"
           RUSTDOCFLAGS+=" --html-in-header=$PWD/crates-ls.html"
           export RUSTDOCFLAGS
