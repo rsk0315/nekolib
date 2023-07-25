@@ -28,11 +28,21 @@ jobs:
           toolchain: nightly
           override: true
 
+      - name: Setup jq
+        uses: dcarbone/install-jq-action@v1.0.1
+        with:
+          version: '1.6'
+          force: true
+
       - name: Build documents
         run: |
           pwd
           ls
           pushd main/nekolib-doc
+          sh crates-ls.sh
+          RUSTDOCFLAGS="--html-in-header=$PWD/katex.html"
+          RUSTDOCFLAGS+=" --html-in-header=$PWD/crates-ls.html"
+          export RUSTDOCFLAGS
           cargo d
           popd
           rm -rf gh-pages/docs
