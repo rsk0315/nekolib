@@ -1,6 +1,7 @@
 #[doc(inline)]
 pub use {
     algo,
+    corro,
     ds,
     fmt,
     integer,
