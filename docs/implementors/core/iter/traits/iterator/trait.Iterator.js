@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"bin_iter":[["impl&lt;U: <a class=\"trait\" href=\"bin_iter/trait.Binary.html\" title=\"trait bin_iter::Binary\">Binary</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"bin_iter/struct.UIntIter.html\" title=\"struct bin_iter::UIntIter\">UIntIter</a>&lt;U&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

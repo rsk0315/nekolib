@@ -1,3 +1,5 @@
 (function() {var implementors = {
-"nekolib_doc":[]
+"monoid":[],
+"nekolib_doc":[],
+"ops":[]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

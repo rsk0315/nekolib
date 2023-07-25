@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["PerLine","PerLineUsize1","SpaceSep","SpaceSepUsize1","StrSep","StrSepUsize1"]};

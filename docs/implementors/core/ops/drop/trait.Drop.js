@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"vec_segtree":[["impl&lt;M: <a class=\"trait\" href=\"monoid/trait.Monoid.html\" title=\"trait monoid::Monoid\">Monoid</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html\" title=\"trait core::ops::drop::Drop\">Drop</a> for <a class=\"struct\" href=\"vec_segtree/struct.PeekMutTmp.html\" title=\"struct vec_segtree::PeekMutTmp\">PeekMutTmp</a>&lt;'_, M&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

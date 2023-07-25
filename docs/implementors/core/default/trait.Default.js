@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"assoc_list":[["impl&lt;K: <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html\" title=\"trait core::cmp::Eq\">Eq</a>, V&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"assoc_list/struct.AssocList.html\" title=\"struct assoc_list::AssocList\">AssocList</a>&lt;K, V&gt;"]],
+"op_add":[["impl&lt;T&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"op_add/struct.OpAdd.html\" title=\"struct op_add::OpAdd\">OpAdd</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
