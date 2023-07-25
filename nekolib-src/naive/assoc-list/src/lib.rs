@@ -1,23 +1,19 @@
 #![allow(dead_code)]
 
 use std::borrow::Borrow;
-use std::marker::PhantomData;
-
-use borrow::DormantMutRef;
 
 pub struct AssocList<K, V>(Vec<(K, V)>);
-pub enum Entry<'a, K: 'a, V: 'a> {
+pub enum Entry<'a, K, V> {
     Vacant(VacantEntry<'a, K, V>),
     Occupied(OccupiedEntry<'a, K, V>),
 }
 pub struct VacantEntry<'a, K, V> {
     key: K,
-    dormant_map: DormantMutRef<'a, AssocList<K, V>>,
-    _marker: PhantomData<&'a mut (K, V)>,
+    map: &'a mut AssocList<K, V>,
 }
 pub struct OccupiedEntry<'a, K, V> {
-    item: &'a mut (K, V),
-    dormant_map: DormantMutRef<'a, AssocList<K, V>>,
+    key: K,
+    map: &'a mut AssocList<K, V>,
 }
 
 impl<K: Eq, V> AssocList<K, V> {
@@ -25,6 +21,14 @@ impl<K: Eq, V> AssocList<K, V> {
 
     pub fn is_empty(&self) -> bool { self.0.is_empty() }
     pub fn len(&self) -> usize { self.0.len() }
+
+    pub fn get<Q>(&self, key: Q) -> Option<&V>
+    where
+        Q: Borrow<K>,
+        K: PartialEq<Q>,
+    {
+        self.0.iter().find(|(k, _)| k == &key).map(|(_, v)| v)
+    }
 
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         if let Some((_, v)) = self.0.iter_mut().find(|(k, _)| k == &key) {
@@ -45,12 +49,11 @@ impl<K: Eq, V> AssocList<K, V> {
             .map(|i| self.0.remove(i).1)
     }
 
-    pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
-        let (map, dormant_map) = DormantMutRef::new(self);
-        if let Some(item) = map.0.iter_mut().find(|(k, _)| k == &key) {
-            Entry::occupied(item, dormant_map)
+    pub fn entry(&mut self, key: K) -> Entry<K, V> {
+        if self.0.iter().any(|(k, _)| k == &key) {
+            Entry::occupied(key, self)
         } else {
-            Entry::vacant(key, dormant_map)
+            Entry::vacant(key, self)
         }
     }
 }
@@ -59,18 +62,12 @@ impl<K: Eq, V> Default for AssocList<K, V> {
     fn default() -> Self { Self::new() }
 }
 
-impl<'a, K: 'a + Eq, V: 'a> Entry<'a, K, V> {
-    pub(crate) fn vacant(
-        key: K,
-        dormant_map: DormantMutRef<'a, AssocList<K, V>>,
-    ) -> Self {
-        Self::Vacant(VacantEntry { key, dormant_map, _marker: PhantomData })
+impl<'a, K: Eq, V> Entry<'a, K, V> {
+    pub(crate) fn vacant(key: K, map: &'a mut AssocList<K, V>) -> Self {
+        Self::Vacant(VacantEntry { key, map })
     }
-    pub(crate) fn occupied(
-        item: &'a mut (K, V),
-        dormant_map: DormantMutRef<'a, AssocList<K, V>>,
-    ) -> Self {
-        Self::Occupied(OccupiedEntry { item, dormant_map })
+    pub(crate) fn occupied(key: K, map: &'a mut AssocList<K, V>) -> Self {
+        Self::Occupied(OccupiedEntry { key, map })
     }
 
     pub fn and_modify<F: FnOnce(&mut V)>(self, f: F) -> Entry<'a, K, V> {
@@ -124,22 +121,74 @@ impl<'a, K: 'a + Eq, V: 'a> Entry<'a, K, V> {
     }
 }
 
-impl<'a, K: 'a + Eq, V: 'a> VacantEntry<'a, K, V> {
+impl<'a, K: Eq, V> VacantEntry<'a, K, V> {
     pub fn into_key(self) -> K { self.key }
     pub fn key(&self) -> &K { &self.key }
-
-    pub fn insert(self, _value: V) -> &'a mut V { todo!() }
+    pub fn insert(self, value: V) -> &'a mut V {
+        let Self { key, map } = self;
+        map.0.push((key, value));
+        &mut map.0.last_mut().unwrap().1
+    }
 }
 
-impl<'a, K: 'a + Eq, V: 'a> OccupiedEntry<'a, K, V> {
+impl<'a, K: Eq, V> OccupiedEntry<'a, K, V> {
     pub fn insert(&mut self, value: V) -> V {
         std::mem::replace(self.get_mut(), value)
     }
+    pub fn get(&self) -> &V {
+        let Self { key, map } = self;
+        map.0.iter().find(|(k, _)| k == key).map(|(_, v)| v).unwrap()
+    }
+    pub fn get_mut(&mut self) -> &mut V {
+        let Self { key, map } = self;
+        map.0.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v).unwrap()
+    }
+    pub fn into_mut(self) -> &'a mut V {
+        let Self { key, map } = self;
+        map.0.iter_mut().find(|(k, _)| k == &key).map(|(_, v)| v).unwrap()
+    }
+    pub fn key(&self) -> &K { &self.key }
+    pub fn remove(self) -> V { self.remove_entry().1 }
+    pub fn remove_entry(self) -> (K, V) {
+        let Self { key, map } = self;
+        let i = (0..map.len()).find(|&i| key == map.0[i].0).unwrap();
+        map.0.remove(i)
+    }
+}
 
-    pub fn get(&self) -> &V { todo!() }
-    pub fn get_mut(&mut self) -> &mut V { todo!() }
-    pub fn into_mut(self) -> &'a mut V { todo!() }
-    pub fn key(&self) -> &K { todo!() }
-    pub fn remove(self) -> V { todo!() }
-    pub fn remove_entry(self) -> (K, V) { todo!() }
+#[test]
+fn sanity_check() {
+    let mut alist = AssocList::new();
+
+    assert_eq!(alist.entry(0).key(), &0);
+
+    alist.entry(0).or_insert("zero");
+    assert_eq!(alist.get(0).unwrap(), &"zero");
+    assert_eq!(alist.len(), 1);
+
+    alist.entry(0).or_insert_with(|| "xxx");
+    assert_eq!(alist.get(0).unwrap(), &"zero");
+    assert_eq!(alist.len(), 1);
+
+    alist.entry(2).or_insert_with_key(|_| "two");
+    assert!(alist.get(1).is_none());
+    assert_eq!(alist.get(2).unwrap(), &"two");
+    assert_eq!(alist.len(), 2);
+
+    alist.entry(2).and_modify(|v| *v = "second");
+    assert_eq!(alist.len(), 2);
+
+    if let Entry::Occupied(o) = alist.entry(2) {
+        assert_eq!(o.get(), &"second");
+        assert_eq!(o.remove(), "second");
+        assert_eq!(alist.len(), 1);
+    }
+
+    alist.entry(1).or_default();
+    assert_eq!(alist.len(), 2);
+    assert!(alist.get(1).unwrap().is_empty());
+    if let Entry::Occupied(mut o) = alist.entry(1) {
+        o.insert("first");
+        assert_eq!(o.get(), &"first");
+    }
 }
