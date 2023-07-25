@@ -1,3 +1,6 @@
 #! /bin/sh
 
-vim -i NONE -u NONE -s crates-ls.vim crates-ls.html
+set -eu
+export TERM=dumb
+
+vim -N -i NONE -u NONE -s crates-ls.vim crates-ls.html

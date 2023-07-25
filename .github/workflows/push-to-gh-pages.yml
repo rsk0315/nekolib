@@ -34,6 +34,11 @@ jobs:
           version: '1.6'
           force: true
 
+      - name: Check json
+        run: |
+          cd main/nekolib-src
+          sh ls.sh
+
       - name: Build documents
         run: |
           pwd
