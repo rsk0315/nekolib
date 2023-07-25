@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["algo","ds","fmt","integer","io","macros","math","naive","ops","poc","seq","uslice"]};
+window.SIDEBAR_ITEMS = {"mod":["algo","corro","ds","fmt","integer","io","macros","math","naive","ops","poc","seq","uslice"]};

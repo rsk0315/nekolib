@@ -3,6 +3,8 @@ var srcIndex = JSON.parse('{\
 "assoc_list":["",[],["lib.rs"]],\
 "bin_iter":["",[],["lib.rs"]],\
 "bisect":["",[],["lib.rs"]],\
+"borrow":["",[],["lib.rs"]],\
+"corro":["",[],["lib.rs"]],\
 "disjoint_set":["",[],["lib.rs"]],\
 "ds":["",[],["lib.rs"]],\
 "fmt":["",[],["lib.rs"]],\

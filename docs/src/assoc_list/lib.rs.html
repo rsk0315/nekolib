@@ -47,6 +47,9 @@
     "algo": [
       "bisect"
     ],
+    "corro": [
+      "borrow"
+    ],
     "ds": [
       "foldable_queue",
       "union-find",
@@ -293,36 +296,6 @@
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 
 </span><span class="kw">use </span>std::borrow::Borrow;
@@ -467,35 +440,5 @@
     <span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K { <span class="macro">todo!</span>() }
     <span class="kw">pub fn </span>remove(<span class="self">self</span>) -&gt; V { <span class="macro">todo!</span>() }
     <span class="kw">pub fn </span>remove_entry(<span class="self">self</span>) -&gt; (K, V) { <span class="macro">todo!</span>() }
-}
-
-<span class="kw">mod </span>borrow {
-    <span class="kw">use </span>std::marker::PhantomData;
-    <span class="kw">use </span>std::ptr::NonNull;
-
-    <span class="kw">pub struct </span>DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-        ptr: NonNull&lt;T&gt;,
-        _marker: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T&gt;,
-    }
-
-    <span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Sync <span class="kw">for </span>DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">where </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T: Sync {}
-    <span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Send <span class="kw">for </span>DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">where </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T: Send {}
-
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-        <span class="kw">pub fn </span>new(t: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T, <span class="self">Self</span>) {
-            <span class="kw">let </span>ptr = NonNull::from(t);
-            <span class="kw">let </span>new_ref = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>ptr.as_ptr() };
-            (new_ref, <span class="self">Self </span>{ ptr, _marker: PhantomData })
-        }
-        <span class="kw">pub unsafe fn </span>awaken(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T {
-            <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.ptr.as_ptr() }
-        }
-        <span class="kw">pub unsafe fn </span>reborrow(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T {
-            <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.ptr.as_ptr() }
-        }
-        <span class="kw">pub unsafe fn </span>reborrow_shared(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T {
-            <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><span class="self">self</span>.ptr.as_ptr() }
-        }
-    }
 }
 </code></pre></div></section></main></body></html>
