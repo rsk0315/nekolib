@@ -1,0 +1,157 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `LC_PAPER` constant in crate `libc`."><title>LC_PAPER in libc - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="libc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (04abc370b 2023-07-28)" data-channel="nightly" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+
+<!-- The loading of KaTeX is deferred to speed up page rendering -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+
+<script>
+  'use strict';
+
+  const macros = {
+    // '\\foo': '42',
+    // '\\bar': '\\operatorname{bar}^{#1}',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
+    }
+
+    const codes = Array.from(document.getElementsByTagName('code'));
+    for (const elt of codes) {
+      if (elt.classList.contains('language-math')) continue;
+      if (elt.classList.contains('language-inline-math')) {
+        katex.render(elt.innerText, elt, { macros });
+        continue;
+      }
+
+      const parent = elt.parentNode;
+      if (parent.nodeName.toLowerCase() === 'pre') {
+        continue;
+      }
+      const inlineMath = `$${elt.outerHTML}$`;
+      if (!parent.innerHTML.includes(inlineMath)) {
+        continue;
+      }
+
+      const math = katex.renderToString(elt.innerHTML, { macros });
+      parent.outerHTML = parent.outerHTML.replace(inlineMath, `<code>${math}</code>`);
+    }
+  });
+</script>
+
+<script>
+  'use strict';
+
+  const cratesLs = {
+    "algo": [
+      "bisect"
+    ],
+    "corro": [
+      "borrow"
+    ],
+    "ds": [
+      "foldable_queue",
+      "union-find",
+      "vec_segtree"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "pdep_pext"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "modint"
+    ],
+    "naive": [
+      "assoc-list",
+      "disjoint-set"
+    ],
+    "ops": [
+      "monoid",
+      "op_add",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support"
+    ],
+    "random": [
+      "randgen"
+    ],
+    "seq": [
+      "inversion",
+      "lis"
+    ],
+    "uslice": [
+      "permutation"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const crates = [...document.getElementsByClassName('block crate')][0];
+
+    const links = new Map([...crates.querySelectorAll('a')].map((e) => [
+      e.innerText,
+      {
+        name: e.innerText,
+        href: e.href,
+        current: e.classList.contains('current'),
+      },
+    ]));
+
+    const tree = new Map();
+    for (const mod of Object.keys(cratesLs)) {
+      for (const crate of cratesLs[mod]) {
+        const crate_ = crate.replaceAll('-', '_');
+        if (!links.has(crate_)) continue;
+
+        if (!tree.has(mod)) {
+          tree.set(mod, []);
+        }
+
+        tree.get(mod).push(links.get(crate_));
+      }
+    }
+
+    const cratesElt = document.createElement('ul');
+    cratesElt.classList.add('block');
+    cratesElt.classList.add('crate');
+    for (const [modName, mod] of tree) {
+      {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        const link = links.get(modName);
+        a.href = link.href;
+        if (link.current) a.classList.add('current');
+        a.innerText = link.name;
+        li.appendChild(a);
+        cratesElt.appendChild(li);
+      }
+
+      const ul = document.createElement('ul');
+      for (const crate of mod) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = crate.href;
+        if (crate.current) a.classList.add('current');
+        a.innerText = crate.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      cratesElt.appendChild(ul);
+    }
+
+    crates.outerHTML = cratesElt.outerHTML;
+  });
+</script>
+
+</head><body class="rustdoc constant"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../libc/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../libc/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><div class="sidebar-elems"><h2><a href="index.html">In libc</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Constant <a href="index.html">libc</a>::<wbr><a class="constant" href="#">LC_PAPER</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/libc/unix/linux_like/linux/gnu/mod.rs.html#686">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub const LC_PAPER: <a class="type" href="type.c_int.html" title="type libc::c_int">c_int</a> = 7;</code></pre></section></div></main></body></html>
