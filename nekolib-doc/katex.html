@@ -29,13 +29,19 @@
       if (parent.nodeName.toLowerCase() === 'pre') {
         continue;
       }
-      const inlineMath = `$${elt.outerHTML}$`;
-      if (!parent.innerHTML.includes(inlineMath)) {
+
+      const content = parent.outerHTML.replaceAll(
+        /\$<code>([^<]*?)<\/code>\$/g,
+        ((match, inner) => {
+          return `<code>${katex.renderToString(inner, { macros })}</code>`;
+        }),
+      );
+
+      try {
+        parent.outerHTML = content;
+      } catch (DOMException) {
         continue;
       }
-
-      const math = katex.renderToString(elt.innerHTML, { macros });
-      parent.outerHTML = parent.outerHTML.replace(inlineMath, `<code>${math}</code>`);
     }
   });
 </script>
