@@ -19,3 +19,4 @@ seq = { path = "../nekolib-src/seq" }
 algo = { path = "../nekolib-src/algo" }
 naive = { path = "../nekolib-src/naive" }
 corro = { path = "../nekolib-src/corro" }
+random = { path = "../nekolib-src/random" }

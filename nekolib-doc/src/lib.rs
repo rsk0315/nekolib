@@ -11,6 +11,7 @@ pub use {
     naive,
     ops,
     poc,
+    random,
     seq,
     uslice,
 };
