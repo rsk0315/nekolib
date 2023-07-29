@@ -30,6 +30,7 @@
         continue;
       }
 
+      parent.style.overflowX = 'unset';
       const content = parent.outerHTML.replaceAll(
         /\$<code>([^<]*?)<\/code>\$/g,
         ((match, inner) => {
