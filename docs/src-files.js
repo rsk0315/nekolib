@@ -39,6 +39,7 @@ var srcIndex = JSON.parse('{\
 "readable":["",[],["lib.rs"]],\
 "seq":["",[],["lib.rs"]],\
 "str_sep":["",[],["lib.rs"]],\
+"suffix_array":["",[],["lib.rs"]],\
 "union_find":["",[],["lib.rs"]],\
 "usize_bounds":["",[],["lib.rs"]],\
 "uslice":["",[],["lib.rs"]],\
