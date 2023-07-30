@@ -2,6 +2,8 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Index;
 
+const NONE: usize = 1_usize.wrapping_neg();
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SuffixArray<T: Ord> {
     buf: Vec<T>,
@@ -225,7 +227,7 @@ fn sa_is(buf: &[usize]) -> Vec<usize> {
     }
 
     let ls = ls_classify(buf);
-    let mut sa = vec![0; len];
+    let mut sa = vec![NONE; len];
     let mut tail = bucket_tail(&count);
     for i in (1..len).rev().filter(|&i| ls[i] == LsType::S(true)) {
         tail[buf[i]] -= 1;
@@ -243,7 +245,7 @@ fn sa_is(buf: &[usize]) -> Vec<usize> {
     let lms: Vec<_> = (0..len).filter(|&i| ls[i] == LsType::S(true)).collect();
 
     let mut tail = bucket_tail(&count);
-    let mut sa = vec![0; len];
+    let mut sa = vec![NONE; len];
     for i in rs_sa.into_iter().rev() {
         let j = lms[i];
         tail[buf[j]] -= 1;
