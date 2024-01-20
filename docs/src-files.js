@@ -8,6 +8,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["corro",["",[],["lib.rs"]]],\
 ["discussion",["",[],["lib.rs"]]],\
 ["disjoint_set",["",[],["lib.rs"]]],\
+["dp",["",[],["lib.rs"]]],\
 ["ds",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
 ["foldable_queue",["",[],["lib.rs"]]],\

@@ -46,6 +46,7 @@
     '\\xgets': '\\xleftarrow{#1}',
     '\\eod': '\\blacksquare', // end of \<details\>
     '\\lldot': '\\mathop{.\\,.}',
+    '\\dp': '\\mathrm{dp}',
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -95,6 +96,7 @@
       "borrow"
     ],
     "discussion": [
+      "dp",
       "plane-sweep"
     ],
     "ds": [
@@ -212,9 +214,11 @@
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
 <a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>inner::doc_inline_reexport;
 
 <span class="macro">doc_inline_reexport! </span>{
+    dp,
     plane_sweep,
 }
 </code></pre></div></section></main></body></html>

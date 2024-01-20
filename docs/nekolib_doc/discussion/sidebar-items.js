@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["plane_sweep"]};
+window.SIDEBAR_ITEMS = {"mod":["dp","plane_sweep"]};
