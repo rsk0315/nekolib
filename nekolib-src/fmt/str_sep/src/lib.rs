@@ -1,12 +1,12 @@
 use std::fmt;
 
-pub struct SpaceSep<I>(I);
-pub struct PerLine<I>(I);
-pub struct StrSep<'a, I>(I, &'a str);
+pub struct SpaceSep<I>(pub I);
+pub struct PerLine<I>(pub I);
+pub struct StrSep<'a, I>(pub I, pub &'a str);
 
-pub struct SpaceSepUsize1<I>(I);
-pub struct PerLineUsize1<I>(I);
-pub struct StrSepUsize1<'a, I>(I, &'a str);
+pub struct SpaceSepUsize1<I>(pub I);
+pub struct PerLineUsize1<I>(pub I);
+pub struct StrSepUsize1<'a, I>(pub I, pub &'a str);
 
 macro_rules! impl_fmt {
     ( $( $fmt:ident )* ) => { $(
