@@ -3,6 +3,12 @@
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
 
+<style>
+  code.code-math {
+      background-color: transparent;
+  }
+</style>
+
 <script>
   'use strict';
 
@@ -34,7 +40,7 @@
       const content = parent.outerHTML.replaceAll(
         /\$<code>([^<]*?)<\/code>\$/g,
         ((match, inner) => {
-          return `<code>${katex.renderToString(inner, { macros })}</code>`;
+          return `<code class="code-math">${katex.renderToString(inner, { macros })}</code>`;
         }),
       );
 
