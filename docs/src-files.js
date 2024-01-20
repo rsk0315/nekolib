@@ -6,6 +6,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["borrow",["",[],["lib.rs"]]],\
 ["cfg_if",["",[],["lib.rs"]]],\
 ["corro",["",[],["lib.rs"]]],\
+["discussion",["",[],["lib.rs"]]],\
 ["disjoint_set",["",[],["lib.rs"]]],\
 ["ds",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
@@ -29,8 +30,10 @@ var srcIndex = new Map(JSON.parse('[\
 ["ops",["",[],["lib.rs"]]],\
 ["pdep_pext",["",[],["lib.rs"]]],\
 ["permutation",["",[],["lib.rs"]]],\
+["plane_sweep",["",[],["lib.rs"]]],\
 ["poc",["",[],["lib.rs"]]],\
 ["ppv_lite86",["",[["x86_64",[],["mod.rs","sse2.rs"]]],["lib.rs","soft.rs","types.rs"]]],\
+["proconio",["",[],["lib.rs"]]],\
 ["rand",["",[["distributions",[],["bernoulli.rs","distribution.rs","float.rs","integer.rs","mod.rs","other.rs","slice.rs","uniform.rs","utils.rs","weighted.rs","weighted_index.rs"]],["rngs",[["adapter",[],["mod.rs","read.rs","reseeding.rs"]]],["mock.rs","mod.rs","std.rs","thread.rs"]],["seq",[],["index.rs","mod.rs"]]],["lib.rs","prelude.rs","rng.rs"]]],\
 ["rand_chacha",["",[],["chacha.rs","guts.rs","lib.rs"]]],\
 ["rand_core",["",[],["block.rs","error.rs","impls.rs","le.rs","lib.rs","os.rs"]]],\
@@ -38,6 +41,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["random",["",[],["lib.rs"]]],\
 ["readable",["",[],["lib.rs"]]],\
 ["seq",["",[],["lib.rs"]]],\
+["snippet",["",[],["lib.rs"]]],\
 ["str_sep",["",[],["lib.rs"]]],\
 ["suffix_array",["",[],["lib.rs"]]],\
 ["union_find",["",[],["lib.rs"]]],\
