@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/corro/borrow/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="borrow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (32303b219 2023-07-29)" data-channel="nightly" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/corro/borrow/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-4e54bb2b497cc83f.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="borrow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (88189a71e 2024-01-19)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0b2e2def73e61cbe.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -162,7 +162,9 @@
   });
 </script>
 
-</head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../borrow/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+</head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../borrow/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -442,15 +444,15 @@
 ///     len: usize, // some other data
 /// }
 ///
-/// enum Entry&lt;&#39;a&gt; {
-///     Occupied(OccupiedEntry&lt;&#39;a&gt;),
+/// enum Entry&lt;'a&gt; {
+///     Occupied(OccupiedEntry&lt;'a&gt;),
 ///     Vacant(VacantEntry),
 /// }
 /// use Entry::Occupied;
 ///
-/// struct OccupiedEntry&lt;&#39;a&gt; {
-///     handle: &amp;&#39;a mut String,
-///     base: &amp;&#39;a mut Base,
+/// struct OccupiedEntry&lt;'a&gt; {
+///     handle: &amp;'a mut String,
+///     base: &amp;'a mut Base,
 /// }
 /// struct VacantEntry;
 ///
@@ -470,41 +472,41 @@
 ///   --&gt; src/lib.rs:26:60
 ///    |
 /// 22 |     pub fn entry(&amp;mut self, key: usize) -&gt; Entry {
-///    |                  - let&#39;s call the lifetime of this reference `&#39;1`
+///    |                  - let's call the lifetime of this reference `'1`
 /// 23 |         match self.buf.get_mut(key) {
 ///    |               --------------------- first mutable borrow occurs here
 /// 24 |             Some(handle) =&gt; Occupied(OccupiedEntry { base: self, handle }),
 ///    |                             -------------------------------^^^^-----------
 ///    |                             |                              |
 ///    |                             |                              second mutable borrow occurs here
-///    |                             returning this value requires that `self.buf` is borrowed for `&#39;1`
+///    |                             returning this value requires that `self.buf` is borrowed for `'1`
 /// ```
 ///
 ///
 /// ## References
 /// - &lt;https://www.reddit.com/r/rust/comments/11f45re&gt;
 /// - &lt;https://doc.rust-lang.org/nomicon/lifetime-mismatch.html#improperly-reduced-borrows&gt;
-</span><span class="kw">pub struct </span>DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+</span><span class="kw">pub struct </span>DormantMutRef&lt;<span class="lifetime">'a</span>, T&gt; {
     ptr: NonNull&lt;T&gt;,
-    _marker: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T&gt;,
+    _marker: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt;,
 }
 
-<span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Sync <span class="kw">for </span>DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">where </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T: Sync {}
-<span class="kw">unsafe impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Send <span class="kw">for </span>DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">where </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T: Send {}
+<span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Sync <span class="kw">for </span>DormantMutRef&lt;<span class="lifetime">'a</span>, T&gt; <span class="kw">where </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T: Sync {}
+<span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Send <span class="kw">for </span>DormantMutRef&lt;<span class="lifetime">'a</span>, T&gt; <span class="kw">where </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T: Send {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; DormantMutRef&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    <span class="kw">pub fn </span>new(t: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T, <span class="self">Self</span>) {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; DormantMutRef&lt;<span class="lifetime">'a</span>, T&gt; {
+    <span class="kw">pub fn </span>new(t: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T, <span class="self">Self</span>) {
         <span class="kw">let </span>ptr = NonNull::from(t);
         <span class="kw">let </span>new_ref = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>ptr.as_ptr() };
         (new_ref, <span class="self">Self </span>{ ptr, _marker: PhantomData })
     }
-    <span class="kw">pub unsafe fn </span>awaken(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T {
+    <span class="kw">pub unsafe fn </span>awaken(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T {
         <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.ptr.as_ptr() }
     }
-    <span class="kw">pub unsafe fn </span>reborrow(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T {
+    <span class="kw">pub unsafe fn </span>reborrow(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T {
         <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.ptr.as_ptr() }
     }
-    <span class="kw">pub unsafe fn </span>reborrow_shared(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T {
+    <span class="kw">pub unsafe fn </span>reborrow_shared(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {
         <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><span class="self">self</span>.ptr.as_ptr() }
     }
 }
@@ -530,22 +532,22 @@
         len: usize,
     }
 
-    <span class="kw">enum </span>Entry&lt;<span class="lifetime">&#39;a</span>&gt; {
-        Occupied(OccupiedEntry&lt;<span class="lifetime">&#39;a</span>&gt;),
-        Vacant(VacantEntry&lt;<span class="lifetime">&#39;a</span>&gt;),
+    <span class="kw">enum </span>Entry&lt;<span class="lifetime">'a</span>&gt; {
+        Occupied(OccupiedEntry&lt;<span class="lifetime">'a</span>&gt;),
+        Vacant(VacantEntry&lt;<span class="lifetime">'a</span>&gt;),
     }
     <span class="kw">use </span>Entry::{Occupied, Vacant};
 
-    <span class="kw">struct </span>OccupiedEntry&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">struct </span>OccupiedEntry&lt;<span class="lifetime">'a</span>&gt; {
         key: usize,
-        handle: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String,
-        dormant_base: DormantMutRef&lt;<span class="lifetime">&#39;a</span>, Base&gt;,
+        handle: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String,
+        dormant_base: DormantMutRef&lt;<span class="lifetime">'a</span>, Base&gt;,
     }
 
-    <span class="kw">struct </span>VacantEntry&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">struct </span>VacantEntry&lt;<span class="lifetime">'a</span>&gt; {
         key: usize,
-        handle: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="prelude-ty">Option</span>&lt;String&gt;&gt;,
-        dormant_base: DormantMutRef&lt;<span class="lifetime">&#39;a</span>, Base&gt;,
+        handle: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="prelude-ty">Option</span>&lt;String&gt;&gt;,
+        dormant_base: DormantMutRef&lt;<span class="lifetime">'a</span>, Base&gt;,
     }
 
     <span class="kw">impl </span>Base {
@@ -572,7 +574,7 @@
         }
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Entry&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Entry&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">pub fn </span>and_modify&lt;F&gt;(<span class="self">self</span>, f: F) -&gt; <span class="self">Self
         </span><span class="kw">where
             </span>F: FnOnce(<span class="kw-2">&amp;mut </span>String),
@@ -591,13 +593,13 @@
                 Vacant(<span class="kw-2">ref </span>entry) =&gt; entry.key(),
             }
         }
-        <span class="kw">pub fn </span>or_default(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String {
+        <span class="kw">pub fn </span>or_default(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String {
             <span class="kw">match </span><span class="self">self </span>{
                 Occupied(entry) =&gt; entry.into_mut(),
                 Vacant(entry) =&gt; entry.insert(Default::default()),
             }
         }
-        <span class="kw">pub fn </span>or_insert(<span class="self">self</span>, default: String) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String {
+        <span class="kw">pub fn </span>or_insert(<span class="self">self</span>, default: String) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String {
             <span class="kw">match </span><span class="self">self </span>{
                 Occupied(entry) =&gt; entry.into_mut(),
                 Vacant(entry) =&gt; entry.insert(default),
@@ -606,7 +608,7 @@
         <span class="kw">pub fn </span>or_insert_with&lt;F: FnOnce() -&gt; String&gt;(
             <span class="self">self</span>,
             default: F,
-        ) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String {
+        ) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String {
             <span class="kw">match </span><span class="self">self </span>{
                 Occupied(entry) =&gt; entry.into_mut(),
                 Vacant(entry) =&gt; entry.insert(default()),
@@ -615,7 +617,7 @@
         <span class="kw">pub fn </span>or_insert_with_key&lt;F: FnOnce(usize) -&gt; String&gt;(
             <span class="self">self</span>,
             default: F,
-        ) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String {
+        ) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String {
             <span class="kw">match </span><span class="self">self </span>{
                 Occupied(entry) =&gt; entry.into_mut(),
                 Vacant(entry) =&gt; {
@@ -626,13 +628,13 @@
         }
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; OccupiedEntry&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>String { <span class="kw-2">&amp;*</span><span class="self">self</span>.handle }
         <span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>String { <span class="self">self</span>.handle }
         <span class="kw">pub fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: String) -&gt; String {
             std::mem::replace(<span class="self">self</span>.handle, value)
         }
-        <span class="kw">pub fn </span>into_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String { <span class="self">self</span>.handle }
+        <span class="kw">pub fn </span>into_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String { <span class="self">self</span>.handle }
         <span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="self">self</span>.key }
         <span class="kw">pub fn </span>remove(<span class="self">self</span>) -&gt; String { <span class="self">self</span>.remove_entry().<span class="number">1 </span>}
         <span class="kw">pub fn </span>remove_entry(<span class="self">self</span>) -&gt; (usize, String) {
@@ -642,9 +644,9 @@
         }
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; VacantEntry&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; VacantEntry&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="self">self</span>.key }
-        <span class="kw">pub fn </span>insert(<span class="self">self</span>, value: String) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>String {
+        <span class="kw">pub fn </span>insert(<span class="self">self</span>, value: String) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>String {
             <span class="kw">match </span><span class="self">self</span>.handle {
                 <span class="prelude-val">None </span>=&gt; {
                     <span class="kw">let </span>key = <span class="self">self</span>.key;
@@ -673,25 +675,25 @@
 
         <span class="macro">assert_eq!</span>(base.entry(<span class="number">0</span>).key(), <span class="number">0</span>);
 
-        base.entry(<span class="number">0</span>).or_insert(<span class="string">&quot;zero&quot;</span>.to_owned());
-        <span class="macro">assert_eq!</span>(base.buf[<span class="number">0</span>].as_ref().unwrap(), <span class="string">&quot;zero&quot;</span>);
+        base.entry(<span class="number">0</span>).or_insert(<span class="string">"zero"</span>.to_owned());
+        <span class="macro">assert_eq!</span>(base.buf[<span class="number">0</span>].as_ref().unwrap(), <span class="string">"zero"</span>);
         <span class="macro">assert_eq!</span>(base.len, <span class="number">1</span>);
 
-        base.entry(<span class="number">0</span>).or_insert_with(|| <span class="string">&quot;xxx&quot;</span>.to_owned());
-        <span class="macro">assert_eq!</span>(base.buf[<span class="number">0</span>].as_ref().unwrap(), <span class="string">&quot;zero&quot;</span>);
+        base.entry(<span class="number">0</span>).or_insert_with(|| <span class="string">"xxx"</span>.to_owned());
+        <span class="macro">assert_eq!</span>(base.buf[<span class="number">0</span>].as_ref().unwrap(), <span class="string">"zero"</span>);
         <span class="macro">assert_eq!</span>(base.len, <span class="number">1</span>);
 
-        base.entry(<span class="number">2</span>).or_insert_with_key(|<span class="kw">_</span>| <span class="string">&quot;two&quot;</span>.to_owned());
+        base.entry(<span class="number">2</span>).or_insert_with_key(|<span class="kw">_</span>| <span class="string">"two"</span>.to_owned());
         <span class="macro">assert!</span>(base.buf[<span class="number">1</span>].is_none());
-        <span class="macro">assert_eq!</span>(base.buf[<span class="number">2</span>].as_ref().unwrap(), <span class="string">&quot;two&quot;</span>);
+        <span class="macro">assert_eq!</span>(base.buf[<span class="number">2</span>].as_ref().unwrap(), <span class="string">"two"</span>);
         <span class="macro">assert_eq!</span>(base.len, <span class="number">2</span>);
 
-        base.entry(<span class="number">2</span>).and_modify(|v| <span class="kw-2">*</span>v = <span class="string">&quot;second&quot;</span>.to_owned());
+        base.entry(<span class="number">2</span>).and_modify(|v| <span class="kw-2">*</span>v = <span class="string">"second"</span>.to_owned());
         <span class="macro">assert_eq!</span>(base.len, <span class="number">2</span>);
 
         <span class="kw">if let </span>Occupied(o) = base.entry(<span class="number">2</span>) {
-            <span class="macro">assert_eq!</span>(o.get(), <span class="string">&quot;second&quot;</span>);
-            <span class="macro">assert_eq!</span>(o.remove(), <span class="string">&quot;second&quot;</span>);
+            <span class="macro">assert_eq!</span>(o.get(), <span class="string">"second"</span>);
+            <span class="macro">assert_eq!</span>(o.remove(), <span class="string">"second"</span>);
             <span class="macro">assert_eq!</span>(base.len, <span class="number">1</span>);
         }
 
@@ -699,8 +701,8 @@
         <span class="macro">assert_eq!</span>(base.len, <span class="number">2</span>);
         <span class="macro">assert!</span>(base.buf[<span class="number">1</span>].as_ref().unwrap().is_empty());
         <span class="kw">if let </span>Occupied(<span class="kw-2">mut </span>o) = base.entry(<span class="number">1</span>) {
-            o.insert(<span class="string">&quot;first&quot;</span>.to_owned());
-            <span class="macro">assert_eq!</span>(o.get(), <span class="string">&quot;first&quot;</span>);
+            o.insert(<span class="string">"first"</span>.to_owned());
+            <span class="macro">assert_eq!</span>(o.get(), <span class="string">"first"</span>);
         }
     }
 }

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/fmt/str_sep/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="str_sep" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (32303b219 2023-07-29)" data-channel="nightly" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/fmt/str_sep/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-4e54bb2b497cc83f.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="str_sep" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (88189a71e 2024-01-19)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0b2e2def73e61cbe.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -162,7 +162,9 @@
   });
 </script>
 
-</head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../str_sep/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+</head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../str_sep/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -329,18 +331,18 @@
 <a href="#165" id="165">165</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 
-<span class="kw">pub struct </span>SpaceSep&lt;I&gt;(I);
-<span class="kw">pub struct </span>PerLine&lt;I&gt;(I);
-<span class="kw">pub struct </span>StrSep&lt;<span class="lifetime">&#39;a</span>, I&gt;(I, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str);
+<span class="kw">pub struct </span>SpaceSep&lt;I&gt;(<span class="kw">pub </span>I);
+<span class="kw">pub struct </span>PerLine&lt;I&gt;(<span class="kw">pub </span>I);
+<span class="kw">pub struct </span>StrSep&lt;<span class="lifetime">'a</span>, I&gt;(<span class="kw">pub </span>I, <span class="kw">pub </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>str);
 
-<span class="kw">pub struct </span>SpaceSepUsize1&lt;I&gt;(I);
-<span class="kw">pub struct </span>PerLineUsize1&lt;I&gt;(I);
-<span class="kw">pub struct </span>StrSepUsize1&lt;<span class="lifetime">&#39;a</span>, I&gt;(I, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str);
+<span class="kw">pub struct </span>SpaceSepUsize1&lt;I&gt;(<span class="kw">pub </span>I);
+<span class="kw">pub struct </span>PerLineUsize1&lt;I&gt;(<span class="kw">pub </span>I);
+<span class="kw">pub struct </span>StrSepUsize1&lt;<span class="lifetime">'a</span>, I&gt;(<span class="kw">pub </span>I, <span class="kw">pub </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>str);
 
 <span class="macro">macro_rules! </span>impl_fmt {
     ( $( <span class="macro-nonterminal">$fmt</span>:ident )* ) =&gt; { $(
         <span class="attr">#[allow(non_snake_case)]
-        </span><span class="kw">fn </span><span class="macro-nonterminal">$fmt</span>&lt;I, T: fmt::<span class="macro-nonterminal">$fmt</span>&gt;(iter: I, sep: <span class="kw-2">&amp;</span>str, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result
+        </span><span class="kw">fn </span><span class="macro-nonterminal">$fmt</span>&lt;I, T: fmt::<span class="macro-nonterminal">$fmt</span>&gt;(iter: I, sep: <span class="kw-2">&amp;</span>str, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result
         <span class="kw">where
             </span>I: IntoIterator&lt;Item = T&gt;,
         {
@@ -348,30 +350,30 @@
             <span class="kw">if let </span><span class="prelude-val">Some</span>(first) = iter.by_ref().next() {
                 first.fmt(f)<span class="question-mark">?</span>;
             }
-            iter.map(|rest| { <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, sep)<span class="question-mark">?</span>; rest.fmt(f) }).collect()
+            iter.map(|rest| { <span class="macro">write!</span>(f, <span class="string">"{}"</span>, sep)<span class="question-mark">?</span>; rest.fmt(f) }).collect()
         }
 
         <span class="kw">impl</span>&lt;I, T: fmt::<span class="macro-nonterminal">$fmt</span>&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>SpaceSep&lt;I&gt;
         <span class="kw">where
             </span>I: IntoIterator&lt;Item = T&gt; + Clone,
         {
-            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="string">&quot; &quot;</span>, f)
+            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="string">" "</span>, f)
             }
         }
         <span class="kw">impl</span>&lt;I, T: fmt::<span class="macro-nonterminal">$fmt</span>&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>PerLine&lt;I&gt;
         <span class="kw">where
             </span>I: IntoIterator&lt;Item = T&gt; + Clone,
         {
-            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="string">&quot;\n&quot;</span>, f)
+            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="string">"\n"</span>, f)
             }
         }
-        <span class="kw">impl</span>&lt;I, T: fmt::<span class="macro-nonterminal">$fmt</span>&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>StrSep&lt;<span class="lifetime">&#39;_</span>, I&gt;
+        <span class="kw">impl</span>&lt;I, T: fmt::<span class="macro-nonterminal">$fmt</span>&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>StrSep&lt;<span class="lifetime">'_</span>, I&gt;
         <span class="kw">where
             </span>I: IntoIterator&lt;Item = T&gt; + Clone,
         {
-            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
                 <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="self">self</span>.<span class="number">1</span>, f)
             }
         }
@@ -385,8 +387,8 @@
             </span>I: IntoIterator&lt;Item = T&gt; + Clone,
             T: std::ops::Add&lt;usize, Output = usize&gt;,
         {
-            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone().into_iter().map(|u| u + <span class="number">1</span>), <span class="string">&quot; &quot;</span>, f)
+            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone().into_iter().map(|u| u + <span class="number">1</span>), <span class="string">" "</span>, f)
             }
         }
         <span class="kw">impl</span>&lt;I, T&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>PerLineUsize1&lt;I&gt;
@@ -394,16 +396,16 @@
             </span>I: IntoIterator&lt;Item = T&gt; + Clone,
             T: std::ops::Add&lt;usize, Output = usize&gt;,
         {
-            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone().into_iter().map(|u| u + <span class="number">1</span>), <span class="string">&quot;\n&quot;</span>, f)
+            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+                <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone().into_iter().map(|u| u + <span class="number">1</span>), <span class="string">"\n"</span>, f)
             }
         }
-        <span class="kw">impl</span>&lt;I, T&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>StrSepUsize1&lt;<span class="lifetime">&#39;_</span>, I&gt;
+        <span class="kw">impl</span>&lt;I, T&gt; fmt::<span class="macro-nonterminal">$fmt </span><span class="kw">for </span>StrSepUsize1&lt;<span class="lifetime">'_</span>, I&gt;
         <span class="kw">where
             </span>I: IntoIterator&lt;Item = T&gt; + Clone,
             T: std::ops::Add&lt;usize, Output = usize&gt;,
         {
-            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
                 <span class="macro-nonterminal">$fmt</span>(<span class="self">self</span>.<span class="number">0</span>.clone().into_iter().map(|u| u + <span class="number">1</span>), <span class="self">self</span>.<span class="number">1</span>, f)
             }
         }
@@ -416,60 +418,60 @@
 <span class="attr">#[test]
 </span><span class="kw">fn </span>sanity_check() {
     <span class="kw">let </span>a = [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>];
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, StrSep(<span class="kw-2">&amp;</span>a[..<span class="number">0</span>], <span class="string">&quot;_&quot;</span>)), <span class="string">&quot;&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, StrSep(<span class="kw-2">&amp;</span>a[..<span class="number">1</span>], <span class="string">&quot;_&quot;</span>)), <span class="string">&quot;0&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, StrSep(<span class="kw-2">&amp;</span>a[..<span class="number">2</span>], <span class="string">&quot;_&quot;</span>)), <span class="string">&quot;0_1&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, StrSep(<span class="kw-2">&amp;</span>a, <span class="string">&quot;_&quot;</span>)), <span class="string">&quot;0_1_2&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, StrSep(<span class="kw-2">&amp;</span>a[..<span class="number">0</span>], <span class="string">"_"</span>)), <span class="string">""</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, StrSep(<span class="kw-2">&amp;</span>a[..<span class="number">1</span>], <span class="string">"_"</span>)), <span class="string">"0"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, StrSep(<span class="kw-2">&amp;</span>a[..<span class="number">2</span>], <span class="string">"_"</span>)), <span class="string">"0_1"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, StrSep(<span class="kw-2">&amp;</span>a, <span class="string">"_"</span>)), <span class="string">"0_1_2"</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>a[..<span class="number">0</span>])), <span class="string">&quot;&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>a[..<span class="number">1</span>])), <span class="string">&quot;0&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>a[..<span class="number">2</span>])), <span class="string">&quot;0 1&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>a)), <span class="string">&quot;0 1 2&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep(<span class="kw-2">&amp;</span>a[..<span class="number">0</span>])), <span class="string">""</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep(<span class="kw-2">&amp;</span>a[..<span class="number">1</span>])), <span class="string">"0"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep(<span class="kw-2">&amp;</span>a[..<span class="number">2</span>])), <span class="string">"0 1"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep(<span class="kw-2">&amp;</span>a)), <span class="string">"0 1 2"</span>);
 
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, PerLine(<span class="kw-2">&amp;</span>a[..<span class="number">0</span>])), <span class="string">&quot;&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, PerLine(<span class="kw-2">&amp;</span>a[..<span class="number">1</span>])), <span class="string">&quot;0&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, PerLine(<span class="kw-2">&amp;</span>a[..<span class="number">2</span>])), <span class="string">&quot;0\n1&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, PerLine(<span class="kw-2">&amp;</span>a)), <span class="string">&quot;0\n1\n2&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, PerLine(<span class="kw-2">&amp;</span>a[..<span class="number">0</span>])), <span class="string">""</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, PerLine(<span class="kw-2">&amp;</span>a[..<span class="number">1</span>])), <span class="string">"0"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, PerLine(<span class="kw-2">&amp;</span>a[..<span class="number">2</span>])), <span class="string">"0\n1"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, PerLine(<span class="kw-2">&amp;</span>a)), <span class="string">"0\n1\n2"</span>);
 }
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>iter() {
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep(<span class="number">0</span>..<span class="number">5</span>)), <span class="string">&quot;0 1 2 3 4&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep(<span class="number">0</span>..<span class="number">5</span>)), <span class="string">"0 1 2 3 4"</span>);
     <span class="macro">assert_eq!</span>(
-        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep([<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>].iter().map(|x| x * <span class="number">100</span>))),
-        <span class="string">&quot;0 100 200&quot;
+        <span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep([<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>].iter().map(|x| x * <span class="number">100</span>))),
+        <span class="string">"0 100 200"
     </span>);
 }
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>formatting() {
     <span class="kw">let </span>int = [<span class="number">3</span>, <span class="number">14</span>, <span class="number">1</span>, <span class="number">59</span>];
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;({})&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">&quot;(3 14 1 59)&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:2}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">&quot; 3 14  1 59&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:&lt;2}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">&quot;3  14 1  59&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:o}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">&quot;3 16 1 73&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:x}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">&quot;3 e 1 3b&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:#04x}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">&quot;0x03 0x0e 0x01 0x3b&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"({})"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">"(3 14 1 59)"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:2}"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">" 3 14  1 59"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:&lt;2}"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">"3  14 1  59"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:o}"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">"3 16 1 73"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:x}"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">"3 e 1 3b"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:#04x}"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)), <span class="string">"0x03 0x0e 0x01 0x3b"</span>);
     <span class="macro">assert_eq!</span>(
-        <span class="macro">format!</span>(<span class="string">&quot;{:08b}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>int)),
-        <span class="string">&quot;00000011 00001110 00000001 00111011&quot;
+        <span class="macro">format!</span>(<span class="string">"{:08b}"</span>, SpaceSep(<span class="kw-2">&amp;</span>int)),
+        <span class="string">"00000011 00001110 00000001 00111011"
     </span>);
 
-    <span class="kw">let </span>ch = [<span class="string">&#39;a&#39;</span>, <span class="string">&#39;\0&#39;</span>, <span class="string">&#39;\n&#39;</span>, char::MAX];
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>ch)), <span class="string">&quot;a \0 \n \u{10ffff}&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>ch)), <span class="string">r&quot;&#39;a&#39; &#39;\0&#39; &#39;\n&#39; &#39;\u{10ffff}&#39;&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:#?}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>ch)), <span class="string">r&quot;&#39;a&#39; &#39;\0&#39; &#39;\n&#39; &#39;\u{10ffff}&#39;&quot;</span>);
+    <span class="kw">let </span>ch = [<span class="string">'a'</span>, <span class="string">'\0'</span>, <span class="string">'\n'</span>, char::MAX];
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSep(<span class="kw-2">&amp;</span>ch)), <span class="string">"a \0 \n \u{10ffff}"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:?}"</span>, SpaceSep(<span class="kw-2">&amp;</span>ch)), <span class="string">r"'a' '\0' '\n' '\u{10ffff}'"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:#?}"</span>, SpaceSep(<span class="kw-2">&amp;</span>ch)), <span class="string">r"'a' '\0' '\n' '\u{10ffff}'"</span>);
 
     <span class="kw">let </span>nested = [[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]];
     <span class="macro">assert_eq!</span>(
-        <span class="macro">format!</span>(<span class="string">&quot;\n{:?}&quot;</span>, PerLine(<span class="kw-2">&amp;</span>nested)),
-        <span class="string">r&quot;
+        <span class="macro">format!</span>(<span class="string">"\n{:?}"</span>, PerLine(<span class="kw-2">&amp;</span>nested)),
+        <span class="string">r"
 [1, 2]
-[3, 4]&quot;
+[3, 4]"
     </span>);
     <span class="macro">assert_eq!</span>(
-        <span class="macro">format!</span>(<span class="string">&quot;\n{:#?}&quot;</span>, PerLine(<span class="kw-2">&amp;</span>nested)),
-        <span class="string">r&quot;
+        <span class="macro">format!</span>(<span class="string">"\n{:#?}"</span>, PerLine(<span class="kw-2">&amp;</span>nested)),
+        <span class="string">r"
 [
     1,
     2,
@@ -477,19 +479,19 @@
 [
     3,
     4,
-]&quot;
+]"
     </span>);
 
     <span class="kw">let </span>float = [<span class="number">0.1</span>, <span class="number">2.34</span>, f64::INFINITY, f64::NAN];
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:4}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>float)), <span class="string">&quot; 0.1 2.34  inf  NaN&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:0.2}&quot;</span>, SpaceSep(<span class="kw-2">&amp;</span>float)), <span class="string">&quot;0.10 2.34 inf NaN&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:4}"</span>, SpaceSep(<span class="kw-2">&amp;</span>float)), <span class="string">" 0.1 2.34  inf  NaN"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{:0.2}"</span>, SpaceSep(<span class="kw-2">&amp;</span>float)), <span class="string">"0.10 2.34 inf NaN"</span>);
 }
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>usize1() {
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSepUsize1([<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">4</span>, <span class="number">2</span>])), <span class="string">&quot;1 4 2 5 3&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSepUsize1([<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">4</span>, <span class="number">2</span>])), <span class="string">"1 4 2 5 3"</span>);
     <span class="kw">let </span>a = <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">4</span>, <span class="number">2</span>];
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSepUsize1(<span class="kw-2">&amp;</span>a)), <span class="string">&quot;1 4 2 5 3&quot;</span>);
-    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, SpaceSepUsize1(a)), <span class="string">&quot;1 4 2 5 3&quot;</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSepUsize1(<span class="kw-2">&amp;</span>a)), <span class="string">"1 4 2 5 3"</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, SpaceSepUsize1(a)), <span class="string">"1 4 2 5 3"</span>);
 }
 </code></pre></div></section></main></body></html>
