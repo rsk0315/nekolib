@@ -1,0 +1,11 @@
+workspace = { members = ["plane-sweep"] }
+[package]
+name = "discussion"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+inner = { path = "../inner" }
+plane-sweep = { path = "plane-sweep" }

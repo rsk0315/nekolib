@@ -2,6 +2,7 @@
 pub use {
     algo,
     corro,
+    discussion,
     ds,
     fmt,
     integer,
@@ -13,5 +14,6 @@ pub use {
     poc,
     random,
     seq,
+    snippet,
     uslice,
 };

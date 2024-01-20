@@ -20,3 +20,5 @@ algo = { path = "../nekolib-src/algo" }
 naive = { path = "../nekolib-src/naive" }
 corro = { path = "../nekolib-src/corro" }
 random = { path = "../nekolib-src/random" }
+snippet = { path = "../nekolib-src/snippet" }
+discussion = { path = "../nekolib-src/discussion" }
