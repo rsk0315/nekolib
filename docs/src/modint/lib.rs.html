@@ -480,11 +480,17 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
-<span class="kw">use </span>std::hash::{Hash, Hasher};
-<span class="kw">use </span>std::iter::{Product, Sum};
-<span class="kw">use </span>std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    fmt,
+    hash::{Hash, Hasher},
+    iter::{Product, Sum},
+    ops::{
+        Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
+    },
 };
 
 <span class="kw">use </span>bin_iter::BinIter;
@@ -500,7 +506,7 @@
 <span class="kw">impl</span>&lt;<span class="kw">const </span>MOD: u32&gt; AddAssign <span class="kw">for </span>StaticModInt&lt;MOD&gt; {
     <span class="kw">fn </span>add_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rhs: <span class="self">Self</span>) {
         <span class="self">self</span>.<span class="number">0 </span>+= rhs.<span class="number">0</span>;
-        <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>+ rhs.<span class="number">0 </span>&gt;= MOD {
+        <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>&gt;= MOD {
             <span class="self">self</span>.<span class="number">0 </span>-= MOD;
         }
     }
@@ -682,6 +688,7 @@
 
     <span class="kw">let </span>zero = Mi::new(<span class="number">0</span>);
     <span class="kw">let </span>half = Mi::new(<span class="number">499122177</span>);
+    <span class="kw">let </span>quarter = Mi::new(<span class="number">748683265</span>);
     <span class="kw">let </span>one = Mi::new(<span class="number">1</span>);
     <span class="kw">let </span>two = Mi::new(<span class="number">2</span>);
     <span class="macro">assert_eq!</span>(Mi::new(Mi::modulus()), zero);
@@ -689,6 +696,7 @@
     <span class="macro">assert_eq!</span>(zero - half, -half);
     <span class="macro">assert_eq!</span>(one - half, half);
     <span class="macro">assert_eq!</span>(half * two, one);
+    <span class="macro">assert_eq!</span>(half * half, quarter);
     <span class="macro">assert_eq!</span>(one / two, half);
     <span class="macro">assert_eq!</span>(two.pow(<span class="number">998244352_u64</span>), one);
 }

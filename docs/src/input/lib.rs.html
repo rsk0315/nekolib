@@ -465,12 +465,16 @@
 <a href="#254" id="254">254</a>
 <a href="#255" id="255">255</a>
 <a href="#256" id="256">256</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::any::type_name;
-<span class="kw">use </span>std::fmt::Debug;
-<span class="kw">use </span>std::io::{BufRead, BufReader, Stdin};
-<span class="kw">use </span>std::marker::PhantomData;
-<span class="kw">use </span>std::str::FromStr;
-<span class="kw">use </span>std::sync::{Mutex, OnceLock};
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    any::type_name,
+    fmt::Debug,
+    io::{BufRead, BufReader, Stdin},
+    marker::PhantomData,
+    str::FromStr,
+    sync::{Mutex, OnceLock},
+};
 
 <span class="kw">pub static </span>STDIN_SOURCE: OnceLock&lt;Mutex&lt;AutoSource&lt;BufReader&lt;Stdin&gt;&gt;&gt;&gt; =
     OnceLock::new();

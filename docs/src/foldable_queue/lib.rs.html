@@ -325,7 +325,6 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::RangeFull;
 
 <span class="kw">use </span>monoid::Monoid;
@@ -386,8 +385,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>naive {
-    <span class="kw">use </span>std::iter::Sum;
-    <span class="kw">use </span>std::ops::Add;
+    <span class="kw">use </span>std::{iter::Sum, ops::Add};
 
     <span class="attr">#[derive(Debug, Eq, PartialEq)]
     </span><span class="kw">pub struct </span>Seq(<span class="kw">pub </span>Vec&lt;u32&gt;);

@@ -328,13 +328,15 @@
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(unused_imports)]
 
-</span><span class="kw">use </span>std::collections::BTreeSet;
-<span class="kw">use </span>std::ops::Range;
+</span><span class="kw">use </span>std::{collections::BTreeSet, ops::Range};
 
-<span class="kw">use </span>rand::distributions::{Distribution, Uniform};
-<span class="kw">use </span>rand::{Rng, SeedableRng};
+<span class="kw">use </span>rand::{
+    distributions::{Distribution, Uniform},
+    Rng, SeedableRng,
+};
 <span class="kw">use </span>rand_chacha::ChaCha20Rng;
 
 <span class="kw">pub trait </span>Gen {
