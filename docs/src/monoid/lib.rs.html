@@ -461,21 +461,6 @@
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
 <a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
-<a href="#259" id="259">259</a>
-<a href="#260" id="260">260</a>
-<a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
-<a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
 </pre></div><pre class="rust"><code><span class="kw">pub trait </span>BinaryOp {
     <span class="kw">type </span>Set;
     <span class="kw">fn </span>op(<span class="kw-2">&amp;</span><span class="self">self</span>, lhs: <span class="kw-2">&amp;</span><span class="self">Self</span>::Set, rhs: <span class="kw-2">&amp;</span><span class="self">Self</span>::Set) -&gt; <span class="self">Self</span>::Set;
@@ -519,40 +504,11 @@
 {
 }
 
-<span class="comment">// macro_rules! def_monoid {
-//     ( $ident:ident = ($ty:ty, $op:expr, $id:expr $(, $marker:ident)* ) ) =&gt; {
-//         pub struct $ident;
-//         impl BinaryOp for $ident {
-//             type Set = $ty;
-//             fn op(&amp;self, lhs: &amp;Self::Set, rhs: &amp;Self::Set) -&gt; Self::Set {
-//                 ($op)(lhs, rhs)
-//             }
-//         }
-//         impl Identity for $ident {
-//             fn id(&amp;self) -&gt; Self::Set { ($id)() }
-//         }
-//         $( impl $marker for $ident {} )*
-//     };
-//     ( $ident:ident&lt;$($g:ident : $($b:tt),*),*&gt; = ($ty:ty, $op:expr, $id:expr) ) =&gt; {
-//         pub struct $ident&lt;$($g),*&gt;;
-//         impl&lt;$($g:$($b)*),*&gt; BinaryOp for $ident&lt;$($g),*&gt; {
-//             type Set = $ty;
-//             fn op(&amp;self, lhs: &amp;Self::Set, rhs: &amp;Self::Set) -&gt; Self::Set {
-//                 ($op)(lhs, rhs)
-//             }
-//         }
-//         impl&lt;$($g:$($b)*),*&gt; Identity for $ident&lt;$($g),*&gt; {
-//             fn id(&amp;self) -&gt; Self::Set { ($id)() }
-//         }
-//         // $( impl&lt;$($g:$($b),*),*&gt; $marker for $ident&lt;$($g),*&gt; {} )*
-//     };
-// }
-
-</span><span class="attr">#[macro_export]
+<span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>def_monoid_generics {
     (
         <span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] =
-            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr)
+            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr $(,)<span class="question-mark">?</span>)
     ) =&gt; {
         <span class="kw">struct </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;(std::marker::PhantomData&lt;<span class="kw">fn</span>() -&gt; ($(<span class="macro-nonterminal">$gen</span>,)<span class="kw-2">*</span>)&gt;)
         <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>;
@@ -561,7 +517,7 @@
         {
             <span class="kw">fn </span><span class="macro-nonterminal">new</span>() -&gt; <span class="self">Self </span>{ <span class="self">Self</span>(std::marker::PhantomData) }
         }
-        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; BinaryOp <span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="macro-nonterminal">$crate::BinaryOp </span><span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
         <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)*
         {
             <span class="kw">type </span><span class="macro-nonterminal">Set </span>= <span class="macro-nonterminal">$ty</span>;
@@ -569,32 +525,40 @@
                 (<span class="macro-nonterminal">$op</span>)(lhs, rhs)
             }
         }
-        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; Identity <span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="macro-nonterminal">$crate::Identity </span><span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
         <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)*
         {
             <span class="kw">fn </span><span class="macro-nonterminal">id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Set { (<span class="macro-nonterminal">$id</span>)() }
         }
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="macro-nonterminal">$crate::Associative </span><span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
+        <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)*
+        {}
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; Default <span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
+        <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)*
+        {
+            <span class="kw">fn </span><span class="macro-nonterminal">default</span>() -&gt; <span class="self">Self </span>{ <span class="self">Self</span>::new() }
+        }
     };
     (
         <span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] =
-            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, Commutative) $(,)<span class="question-mark">?
-    </span>) =&gt; {
-        <span class="macro">def_monoid_generics! </span>{
+            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, Commutative $(,)<span class="question-mark">?</span>)
+    ) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>)
         }
-        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; Commutative <span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)* {}
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="macro-nonterminal">$crate::Commutative </span><span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)* {}
     };
     (
         $(<span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>)),*
     ) =&gt; { $(
-        <span class="macro">def_monoid_generics! </span>{
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>)
         }
     )* };
     (
         $(<span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>),)*
     ) =&gt; { $(
-        <span class="macro">def_monoid_generics! </span>{
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>)
         }
     )* };
@@ -604,12 +568,12 @@
 </span><span class="macro">macro_rules! </span>def_group_generics {
     (
         <span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] =
-            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr) $(,)<span class="question-mark">?
-    </span>) =&gt; {
-        <span class="macro">def_monoid_generics! </span>{
+            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr $(,)<span class="question-mark">?</span>)
+    ) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>)
         }
-        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; Recip <span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="macro-nonterminal">$crate::Recip </span><span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt;
         <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)*
         {
             <span class="kw">fn </span><span class="macro-nonterminal">recip</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, lhs: <span class="kw-2">&amp;</span><span class="self">Self</span>::Set) -&gt; <span class="self">Self</span>::Set { (<span class="macro-nonterminal">$recip</span>)(lhs) }
@@ -617,24 +581,24 @@
     };
     (
         <span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] =
-            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr, Commutative)
+            (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr, Commutative $(,)<span class="question-mark">?</span>)
     ) =&gt; {
-        <span class="macro">def_group_generics! </span>{
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>, <span class="macro-nonterminal">$recip</span>)
         }
-        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; Commutative <span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)* {}
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="macro-nonterminal">$crate::Commutative </span><span class="kw">for </span><span class="macro-nonterminal">$name</span>&lt;$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>&gt; <span class="kw">where </span>$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)* {}
     };
     (
         $(<span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>)),*
     ) =&gt; { $(
-        <span class="macro">def_group_generics! </span>{
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>)
         }
     )* };
     (
         $(<span class="macro-nonterminal">$name</span>:ident[$(<span class="macro-nonterminal">$gen</span>:tt)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>),)*
     ) =&gt; { $(
-        <span class="macro">def_group_generics! </span>{
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group_generics! </span>{
             <span class="macro-nonterminal">$name</span>[$(<span class="macro-nonterminal">$gen</span>)<span class="kw-2">*</span>] <span class="kw">where </span>[$(<span class="macro-nonterminal">$</span><span class="kw">where</span>)<span class="kw-2">*</span>] = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>)
         }
     )* };
@@ -642,27 +606,33 @@
 
 <span class="attr">#[<span class="macro-nonterminal">macro_export</span>]
 </span><span class="macro">macro_rules! </span>def_monoid {
-    ( <span class="macro-nonterminal">$name</span>:ident = (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr) ) =&gt; {
-        <span class="macro">def_monoid_generics! </span>{ <span class="macro-nonterminal">$name</span>[] <span class="kw">where </span>[] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>) }
+    ( <span class="macro-nonterminal">$name</span>:ident = (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr $(,)<span class="question-mark">?</span>) ) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid_generics! </span>{ <span class="macro-nonterminal">$name</span>[] <span class="kw">where </span>[] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>) }
+    };
+    ( <span class="macro-nonterminal">$name</span>:ident = (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, Commutative $(,)<span class="question-mark">?</span>) ) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid_generics! </span>{ <span class="macro-nonterminal">$name</span>[] <span class="kw">where </span>[] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>, Commutative) }
     };
     ( $(<span class="macro-nonterminal">$name</span>:ident = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>)),* ) =&gt; { $(
-        <span class="macro">def_monoid! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
     )* };
     ( $(<span class="macro-nonterminal">$name</span>:ident = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>),)* ) =&gt; { $(
-        <span class="macro">def_monoid! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_monoid! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
     )* };
 }
 
 <span class="attr">#[<span class="macro-nonterminal">macro_export</span>]
 </span><span class="macro">macro_rules! </span>def_group {
-    ( <span class="macro-nonterminal">$name</span>:ident = (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr) ) =&gt; {
-        <span class="macro">def_group_generics! </span>{ <span class="macro-nonterminal">$name</span>[] <span class="kw">where </span>[] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>, <span class="macro-nonterminal">$recip</span>) }
+    ( <span class="macro-nonterminal">$name</span>:ident = (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr $(,)<span class="question-mark">?</span>) ) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group_generics! </span>{ <span class="macro-nonterminal">$name</span>[] <span class="kw">where </span>[] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>, <span class="macro-nonterminal">$recip</span>) }
+    };
+    ( <span class="macro-nonterminal">$name</span>:ident = (<span class="macro-nonterminal">$ty</span>:ty, <span class="macro-nonterminal">$op</span>:expr, <span class="macro-nonterminal">$id</span>:expr, <span class="macro-nonterminal">$recip</span>:expr, Commutative $(,)<span class="question-mark">?</span>) ) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group_generics! </span>{ <span class="macro-nonterminal">$name</span>[] <span class="kw">where </span>[] = (<span class="macro-nonterminal">$ty</span>, <span class="macro-nonterminal">$op</span>, <span class="macro-nonterminal">$id</span>, <span class="macro-nonterminal">$recip</span>, Commutative) }
     };
     ( $(<span class="macro-nonterminal">$name</span>:ident = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>)),* ) =&gt; { $(
-        <span class="macro">def_group! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
     )* };
     ( $(<span class="macro-nonterminal">$name</span>:ident = ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>:<span class="macro-nonterminal">tt</span>)<span class="kw-2">*</span>),)* ) =&gt; { $(
-        <span class="macro">def_group! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
+        <span class="macro-nonterminal">$</span><span class="macro">crate::def_group! </span>{ <span class="macro-nonterminal">$name </span>= ($(<span class="macro-nonterminal">$</span><span class="kw">impl</span>)<span class="kw-2">*</span>) }
     )* };
 }
 
