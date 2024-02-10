@@ -11,7 +11,7 @@
       {
         name: e.innerText,
         href: e.href,
-        current: e.classList.contains('current'),
+        current: e.parentNode.classList.contains('current'),
       },
     ]));
 
@@ -38,7 +38,7 @@
         const a = document.createElement('a');
         const link = links.get(modName);
         a.href = link.href;
-        if (link.current) a.classList.add('current');
+        if (link.current) li.classList.add('current');
         a.innerText = link.name;
         li.appendChild(a);
         cratesElt.appendChild(li);
@@ -49,7 +49,7 @@
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.href = crate.href;
-        if (crate.current) a.classList.add('current');
+        if (crate.current) li.classList.add('current');
         a.innerText = crate.name;
         li.appendChild(a);
         ul.appendChild(li);
