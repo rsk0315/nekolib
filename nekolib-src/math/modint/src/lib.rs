@@ -1,8 +1,10 @@
-use std::fmt;
-use std::hash::{Hash, Hasher};
-use std::iter::{Product, Sum};
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
+use std::{
+    fmt,
+    hash::{Hash, Hasher},
+    iter::{Product, Sum},
+    ops::{
+        Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign,
+    },
 };
 
 use bin_iter::BinIter;

@@ -1,5 +1,7 @@
-use std::iter::Sum;
-use std::ops::{Add, Neg};
+use std::{
+    iter::Sum,
+    ops::{Add, Neg},
+};
 
 use monoid::{Associative, BinaryOp, Commutative, Identity, Recip};
 

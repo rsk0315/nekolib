@@ -1,9 +1,11 @@
-use std::any::type_name;
-use std::fmt::Debug;
-use std::io::{BufRead, BufReader, Stdin};
-use std::marker::PhantomData;
-use std::str::FromStr;
-use std::sync::{Mutex, OnceLock};
+use std::{
+    any::type_name,
+    fmt::Debug,
+    io::{BufRead, BufReader, Stdin},
+    marker::PhantomData,
+    str::FromStr,
+    sync::{Mutex, OnceLock},
+};
 
 pub static STDIN_SOURCE: OnceLock<Mutex<AutoSource<BufReader<Stdin>>>> =
     OnceLock::new();

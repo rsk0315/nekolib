@@ -58,8 +58,7 @@ impl<M: Monoid> FoldableQueue<M> {
 
 #[cfg(test)]
 mod naive {
-    use std::iter::Sum;
-    use std::ops::Add;
+    use std::{iter::Sum, ops::Add};
 
     #[derive(Debug, Eq, PartialEq)]
     pub struct Seq(pub Vec<u32>);

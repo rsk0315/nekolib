@@ -1,5 +1,4 @@
-use std::marker::PhantomData;
-use std::ptr::NonNull;
+use std::{marker::PhantomData, ptr::NonNull};
 
 /// ```compile_fail
 /// struct Base {

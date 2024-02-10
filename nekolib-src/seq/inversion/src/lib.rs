@@ -1,5 +1,7 @@
-use std::iter::{Product, Sum};
-use std::ops::{Add, AddAssign};
+use std::{
+    iter::{Product, Sum},
+    ops::{Add, AddAssign},
+};
 
 pub trait Inversion {
     fn inversion<I: Add<I> + for<'a> AddAssign<&'a I> + Sum<I> + Product<I>>(

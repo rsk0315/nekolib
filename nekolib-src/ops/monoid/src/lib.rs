@@ -175,8 +175,10 @@ macro_rules! def_group {
 
 #[cfg(test)]
 mod tests {
-    use std::iter::Sum;
-    use std::ops::{Add, BitXor, Neg};
+    use std::{
+        iter::Sum,
+        ops::{Add, BitXor, Neg},
+    };
 
     use super::*;
 

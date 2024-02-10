@@ -1,6 +1,8 @@
-use std::cmp::Ordering::{Equal, Greater, Less};
-use std::collections::{BTreeMap, BTreeSet};
-use std::ops::Index;
+use std::{
+    cmp::Ordering::{Equal, Greater, Less},
+    collections::{BTreeMap, BTreeSet},
+    ops::Index,
+};
 
 const NONE: usize = 1_usize.wrapping_neg();
 

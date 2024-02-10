@@ -1,10 +1,11 @@
 #![allow(unused_imports)]
 
-use std::collections::BTreeSet;
-use std::ops::Range;
+use std::{collections::BTreeSet, ops::Range};
 
-use rand::distributions::{Distribution, Uniform};
-use rand::{Rng, SeedableRng};
+use rand::{
+    distributions::{Distribution, Uniform},
+    Rng, SeedableRng,
+};
 use rand_chacha::ChaCha20Rng;
 
 pub trait Gen {
