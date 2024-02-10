@@ -45,7 +45,7 @@ impl<T: BinaryOp + Associative + Identity + Recip + Commutative>
 macro_rules! def_monoid_generics {
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr)
+            ($ty:ty, $op:expr, $id:expr $(,)?)
     ) => {
         struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen,)*)>)
         where $($where)*;
@@ -78,7 +78,7 @@ macro_rules! def_monoid_generics {
     };
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr, Commutative)
+            ($ty:ty, $op:expr, $id:expr, Commutative $(,)?)
     ) => {
         $crate::def_monoid_generics! {
             $name[$($gen)*] where [$($where)*] = ($ty, $op, $id)
@@ -105,7 +105,7 @@ macro_rules! def_monoid_generics {
 macro_rules! def_group_generics {
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr, $recip:expr) $(,)?
+            ($ty:ty, $op:expr, $id:expr, $recip:expr $(,)?)
     ) => {
         $crate::def_monoid_generics! {
             $name[$($gen)*] where [$($where)*] = ($ty, $op, $id)
@@ -118,7 +118,7 @@ macro_rules! def_group_generics {
     };
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr, $recip:expr, Commutative)
+            ($ty:ty, $op:expr, $id:expr, $recip:expr, Commutative $(,)?)
     ) => {
         $crate::def_group_generics! {
             $name[$($gen)*] where [$($where)*] = ($ty, $op, $id, $recip)
@@ -143,8 +143,11 @@ macro_rules! def_group_generics {
 
 #[macro_export]
 macro_rules! def_monoid {
-    ( $name:ident = ($ty:ty, $op:expr, $id:expr) ) => {
+    ( $name:ident = ($ty:ty, $op:expr, $id:expr $(,)?) ) => {
         $crate::def_monoid_generics! { $name[] where [] = ($ty, $op, $id) }
+    };
+    ( $name:ident = ($ty:ty, $op:expr, $id:expr, Commutative $(,)?) ) => {
+        $crate::def_monoid_generics! { $name[] where [] = ($ty, $op, $id, Commutative) }
     };
     ( $($name:ident = ($($impl:tt)*)),* ) => { $(
         $crate::def_monoid! { $name = ($($impl)*) }
@@ -156,8 +159,11 @@ macro_rules! def_monoid {
 
 #[macro_export]
 macro_rules! def_group {
-    ( $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr) ) => {
+    ( $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr $(,)?) ) => {
         $crate::def_group_generics! { $name[] where [] = ($ty, $op, $id, $recip) }
+    };
+    ( $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr, Commutative $(,)?) ) => {
+        $crate::def_group_generics! { $name[] where [] = ($ty, $op, $id, $recip, Commutative) }
     };
     ( $($name:ident = ($($impl:tt)*)),* ) => { $(
         $crate::def_group! { $name = ($($impl)*) }
