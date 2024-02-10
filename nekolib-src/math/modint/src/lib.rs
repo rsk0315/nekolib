@@ -200,6 +200,7 @@ fn arithmetic() {
 
     let zero = Mi::new(0);
     let half = Mi::new(499122177);
+    let quarter = Mi::new(748683265);
     let one = Mi::new(1);
     let two = Mi::new(2);
     assert_eq!(Mi::new(Mi::modulus()), zero);
@@ -207,6 +208,7 @@ fn arithmetic() {
     assert_eq!(zero - half, -half);
     assert_eq!(one - half, half);
     assert_eq!(half * two, one);
+    assert_eq!(half * half, quarter);
     assert_eq!(one / two, half);
     assert_eq!(two.pow(998244352_u64), one);
 }
