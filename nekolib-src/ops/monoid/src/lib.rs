@@ -41,35 +41,6 @@ impl<T: BinaryOp + Associative + Identity + Recip + Commutative>
 {
 }
 
-// macro_rules! def_monoid {
-//     ( $ident:ident = ($ty:ty, $op:expr, $id:expr $(, $marker:ident)* ) ) => {
-//         pub struct $ident;
-//         impl BinaryOp for $ident {
-//             type Set = $ty;
-//             fn op(&self, lhs: &Self::Set, rhs: &Self::Set) -> Self::Set {
-//                 ($op)(lhs, rhs)
-//             }
-//         }
-//         impl Identity for $ident {
-//             fn id(&self) -> Self::Set { ($id)() }
-//         }
-//         $( impl $marker for $ident {} )*
-//     };
-//     ( $ident:ident<$($g:ident : $($b:tt),*),*> = ($ty:ty, $op:expr, $id:expr) ) => {
-//         pub struct $ident<$($g),*>;
-//         impl<$($g:$($b)*),*> BinaryOp for $ident<$($g),*> {
-//             type Set = $ty;
-//             fn op(&self, lhs: &Self::Set, rhs: &Self::Set) -> Self::Set {
-//                 ($op)(lhs, rhs)
-//             }
-//         }
-//         impl<$($g:$($b)*),*> Identity for $ident<$($g),*> {
-//             fn id(&self) -> Self::Set { ($id)() }
-//         }
-//         // $( impl<$($g:$($b),*),*> $marker for $ident<$($g),*> {} )*
-//     };
-// }
-
 #[macro_export]
 macro_rules! def_monoid_generics {
     (
@@ -99,6 +70,11 @@ macro_rules! def_monoid_generics {
         impl<$($gen)*> $crate::Associative for $name<$($gen)*>
         where $($where)*
         {}
+        impl<$($gen)*> Default for $name<$($gen)*>
+        where $($where)*
+        {
+            fn default() -> Self { Self::new() }
+        }
     };
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
