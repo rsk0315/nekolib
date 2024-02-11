@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DijkstraSssp"]};
+window.SIDEBAR_ITEMS = {"struct":["Cert","DijkstraSssp","NoCert"]};
