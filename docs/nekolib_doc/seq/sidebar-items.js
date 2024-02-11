@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["inversion","lis","suffix_array"],"struct":["Largest","Leftmost","Rightmost","Smallest","SuffixArray"],"trait":["Inversion","Lis","LisMapProj"]};
+window.SIDEBAR_ITEMS = {"mod":["inversion","lis","majority_vote","suffix_array"],"struct":["Largest","Leftmost","Rightmost","Smallest","SuffixArray"],"trait":["Inversion","Lis","LisMapProj","MajorityVote"]};
