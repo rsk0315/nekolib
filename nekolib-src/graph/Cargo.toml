@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 dijkstra = { path = "dijkstra" }
+bfs01 = { path = "bfs01" }
