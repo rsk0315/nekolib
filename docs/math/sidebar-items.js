@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["modint"],"struct":["StaticModInt"],"trait":["RemEuclidU32"],"type":["ModInt1000000007","ModInt998244353"]};
+window.SIDEBAR_ITEMS = {"mod":["linear_sieve","modint"],"struct":["LinearSieve","StaticModInt"],"trait":["RemEuclidU32"],"type":["ModInt1000000007","ModInt998244353"]};
