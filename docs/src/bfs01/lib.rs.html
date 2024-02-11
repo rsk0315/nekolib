@@ -149,6 +149,7 @@
       "proconio"
     ],
     "uslice": [
+      "bucket_sort",
       "permutation"
     ]
   };
@@ -315,6 +316,8 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::VecDeque;
 
 <span class="kw">pub struct </span>Cert&lt;V&gt;(Vec&lt;<span class="prelude-ty">Option</span>&lt;V&gt;&gt;);
@@ -375,6 +378,7 @@
         <span class="prelude-val">Some</span>(res.into_iter())
     }
 }
+
 <span class="kw">impl</span>&lt;V, I&gt; Bfs01Sssp&lt;V, I, NoCert&gt;
 <span class="kw">where
     </span>V: Eq + Clone,
@@ -407,6 +411,7 @@
         <span class="self">Self </span>{ src, cost, prev: NoCert, index }
     }
 }
+
 <span class="kw">impl</span>&lt;V, I, C&gt; Bfs01Sssp&lt;V, I, C&gt;
 <span class="kw">where
     </span>V: Eq + Clone,

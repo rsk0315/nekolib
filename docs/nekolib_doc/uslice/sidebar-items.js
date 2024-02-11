@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["permutation"],"trait":["Permutation"]};
+window.SIDEBAR_ITEMS = {"mod":["bucket_sort","permutation"],"trait":["BucketSort","Permutation"]};
