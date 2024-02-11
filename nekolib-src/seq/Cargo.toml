@@ -10,3 +10,4 @@ inner = { path = "../inner" }
 inversion = { path = "inversion" }
 lis = { path = "lis" }
 suffix_array = { path = "suffix_array" }
+majority_vote = { path = "majority_vote" }
