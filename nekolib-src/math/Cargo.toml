@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 modint = { path = "modint" }
+linear_sieve = { path = "linear_sieve" }
