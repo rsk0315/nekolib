@@ -1,17 +1,16 @@
-use std::{collections::VecDeque, marker::PhantomData};
+use std::collections::VecDeque;
 
-pub enum Cert {}
-pub enum NoCert {}
+pub struct Cert<V>(Vec<Option<V>>);
+pub struct NoCert;
 
 pub struct Bfs01Sssp<V, I, C> {
     cost: Vec<usize>,
-    prev: Vec<Option<V>>,
+    prev: C,
     index: I,
     src: V,
-    _cert: PhantomData<fn() -> C>,
 }
 
-impl<V, I> Bfs01Sssp<V, I, Cert>
+impl<V, I> Bfs01Sssp<V, I, Cert<V>>
 where
     V: Eq + Clone,
     I: Fn(&V) -> usize,
@@ -42,16 +41,16 @@ where
             }
         }
 
-        Self { src, cost, prev, index, _cert: PhantomData }
+        Self { src, cost, prev: Cert(prev), index }
     }
     pub fn path(&self, dst: &V) -> Option<std::vec::IntoIter<V>> {
         let mut i = (self.index)(dst);
-        if self.prev[i].is_none() {
+        if self.prev.0[i].is_none() {
             return (&self.src == dst).then(|| vec![dst.clone()].into_iter());
         }
 
         let mut res = vec![dst.clone()];
-        while let Some(v) = &self.prev[i] {
+        while let Some(v) = &self.prev.0[i] {
             i = (self.index)(v);
             res.push(v.clone());
         }
@@ -88,8 +87,7 @@ where
             }
         }
 
-        let prev = vec![];
-        Self { src, cost, prev, index, _cert: PhantomData }
+        Self { src, cost, prev: NoCert, index }
     }
 }
 impl<V, I, C> Bfs01Sssp<V, I, C>
