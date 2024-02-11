@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["bisect"],"trait":["Bisect"]};
+window.SIDEBAR_ITEMS = {"mod":["bisect","tortoise_hare"],"trait":["Bisect","CycleMuLambda"]};
