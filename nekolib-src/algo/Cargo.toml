@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 bisect = { path = "bisect" }
+tortoise_hare = { path = "tortoise_hare" }
