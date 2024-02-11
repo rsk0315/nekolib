@@ -5,6 +5,7 @@ pub use {
     discussion,
     ds,
     fmt,
+    graph,
     integer,
     io,
     macros,
