@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 permutation = { path = "permutation" }
+bucket_sort = { path = "bucket_sort" }
