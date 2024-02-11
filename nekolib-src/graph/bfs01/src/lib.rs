@@ -58,6 +58,7 @@ where
         Some(res.into_iter())
     }
 }
+
 impl<V, I> Bfs01Sssp<V, I, NoCert>
 where
     V: Eq + Clone,
@@ -90,6 +91,7 @@ where
         Self { src, cost, prev: NoCert, index }
     }
 }
+
 impl<V, I, C> Bfs01Sssp<V, I, C>
 where
     V: Eq + Clone,
