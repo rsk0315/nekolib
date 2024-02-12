@@ -1,4 +1,4 @@
-name: Cargo test --lib
+name: Cargo test
 on:
   push:
     branches:
