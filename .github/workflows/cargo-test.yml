@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           ref: main
           path: main
@@ -31,13 +31,13 @@ jobs:
                       echo '```'
                       echo "$f (--lib)"
                       echo '```'
-                  } >> $GITHUB_SUMMARY
+                  } >> $GITHUB_STEP_SUMMARY
               cargo test --doc --manifest-path=$f ||
                   {
                       failed=t
                       echo '```'
                       echo "$f (--doc)"
                       echo '```'
-                  } >> $GITHUB_SUMMARY
+                  } >> $GITHUB_STEP_SUMMARY
           done
           [[ failed != t ]]
