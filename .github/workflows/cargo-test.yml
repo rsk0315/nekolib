@@ -1,4 +1,4 @@
-name: Cargo test
+name: Cargo test --lib
 on:
   push:
     branches:
@@ -22,22 +22,4 @@ jobs:
 
       - name: Run tests
         run: |
-          failed=''
-          shopt -s globstar
-          for f in **/Cargo.toml; do
-              cargo test --release --lib --manifest-path=$f ||
-                  {
-                      failed=t
-                      echo '```'
-                      echo "$f (--lib)"
-                      echo '```'
-                  } >> $GITHUB_STEP_SUMMARY
-              cargo test --doc --manifest-path=$f ||
-                  {
-                      failed=t
-                      echo '```'
-                      echo "$f (--doc)"
-                      echo '```'
-                  } >> $GITHUB_STEP_SUMMARY
-          done
-          [[ $failed != t ]]
+          zsh scripts/ci-test.zsh --lib >> $GITHUB_STEP_SUMMARY
