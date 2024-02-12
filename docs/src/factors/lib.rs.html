@@ -331,11 +331,11 @@
 <a href="#108" id="108">108</a>
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
-</pre></div><pre class="rust"><code><span class="kw">trait </span>Factors: Sized {
+</pre></div><pre class="rust"><code><span class="kw">pub trait </span>Factors: Sized {
     <span class="kw">fn </span>factors(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = ((<span class="self">Self</span>, u32), <span class="self">Self</span>)&gt;;
 }
 
-<span class="kw">trait </span>FactorsDup {
+<span class="kw">pub trait </span>FactorsDup: Sized {
     <span class="kw">fn </span>factors_dup(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>&gt;;
 }
 
