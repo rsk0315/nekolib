@@ -68,7 +68,7 @@ where
 }
 
 #[cfg(test)]
-mod naive {
+mod tests {
     use concat_monoid::OpConcat;
 
     use crate::*;

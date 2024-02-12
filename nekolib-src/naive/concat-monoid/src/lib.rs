@@ -12,7 +12,7 @@ def_monoid_generics! {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use monoid::{BinaryOp, Identity};
 
     use crate::*;

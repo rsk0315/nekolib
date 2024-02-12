@@ -86,7 +86,7 @@ fn sanity_check() {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::DormantMutRef;
 
     struct Base {
