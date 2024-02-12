@@ -1,8 +1,8 @@
-trait Factors: Sized {
+pub trait Factors: Sized {
     fn factors(self) -> impl Iterator<Item = ((Self, u32), Self)>;
 }
 
-trait FactorsDup {
+pub trait FactorsDup: Sized {
     fn factors_dup(self) -> impl Iterator<Item = Self>;
 }
 

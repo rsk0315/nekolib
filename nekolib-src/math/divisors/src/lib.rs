@@ -1,4 +1,4 @@
-trait Divisors {
+pub trait Divisors: Sized {
     fn divisors(self) -> impl Iterator<Item = Self>;
 }
 

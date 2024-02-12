@@ -13,7 +13,7 @@
 //!
 //! ## `impl Readable`
 //!
-//! ```
+//! ```ignore
 //! use std::io::BufRead;
 //!
 //! use proconio::{

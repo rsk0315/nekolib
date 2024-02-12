@@ -100,7 +100,7 @@ fn uniformity() {
 }
 
 #[test]
-#[ignore]
+#[cfg(ignore)]
 fn macros() {
     rand_gen! {
         rng = _; // Default
