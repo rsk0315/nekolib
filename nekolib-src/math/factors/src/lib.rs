@@ -1,27 +1,55 @@
+trait Factors: Sized {
+    fn factors(self) -> impl Iterator<Item = ((Self, u32), Self)>;
+}
+
 trait FactorsDup {
     fn factors_dup(self) -> impl Iterator<Item = Self>;
 }
 
 macro_rules! impl_uint {
     ( $($ty:ty)* ) => { $(
-        impl FactorsDup for $ty {
-            fn factors_dup(self) -> impl Iterator<Item = Self> {
+        impl Factors for $ty {
+            fn factors(self) -> impl Iterator<Item = ((Self, u32), Self)> {
                 let n = self;
                 std::iter::successors(
-                    (n >= 1).then_some((1, n)),
-                    move |&(i, n)| {
-                        if let Some(j) = (i.max(2)..)
-                            .take_while(|j| j * j <= n)
-                            .find(|j| n % j == 0)
+                    (n >= 1).then_some((((1, 0), 1), n)),
+                    move |&(((i, _), _), n)| {
+                        if let Some(j) =
+                            (i + 1..).take_while(|j| j * j <= n).find(|j| n % j == 0)
                         {
-                            Some((j, n / j))
+                            let (jj, e) =
+                                std::iter::successors(Some((j, 1)), |&(jj, e)| {
+                                    (n / jj % j == 0).then(|| (jj * j, e + 1))
+                                })
+                                .last()
+                                .unwrap();
+                            Some((((j, e), jj), n / jj))
                         } else if n > 1 {
-                            Some((n, 1))
+                            Some((((n, 1), n), 1))
                         } else {
                             None
                         }
-                    }
+                    },
                 )
+                .skip(1)
+                .map(move |(i, _)| i)
+            }
+        }
+
+        impl FactorsDup for $ty {
+            fn factors_dup(self) -> impl Iterator<Item = Self> {
+                let n = self;
+                std::iter::successors((n >= 1).then_some((1, n)), move |&(i, n)| {
+                    if let Some(j) =
+                        (i.max(2)..).take_while(|j| j * j <= n).find(|j| n % j == 0)
+                    {
+                        Some((j, n / j))
+                    } else if n > 1 {
+                        Some((n, 1))
+                    } else {
+                        None
+                    }
+                })
                 .skip(1)
                 .map(move |(i, _)| i)
             }
@@ -61,8 +89,22 @@ fn sanity_check() {
         res
     };
 
-    for i in 1..=n_max {
-        let actual = i.factors_dup();
-        assert!(actual.eq(expected[i].iter().copied()));
+    for n in 1..=n_max {
+        let actual = n.factors_dup();
+        assert!(actual.eq(expected[n].iter().copied()));
+
+        let expected_dedup = {
+            let mut tmp: Vec<_> = n.factors_dup().collect();
+            tmp.dedup();
+            tmp
+        };
+        let actual_dedup = n.factors().map(|((p, _), _)| p);
+        assert!(actual_dedup.eq(expected_dedup));
+
+        for ((p, e), pp) in n.factors() {
+            assert_eq!(n / (pp / p) % p, 0);
+            assert_ne!(n / pp % p, 0);
+            assert_eq!(pp, p.pow(e));
+        }
     }
 }
