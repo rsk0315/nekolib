@@ -7,4 +7,4 @@ edition = "2021"
 monoid = { path = "../../ops/monoid" }
 
 [dev-dependencies]
-op_add = { path = "../../ops/op_add" }
+concat-monoid = { path = "../../naive/concat-monoid" }

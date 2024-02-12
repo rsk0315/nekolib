@@ -1,7 +1,7 @@
 use monoid::def_monoid_generics;
 
 def_monoid_generics! {
-    OpConcat[T, B] where [
+    pub OpConcat[T, B] where [
         T: Clone,
         B: Clone + IntoIterator<Item = T> + FromIterator<T>,
     ] = (

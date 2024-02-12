@@ -42,13 +42,11 @@ impl<T: BinaryOp + Associative + Identity + Recip + Commutative>
 }
 
 #[macro_export]
-macro_rules! def_monoid_generics {
+macro_rules! impl_monoid_generics {
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr $(,)?)
+            ([$ty:ty, $op:expr, $id:expr] [])
     ) => {
-        struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
-        where $($where)*;
         impl<$($gen)*> $name<$($gen)*>
         where $($where)*
         {
@@ -78,37 +76,68 @@ macro_rules! def_monoid_generics {
     };
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr, Commutative $(,)?)
+            ([$ty:ty, $op:expr, $id:expr] [$marker:ident])
     ) => {
-        $crate::def_monoid_generics! {
-            $name[$($gen)*] where [$($where)*] = ($ty, $op, $id)
+        impl_monoid_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id] [])
         }
-        impl<$($gen)*> $crate::Commutative for $name<$($gen)*> where $($where)* {}
+        impl<$($gen)*> $crate::$marker for $name<$($gen)*>
+        where $($where)*
+        {}
     };
-    (
-        $($name:ident[$($gen:tt)*] where [$($where:tt)*] = ($($impl:tt)*)),*
-    ) => { $(
-        $crate::def_monoid_generics! {
-            $name[$($gen)*] where [$($where)*] = ($($impl)*)
-        }
-    )* };
-    (
-        $($name:ident[$($gen:tt)*] where [$($where:tt)*] = ($($impl:tt)*),)*
-    ) => { $(
-        $crate::def_monoid_generics! {
-            $name[$($gen)*] where [$($where)*] = ($($impl)*)
-        }
-    )* };
 }
 
 #[macro_export]
-macro_rules! def_group_generics {
+macro_rules! def_monoid_generics {
+    (
+        $(#[$attr:meta])*
+        $name:ident[$($gen:tt)*] where [$($where:tt)*] =
+            ($ty:ty, $op:expr, $id:expr $(, $marker:ident)? $(,)?) $(,)?
+    ) => {
+        $(#[$attr])*
+        #[allow(unused_parens)]
+        struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
+        where $($where)*;
+        $crate::impl_monoid_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id] [$($marker)?])
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        pub $name:ident[$($gen:tt)*] where [$($where:tt)*] =
+            ($ty:ty, $op:expr, $id:expr $(, $marker:ident)? $(,)?) $(,)?
+    ) => {
+        $(#[$attr])*
+        #[allow(unused_parens)]
+        pub struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
+        where $($where)*;
+        $crate::impl_monoid_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id] [$($marker)?])
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        pub($($vis:tt)+) $name:ident[$($gen:tt)*] where [$($where:tt)*] =
+            ($ty:ty, $op:expr, $id:expr $(, $marker:ident)? $(,)?) $(,)?
+    ) => {
+        $(#[$attr])*
+        #[allow(unused_parens)]
+        pub($($vis)+) struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
+        where $($where)*;
+        $crate::impl_monoid_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id] [$($marker)?])
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_group_generics {
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr, $recip:expr $(,)?)
+            ([$ty:ty, $op:expr, $id:expr, $recip:expr] [])
     ) => {
-        $crate::def_monoid_generics! {
-            $name[$($gen)*] where [$($where)*] = ($ty, $op, $id)
+        impl_monoid_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id] [])
         }
         impl<$($gen)*> $crate::Recip for $name<$($gen)*>
         where $($where)*
@@ -118,59 +147,111 @@ macro_rules! def_group_generics {
     };
     (
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
-            ($ty:ty, $op:expr, $id:expr, $recip:expr, Commutative $(,)?)
+            ([$ty:ty, $op:expr, $id:expr, $recip:expr] [$marker:ident])
     ) => {
-        $crate::def_group_generics! {
-            $name[$($gen)*] where [$($where)*] = ($ty, $op, $id, $recip)
+        impl_group_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id, $recip] [])
         }
-        impl<$($gen)*> $crate::Commutative for $name<$($gen)*> where $($where)* {}
+        impl<$($gen)*> $crate::$marker for $name<$($gen)*>
+        where $($where)*
+        {}
+    };
+}
+
+#[macro_export]
+macro_rules! def_group_generics {
+    (
+        $(#[$attr:meta])*
+        $name:ident[$($gen:tt)*] where [$($where:tt)*] =
+            ($ty:ty, $op:expr, $id:expr, $recip:expr $(, $marker:ident)? $(,)?) $(,)?
+    ) => {
+        $(#[$attr])*
+        #[allow(unused_parens)]
+        struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
+        where $($where)*;
+        $crate::impl_group_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id, $recip] [$($marker)?])
+        }
     };
     (
-        $($name:ident[$($gen:tt)*] where [$($where:tt)*] = ($($impl:tt)*)),*
-    ) => { $(
-        $crate::def_group_generics! {
-            $name[$($gen)*] where [$($where)*] = ($($impl)*)
+        $(#[$attr:meta])*
+        pub $name:ident[$($gen:tt)*] where [$($where:tt)*] =
+            ($ty:ty, $op:expr, $id:expr, $recip:expr $(, $marker:ident)? $(,)?) $(,)?
+    ) => {
+        $(#[$attr])*
+        #[allow(unused_parens)]
+        pub struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
+        where $($where)*;
+        $crate::impl_group_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id, $recip] [$($marker)?])
         }
-    )* };
+    };
     (
-        $($name:ident[$($gen:tt)*] where [$($where:tt)*] = ($($impl:tt)*),)*
-    ) => { $(
-        $crate::def_group_generics! {
-            $name[$($gen)*] where [$($where)*] = ($($impl)*)
+        $(#[$attr:meta])*
+        pub($($vis:tt)+) $name:ident[$($gen:tt)*] where [$($where:tt)*] =
+            ($ty:ty, $op:expr, $id:expr, $recip:expr $(, $marker:ident)? $(,)?) $(,)?
+    ) => {
+        $(#[$attr])*
+        #[allow(unused_parens)]
+        pub($($vis)+) struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
+        where $($where)*;
+        $crate::impl_group_generics! {
+            $name[$($gen)*] where [$($where)*] = ([$ty, $op, $id, $recip] [$($marker)?])
         }
-    )* };
+    };
 }
 
 #[macro_export]
 macro_rules! def_monoid {
-    ( $name:ident = ($ty:ty, $op:expr, $id:expr $(,)?) ) => {
-        $crate::def_monoid_generics! { $name[] where [] = ($ty, $op, $id) }
+    (
+        $(#[$attr:meta])*
+        $name:ident = ($ty:ty, $op:expr, $id:expr $(, $marker:ident)? $(,)?)
+    ) => {
+        $crate::def_monoid_generics! {
+            $(#[$attr])* $name[] where [] = ($ty, $op, $id $(, $marker)?)
+        }
     };
-    ( $name:ident = ($ty:ty, $op:expr, $id:expr, Commutative $(,)?) ) => {
-        $crate::def_monoid_generics! { $name[] where [] = ($ty, $op, $id, Commutative) }
+    (
+        $(#[$attr:meta])*
+        pub $name:ident = ($ty:ty, $op:expr, $id:expr $(, $marker:ident)? $(,)?)
+    ) => {
+        $crate::def_monoid_generics! {
+            $(#[$attr])* pub $name[] where [] = ($ty, $op, $id $(, $marker)?)
+        }
     };
-    ( $($name:ident = ($($impl:tt)*)),* ) => { $(
-        $crate::def_monoid! { $name = ($($impl)*) }
-    )* };
-    ( $($name:ident = ($($impl:tt)*),)* ) => { $(
-        $crate::def_monoid! { $name = ($($impl)*) }
-    )* };
+    (
+        $(#[$attr:meta])*
+        pub($(vis:tt)+) $name:ident = ($ty:ty, $op:expr, $id:expr $(, $marker:ident)? $(,)?)
+    ) => {
+        $crate::def_monoid_generics! {
+            $(#[$attr])* pub($(vis)+) $name[] where [] = ($ty, $op, $id $(, $marker)?)
+        }
+    };
 }
 
 #[macro_export]
 macro_rules! def_group {
-    ( $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr $(,)?) ) => {
-        $crate::def_group_generics! { $name[] where [] = ($ty, $op, $id, $recip) }
+    (
+        $(#[$attr:meta])*
+        $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr $(, $marker:ident)? $(,)?) ) => {
+        $crate::def_group_generics! {
+            $(#[$attr])* $name[] where [] = ($ty, $op, $id, $recip $(, $marker)?)
+        }
     };
-    ( $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr, Commutative $(,)?) ) => {
-        $crate::def_group_generics! { $name[] where [] = ($ty, $op, $id, $recip, Commutative) }
+    (
+        $(#[$attr:meta])*
+        pub $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr $(, $marker:ident)? $(,)?) ) => {
+        $crate::def_group_generics! {
+            $(#[$attr])* pub $name[] where [] = ($ty, $op, $id, $recip $(, $marker)?)
+        }
     };
-    ( $($name:ident = ($($impl:tt)*)),* ) => { $(
-        $crate::def_group! { $name = ($($impl)*) }
-    )* };
-    ( $($name:ident = ($($impl:tt)*),)* ) => { $(
-        $crate::def_group! { $name = ($($impl)*) }
-    )* };
+    (
+        $(#[$attr:meta])*
+        pub($($vis:tt)+) $name:ident = ($ty:ty, $op:expr, $id:expr, $recip:expr $(, $marker:ident)? $(,)?) ) => {
+        $crate::def_group_generics! {
+            $(#[$attr])* pub($(vis)+) $name[] where [] = ($ty, $op, $id, $recip $(, $marker)?)
+        }
+    };
 }
 
 #[cfg(test)]
@@ -184,10 +265,8 @@ mod tests {
 
     #[test]
     fn simple_monoid() {
-        def_monoid! {
-            OpXor = (u32, |x, y| x ^ y, || 0),
-            OpAdd = (i32, |x, y| x + y, || 0),
-        }
+        def_monoid! { OpXor = (u32, |x, y| x ^ y, || 0) }
+        def_monoid! { OpAdd = (i32, |x, y| x + y, || 0) }
 
         let xor = OpXor::new();
         assert_eq!(xor.id(), 0);
@@ -200,10 +279,8 @@ mod tests {
 
     #[test]
     fn simple_group() {
-        def_group! {
-            OpXor = (u32, |x, y| x ^ y, || 0, |&x: &u32| x),
-            OpAdd = (i32, |x, y| x + y, || 0, |&x: &i32| -x),
-        }
+        def_group! { OpXor = (u32, |x, y| x ^ y, || 0, |&x: &u32| x) }
+        def_group! { OpAdd = (i32, |x, y| x + y, || 0, |&x: &i32| -x, Commutative) }
 
         let xor = OpXor::new();
         assert_eq!(xor.id(), 0);
@@ -217,13 +294,14 @@ mod tests {
     #[test]
     fn generics_monoid() {
         def_monoid_generics! {
-            OpXor[T] where [
+            #[allow(non_camel_case_types)]
+            Op_Xor[T] where [
                 for<'a> &'a T: BitXor<Output = T>,
                 T: for<'a> Sum<&'a T>,
             ] = (T, |x, y| x ^ y, || None.into_iter().sum(), Commutative),
         }
 
-        let xor = OpXor::<u64>::new();
+        let xor = Op_Xor::<u64>::new();
         assert_eq!(xor.id(), 0);
         assert_eq!(xor.op(&2, &3), 1);
     }
@@ -235,6 +313,8 @@ mod tests {
                 for<'a> &'a T: BitXor<Output = T>,
                 T: for<'a> Sum<&'a T>,
             ] = (T, |x, y| x ^ y, || None.into_iter().sum(), |x| &(x ^ x) ^ x, Commutative),
+        }
+        def_group_generics! {
             OpAdd[T] where [
                 for<'a> &'a T: Add<Output = T> + Neg<Output = T>,
                 T: for<'a> Sum<&'a T>,

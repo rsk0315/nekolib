@@ -121,90 +121,66 @@ where
 
 #[cfg(test)]
 mod naive {
-    use std::{iter::Sum, ops::Add};
-
-    use op_add::OpAdd;
+    use concat_monoid::OpConcat;
 
     use crate::FoldableDeque;
 
-    #[derive(Clone, Debug, Eq, PartialEq)]
-    pub struct Seq(pub Vec<u32>);
-    impl Add<&Seq> for &Seq {
-        type Output = Seq;
-        fn add(self, rhs: &Seq) -> Seq {
-            Seq(self.0.iter().chain(&rhs.0).copied().collect())
-        }
-    }
-    impl<'a> Sum<&'a Seq> for Seq {
-        fn sum<I: IntoIterator<Item = &'a Seq>>(iter: I) -> Seq {
-            Seq(iter
-                .into_iter()
-                .flat_map(|seq| seq.0.iter().copied())
-                .collect())
-        }
-    }
-    impl Seq {
-        pub fn new(x: u32) -> Self { Self(vec![x]) }
-    }
-
     #[test]
     fn sanity_check() {
-        use crate::naive::Seq;
+        let mut queue = FoldableDeque::<OpConcat<_, Vec<_>>>::new();
+        queue.push_back(vec![1]);
+        assert_eq!(queue.fold(..), vec![1]);
+        assert_eq!(queue.pop_back(), Some(vec![1]));
 
-        let mut queue = FoldableDeque::<OpAdd<Seq>>::new();
-        queue.push_back(Seq::new(1));
-        assert_eq!(queue.fold(..), Seq(vec![1]));
-        assert_eq!(queue.pop_back(), Some(Seq::new(1)));
+        queue.push_back(vec![1]);
+        queue.push_back(vec![2]);
+        queue.push_back(vec![3]);
+        queue.push_back(vec![4]);
+        queue.push_back(vec![5]);
+        assert_eq!(queue.fold(..), vec![1, 2, 3, 4, 5]);
 
-        queue.push_back(Seq::new(1));
-        queue.push_back(Seq::new(2));
-        queue.push_back(Seq::new(3));
-        queue.push_back(Seq::new(4));
-        queue.push_back(Seq::new(5));
-        assert_eq!(queue.fold(..), Seq(vec![1, 2, 3, 4, 5]));
-
-        assert_eq!(queue.pop_front(), Some(Seq::new(1)));
-        assert_eq!(queue.fold(..), Seq(vec![2, 3, 4, 5]));
-        assert_eq!(queue.pop_front(), Some(Seq::new(2)));
-        assert_eq!(queue.fold(..), Seq(vec![3, 4, 5]));
-        assert_eq!(queue.pop_front(), Some(Seq::new(3)));
-        assert_eq!(queue.fold(..), Seq(vec![4, 5]));
-        assert_eq!(queue.pop_front(), Some(Seq::new(4)));
-        assert_eq!(queue.fold(..), Seq(vec![5]));
-        assert_eq!(queue.pop_front(), Some(Seq::new(5)));
-        assert_eq!(queue.fold(..), Seq(vec![]));
+        assert_eq!(queue.pop_front(), Some(vec![1]));
+        assert_eq!(queue.fold(..), vec![2, 3, 4, 5]);
+        assert_eq!(queue.pop_front(), Some(vec![2]));
+        assert_eq!(queue.fold(..), vec![3, 4, 5]);
+        assert_eq!(queue.pop_front(), Some(vec![3]));
+        assert_eq!(queue.fold(..), vec![4, 5]);
+        assert_eq!(queue.pop_front(), Some(vec![4]));
+        assert_eq!(queue.fold(..), vec![5]);
+        assert_eq!(queue.pop_front(), Some(vec![5]));
+        assert_eq!(queue.fold(..), vec![]);
         assert_eq!(queue.pop_front(), None);
-        assert_eq!(queue.fold(..), Seq(vec![]));
+        assert_eq!(queue.fold(..), vec![]);
 
-        queue.push_front(Seq::new(5));
-        queue.push_front(Seq::new(4));
-        queue.push_front(Seq::new(3));
-        queue.push_front(Seq::new(2));
-        queue.push_front(Seq::new(1));
-        assert_eq!(queue.fold(..), Seq(vec![1, 2, 3, 4, 5]));
+        queue.push_front(vec![5]);
+        queue.push_front(vec![4]);
+        queue.push_front(vec![3]);
+        queue.push_front(vec![2]);
+        queue.push_front(vec![1]);
+        assert_eq!(queue.fold(..), vec![1, 2, 3, 4, 5]);
 
-        assert_eq!(queue.pop_back(), Some(Seq::new(5)));
-        assert_eq!(queue.fold(..), Seq(vec![1, 2, 3, 4]));
-        assert_eq!(queue.pop_back(), Some(Seq::new(4)));
-        assert_eq!(queue.fold(..), Seq(vec![1, 2, 3]));
-        assert_eq!(queue.pop_back(), Some(Seq::new(3)));
-        assert_eq!(queue.fold(..), Seq(vec![1, 2]));
-        assert_eq!(queue.pop_back(), Some(Seq::new(2)));
-        assert_eq!(queue.fold(..), Seq(vec![1]));
-        assert_eq!(queue.pop_back(), Some(Seq::new(1)));
-        assert_eq!(queue.fold(..), Seq(vec![]));
+        assert_eq!(queue.pop_back(), Some(vec![5]));
+        assert_eq!(queue.fold(..), vec![1, 2, 3, 4]);
+        assert_eq!(queue.pop_back(), Some(vec![4]));
+        assert_eq!(queue.fold(..), vec![1, 2, 3]);
+        assert_eq!(queue.pop_back(), Some(vec![3]));
+        assert_eq!(queue.fold(..), vec![1, 2]);
+        assert_eq!(queue.pop_back(), Some(vec![2]));
+        assert_eq!(queue.fold(..), vec![1]);
+        assert_eq!(queue.pop_back(), Some(vec![1]));
+        assert_eq!(queue.fold(..), vec![]);
         assert_eq!(queue.pop_back(), None);
-        assert_eq!(queue.fold(..), Seq(vec![]));
+        assert_eq!(queue.fold(..), vec![]);
     }
 
     #[test]
     fn test_fmt() {
-        let mut queue = FoldableDeque::<OpAdd<_>>::new();
+        let mut queue = FoldableDeque::<OpConcat<_, Vec<_>>>::new();
         assert_eq!(format!("{queue:?}"), "[]");
-        queue.push_front(2);
-        queue.push_front(1);
-        queue.push_back(3);
-        queue.push_back(4);
-        assert_eq!(format!("{queue:?}"), "[1, 2, 3, 4]");
+        queue.push_front(vec![2]);
+        queue.push_front(vec![1]);
+        queue.push_back(vec![3]);
+        queue.push_back(vec![4]);
+        assert_eq!(format!("{queue:?}"), "[[1], [2], [3], [4]]");
     }
 }
