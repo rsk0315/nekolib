@@ -9,3 +9,4 @@ edition = "2021"
 inner = { path = "../inner" }
 disjoint-set = { path = "disjoint-set" }
 assoc-list = { path = "assoc-list" }
+concat-monoid = { path = "concat-monoid" }

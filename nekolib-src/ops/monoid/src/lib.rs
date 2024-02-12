@@ -47,7 +47,7 @@ macro_rules! def_monoid_generics {
         $name:ident[$($gen:tt)*] where [$($where:tt)*] =
             ($ty:ty, $op:expr, $id:expr $(,)?)
     ) => {
-        struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen,)*)>)
+        struct $name<$($gen)*>(std::marker::PhantomData<fn() -> ($($gen)*)>)
         where $($where)*;
         impl<$($gen)*> $name<$($gen)*>
         where $($where)*
