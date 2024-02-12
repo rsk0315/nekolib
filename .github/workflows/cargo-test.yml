@@ -1,0 +1,43 @@
+name: Cargo test
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  cargo-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: main
+          path: main
+
+      - name: Install latest Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Run tests
+        run: |
+          failed=''
+          for f in **/Cargo.toml; do
+              cargo test --release --lib --manifest-path=$f ||
+                  {
+                      failed=t
+                      echo '```'
+                      echo "$f (--lib)"
+                      echo '```'
+                  } >> $GITHUB_SUMMARY
+              cargo test --doc --manifest-path=$f ||
+                  {
+                      failed=t
+                      echo '```'
+                      echo "$f (--doc)"
+                      echo '```'
+                  } >> $GITHUB_SUMMARY
+          done
+          [[ failed != t ]]
