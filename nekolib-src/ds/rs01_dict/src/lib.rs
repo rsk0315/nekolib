@@ -72,6 +72,52 @@ impl<const LARGE: usize, const SMALL: usize> RankPreprocess<LARGE, SMALL> {
     }
 }
 
+enum SelectPreprocessDs<const LARGE: usize, const SMALL: usize> {
+    /// at least $`\log(n)^4`$-bit blocks.
+    Sparse(Vec<usize>),
+
+    /// less than $`\log(n)^4`$-bit blocks.
+    Dense,
+}
+
+struct SelectPreprocess<const LARGE: usize, const SMALL: usize> {
+    ds: Vec<SelectPreprocessDs<LARGE, SMALL>>,
+}
+
+impl<const LARGE: usize, const SMALL: usize> SelectPreprocessDs<LARGE, SMALL> {
+    fn new(a: Vec<usize>, range: RangeInclusive<usize>) -> Self {
+        let start = *range.start();
+        let end = *range.end();
+        if end - start + 1 >= LARGE * LARGE {
+            // sparse
+            Self::Sparse(a)
+        } else {
+            // dense
+            todo!()
+        }
+    }
+}
+
+impl<const LARGE: usize, const SMALL: usize> SelectPreprocess<LARGE, SMALL> {
+    fn new<const X: bool>(a: &[bool]) -> Self {
+        let n = a.len();
+        let mut cur = vec![];
+        let mut res = vec![];
+        let mut start = 0;
+        for i in 0..n {
+            if a[i] == X {
+                cur.push(i);
+            }
+            if cur.len() == LARGE || i == n - 1 {
+                let tmp = std::mem::take(&mut cur);
+                res.push(SelectPreprocessDs::new(tmp, start..=i));
+                start = i + 1;
+            }
+        }
+        Self { ds: res }
+    }
+}
+
 macro_rules! bitvec {
     ($lit:literal) => {
         $lit.iter()
