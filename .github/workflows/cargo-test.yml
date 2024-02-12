@@ -24,6 +24,7 @@ jobs:
       - name: Run tests
         run: |
           failed=''
+          shopt -s globstar
           for f in **/Cargo.toml; do
               cargo test --release --lib --manifest-path=$f ||
                   {
@@ -40,4 +41,4 @@ jobs:
                       echo '```'
                   } >> $GITHUB_STEP_SUMMARY
           done
-          [[ failed != t ]]
+          [[ $failed != t ]]
