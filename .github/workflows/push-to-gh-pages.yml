@@ -23,10 +23,9 @@ jobs:
           path: gh-pages
 
       - name: Install latest Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          override: true
 
       - name: Setup jq
         uses: dcarbone/install-jq-action@v1.0.1
@@ -63,7 +62,7 @@ jobs:
           git commit -m '[auto-generated]' --allow-empty
 
       - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
+        uses: ad-m/github-push-action@v0.8.0
         with:
           github_token: ${{ secrets.GA_TOKEN }}
           branch: gh-pages
