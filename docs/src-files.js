@@ -14,6 +14,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["divisors",["",[],["lib.rs"]]],\
 ["dp",["",[],["lib.rs"]]],\
 ["ds",["",[],["lib.rs"]]],\
+["factors",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
 ["foldable_queue",["",[],["lib.rs"]]],\
 ["getrandom",["",[],["error.rs","error_impls.rs","lazy.rs","lib.rs","linux_android.rs","use_file.rs","util.rs","util_libc.rs"]]],\
