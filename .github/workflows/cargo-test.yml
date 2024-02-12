@@ -26,6 +26,9 @@ jobs:
           sudo apt-get install zsh
 
       - name: Run tests
-        shell: zsh {0}
         run: |
-          zsh scripts/ci-test.zsh --lib >> $GITHUB_STEP_SUMMARY
+          pwd
+          ls
+          echo ...
+          ls *
+          zsh scripts/ci-test.zsh --release --lib >> $GITHUB_STEP_SUMMARY
