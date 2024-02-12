@@ -94,12 +94,12 @@ cat $pass_doc
 
 echo '---'
 
-echo '## :smiling_face_with_tear: passed (`--lib`)'
+echo '## :smiling_face_with_tear: not tested (`--lib`)'
 cat $notest_lib
 
 echo '---'
 
-echo '## :smiling_face_with_tear:: passed (`--doc`)'
+echo '## :smiling_face_with_tear: not tested (`--doc`)'
 cat $notest_doc
 
 [[ "$failed" != t ]]
