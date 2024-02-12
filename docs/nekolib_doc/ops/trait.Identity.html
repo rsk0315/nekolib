@@ -101,6 +101,7 @@
       "plane-sweep"
     ],
     "ds": [
+      "foldable_deque",
       "foldable_queue",
       "union-find",
       "vec_segtree"
@@ -131,6 +132,7 @@
     ],
     "naive": [
       "assoc-list",
+      "concat-monoid",
       "disjoint-set"
     ],
     "ops": [
@@ -223,4 +225,6 @@
     fn <a href="#tymethod.id" class="fn">id</a>(&amp;self) -&gt; Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type nekolib_doc::ops::BinaryOp::Set">Set</a>;
 }</code></pre><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><section id="tymethod.id" class="method"><a class="src rightside" href="../../src/monoid/lib.rs.html#7">source</a><h4 class="code-header">fn <a href="#tymethod.id" class="fn">id</a>(&amp;self) -&gt; Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type nekolib_doc::ops::BinaryOp::Set">Set</a></h4></section></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-Identity-for-OpAdd%3CT%3E" class="impl"><a class="src rightside" href="../../src/op_add/lib.rs.html#23-26">source</a><a href="#impl-Identity-for-OpAdd%3CT%3E" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="trait.Identity.html" title="trait nekolib_doc::ops::Identity">Identity</a> for <a class="struct" href="struct.OpAdd.html" title="struct nekolib_doc::ops::OpAdd">OpAdd</a>&lt;T&gt;<div class="where">where
     <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a T</a>: for&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.Add.html" title="trait core::ops::arith::Add">Add</a>&lt;Output = T&gt;,
-    T: for&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/traits/accum/trait.Sum.html" title="trait core::iter::traits::accum::Sum">Sum</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a T</a>&gt;,</div></h3></section></div><script src="../../trait.impl/monoid/trait.Identity.js" data-ignore-extern-crates="op_add" async></script></section></div></main></body></html>
+    T: for&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/traits/accum/trait.Sum.html" title="trait core::iter::traits::accum::Sum">Sum</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a T</a>&gt;,</div></h3></section><section id="impl-Identity-for-OpConcat%3CT,+B%3E" class="impl"><a class="src rightside" href="../../src/concat_monoid/lib.rs.html#3-12">source</a><a href="#impl-Identity-for-OpConcat%3CT,+B%3E" class="anchor">§</a><h3 class="code-header">impl&lt;T, B&gt; <a class="trait" href="trait.Identity.html" title="trait nekolib_doc::ops::Identity">Identity</a> for <a class="struct" href="../naive/struct.OpConcat.html" title="struct nekolib_doc::naive::OpConcat">OpConcat</a>&lt;T, B&gt;<div class="where">where
+    T: <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,
+    B: <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/traits/collect/trait.IntoIterator.html" title="trait core::iter::traits::collect::IntoIterator">IntoIterator</a>&lt;Item = T&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/traits/collect/trait.FromIterator.html" title="trait core::iter::traits::collect::FromIterator">FromIterator</a>&lt;T&gt;,</div></h3></section></div><script src="../../trait.impl/monoid/trait.Identity.js" data-ignore-extern-crates="concat_monoid,op_add" async></script></section></div></main></body></html>

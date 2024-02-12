@@ -7,6 +7,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["borrow",["",[],["lib.rs"]]],\
 ["bucket_sort",["",[],["lib.rs"]]],\
 ["cfg_if",["",[],["lib.rs"]]],\
+["concat_monoid",["",[],["lib.rs"]]],\
 ["corro",["",[],["lib.rs"]]],\
 ["dijkstra",["",[],["lib.rs"]]],\
 ["discussion",["",[],["lib.rs"]]],\
@@ -16,6 +17,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["ds",["",[],["lib.rs"]]],\
 ["factors",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
+["foldable_deque",["",[],["lib.rs"]]],\
 ["foldable_queue",["",[],["lib.rs"]]],\
 ["getrandom",["",[],["error.rs","error_impls.rs","lazy.rs","lib.rs","linux_android.rs","use_file.rs","util.rs","util_libc.rs"]]],\
 ["graph",["",[],["lib.rs"]]],\

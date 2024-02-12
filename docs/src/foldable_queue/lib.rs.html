@@ -101,6 +101,7 @@
       "plane-sweep"
     ],
     "ds": [
+      "foldable_deque",
       "foldable_queue",
       "union-find",
       "vec_segtree"
@@ -131,6 +132,7 @@
     ],
     "naive": [
       "assoc-list",
+      "concat-monoid",
       "disjoint-set"
     ],
     "ops": [
@@ -334,12 +336,11 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::RangeFull;
 
 <span class="kw">use </span>monoid::Monoid;
 
-<span class="attr">#[derive(Debug)]
+<span class="attr">#[derive(Clone, PartialEq, Eq)]
 </span><span class="kw">pub struct </span>FoldableQueue&lt;M: Monoid&gt; {
     front: Vec&lt;M::Set&gt;,
     front_folded: Vec&lt;M::Set&gt;,
@@ -393,62 +394,61 @@
     }
 }
 
-<span class="attr">#[cfg(test)]
-</span><span class="kw">mod </span>naive {
-    <span class="kw">use </span>std::{iter::Sum, ops::Add};
-
-    <span class="attr">#[derive(Debug, Eq, PartialEq)]
-    </span><span class="kw">pub struct </span>Seq(<span class="kw">pub </span>Vec&lt;u32&gt;);
-    <span class="kw">impl </span>Add&lt;<span class="kw-2">&amp;</span>Seq&gt; <span class="kw">for </span><span class="kw-2">&amp;</span>Seq {
-        <span class="kw">type </span>Output = Seq;
-        <span class="kw">fn </span>add(<span class="self">self</span>, rhs: <span class="kw-2">&amp;</span>Seq) -&gt; Seq {
-            Seq(<span class="self">self</span>.<span class="number">0</span>.iter().chain(<span class="kw-2">&amp;</span>rhs.<span class="number">0</span>).copied().collect())
-        }
-    }
-    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Sum&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Seq&gt; <span class="kw">for </span>Seq {
-        <span class="kw">fn </span>sum&lt;I: IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Seq&gt;&gt;(iter: I) -&gt; Seq {
-            Seq(iter
-                .into_iter()
-                .flat_map(|seq| seq.<span class="number">0</span>.iter().copied())
-                .collect())
-        }
-    }
-    <span class="kw">impl </span>Seq {
-        <span class="kw">pub fn </span>new(x: u32) -&gt; <span class="self">Self </span>{ <span class="self">Self</span>(<span class="macro">vec!</span>[x]) }
+<span class="kw">impl</span>&lt;M: Monoid&gt; std::fmt::Debug <span class="kw">for </span>FoldableQueue&lt;M&gt;
+<span class="kw">where
+    </span>M::Set: std::fmt::Debug,
+{
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_list()
+            .entries(<span class="self">self</span>.front.iter().rev().chain(<span class="self">self</span>.back.iter()))
+            .finish()
     }
 }
 
-<span class="attr">#[test]
-</span><span class="kw">fn </span>sanity_check() {
-    <span class="kw">use </span>op_add::OpAdd;
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>naive {
+    <span class="kw">use </span>concat_monoid::OpConcat;
 
-    <span class="kw">use </span><span class="kw">crate</span>::naive::Seq;
+    <span class="kw">use crate</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>queue = FoldableQueue::&lt;OpAdd&lt;Seq&gt;&gt;::new();
-    queue.push(Seq::new(<span class="number">1</span>));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">1</span>]));
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(Seq::new(<span class="number">1</span>)));
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>sanity_check() {
+        <span class="kw">let </span><span class="kw-2">mut </span>queue = FoldableQueue::&lt;OpConcat&lt;i32, Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;::new();
+        queue.push(<span class="macro">vec!</span>[<span class="number">1</span>]);
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">1</span>]);
+        <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="number">1</span>]));
 
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[]));
-    queue.push(Seq::new(<span class="number">1</span>));
-    queue.push(Seq::new(<span class="number">2</span>));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>]));
-    queue.push(Seq::new(<span class="number">3</span>));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]));
+        queue.push(<span class="macro">vec!</span>[<span class="number">1</span>]);
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">1</span>]);
+        queue.push(<span class="macro">vec!</span>[<span class="number">2</span>]);
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>]);
+        queue.push(<span class="macro">vec!</span>[<span class="number">3</span>]);
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]);
 
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(Seq::new(<span class="number">1</span>)));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">2</span>, <span class="number">3</span>]));
-    queue.push(Seq::new(<span class="number">4</span>));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]));
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(Seq::new(<span class="number">2</span>)));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">3</span>, <span class="number">4</span>]));
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(Seq::new(<span class="number">3</span>)));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[<span class="number">4</span>]));
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(Seq::new(<span class="number">4</span>)));
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[]));
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">None</span>);
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[]));
-    <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">None</span>);
-    <span class="macro">assert_eq!</span>(queue.fold(..), Seq(<span class="macro">vec!</span>[]));
+        <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="number">1</span>]));
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">2</span>, <span class="number">3</span>]);
+
+        queue.push(<span class="macro">vec!</span>[<span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="number">2</span>]));
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">3</span>, <span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="number">3</span>]));
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[<span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="number">4</span>]));
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[]);
+        <span class="macro">assert_eq!</span>(queue.pop(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(queue.fold(..), <span class="macro">vec!</span>[]);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_fmt() {
+        <span class="kw">let </span><span class="kw-2">mut </span>queue = FoldableQueue::&lt;OpConcat&lt;<span class="kw">_</span>, Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;::new();
+        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{queue:?}"</span>), <span class="string">"[]"</span>);
+        queue.push(<span class="macro">vec!</span>[<span class="number">1</span>]);
+        queue.push(<span class="macro">vec!</span>[<span class="number">2</span>]);
+        queue.push(<span class="macro">vec!</span>[<span class="number">3</span>]);
+        queue.push(<span class="macro">vec!</span>[<span class="number">4</span>]);
+        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{queue:?}"</span>), <span class="string">"[[1], [2], [3], [4]]"</span>);
+    }
 }
 </code></pre></div></section></main></body></html>
