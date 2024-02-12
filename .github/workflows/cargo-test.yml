@@ -20,6 +20,11 @@ jobs:
         with:
           toolchain: nightly
 
+      - name: Install Zsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install zsh
+
       - name: Run tests
         shell: zsh {0}
         run: |
