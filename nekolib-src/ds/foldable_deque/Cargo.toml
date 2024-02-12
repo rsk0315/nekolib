@@ -1,0 +1,10 @@
+[package]
+name = "foldable_deque"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+monoid = { path = "../../ops/monoid" }
+
+[dev-dependencies]
+op_add = { path = "../../ops/op_add" }
