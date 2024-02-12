@@ -7,6 +7,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["borrow",["",[],["lib.rs"]]],\
 ["bucket_sort",["",[],["lib.rs"]]],\
 ["cfg_if",["",[],["lib.rs"]]],\
+["ci_test",["",[],["lib.rs"]]],\
 ["concat_monoid",["",[],["lib.rs"]]],\
 ["corro",["",[],["lib.rs"]]],\
 ["dijkstra",["",[],["lib.rs"]]],\

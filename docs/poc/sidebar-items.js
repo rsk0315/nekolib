@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["katex_support"]};
+window.SIDEBAR_ITEMS = {"mod":["ci_test","katex_support"]};
