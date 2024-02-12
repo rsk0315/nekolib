@@ -11,6 +11,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["dijkstra",["",[],["lib.rs"]]],\
 ["discussion",["",[],["lib.rs"]]],\
 ["disjoint_set",["",[],["lib.rs"]]],\
+["divisors",["",[],["lib.rs"]]],\
 ["dp",["",[],["lib.rs"]]],\
 ["ds",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
