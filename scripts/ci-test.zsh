@@ -74,32 +74,34 @@ cargo_test "$pass_lib" "$fail_lib" "$notest_lib" '--lib --release'
 cargo_test "$pass_doc" "$fail_doc" "$notest_doc" '--doc --release'
 (( ? == 0 )) || fail=t
 
-echo '## :x: failed (`--lib`)'
-cat $fail_lib
+if [[ -s $fail_lib ]]; then
+    echo '## :x: failed (`--lib`)'
+    cat $fail_lib
+fi
 
-echo '---'
+if [[ -s $fail_doc ]]; then
+    echo '## :x: failed (`--doc`)'
+    cat $fail_doc
+fi
 
-echo '## :x: failed (`--doc`)'
-cat $fail_doc
+if [[ -s $pass_lib ]]; then
+    echo '## :sparkles: passed (`--lib`)'
+    cat $pass_lib
+fi
 
-echo '---'
+if [[ -s $pass_doc ]]; then
+    echo '## :sparkles: passed (`--doc`)'
+    cat $pass_doc
+fi
 
-echo '## :sparkles: passed (`--lib`)'
-cat $pass_lib
+if [[ -s $notest_lib ]]; then
+    echo '## :smiling_face_with_tear: not tested (`--lib`)'
+    cat $notest_lib
+fi
 
-echo '---'
-
-echo '## :sparkles: passed (`--doc`)'
-cat $pass_doc
-
-echo '---'
-
-echo '## :smiling_face_with_tear: not tested (`--lib`)'
-cat $notest_lib
-
-echo '---'
-
-echo '## :smiling_face_with_tear: not tested (`--doc`)'
-cat $notest_doc
+if [[ -s $notest_doc ]]; then
+    echo '## :smiling_face_with_tear: not tested (`--doc`)'
+    cat $notest_doc
+fi
 
 [[ "$failed" != t ]]
