@@ -12,6 +12,8 @@ fn compress_vec_bool<const W: usize>(buf: &[bool]) -> Vec<u64> {
     res
 }
 
+const W: usize = u64::BITS as usize;
+
 const LG_N: usize = 8;
 
 const LARGE: usize = LG_N * LG_N;
@@ -66,7 +68,7 @@ const fn select_lookup<
     table
 }
 
-struct RankPreprocess<const LARGE: usize, const SMALL: usize> {
+struct RankIndex<const LARGE: usize, const SMALL: usize> {
     buf: Vec<u64>,
 
     /// $`\log(n)^2`$-bit blocks.
@@ -76,7 +78,7 @@ struct RankPreprocess<const LARGE: usize, const SMALL: usize> {
     small: Vec<u16>,
 }
 
-impl<const LARGE: usize, const SMALL: usize> RankPreprocess<LARGE, SMALL> {
+impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
     // `a` should be the value returned by `compress_vec_bool::<SMALL>(_)`
     fn new(a: Vec<u64>) -> Self {
         let count: Vec<_> =
@@ -107,33 +109,36 @@ impl<const LARGE: usize, const SMALL: usize> RankPreprocess<LARGE, SMALL> {
     }
 }
 
-enum SelectPreprocessDs<const LARGE: usize, const SMALL: usize> {
+enum SelectIndexInner<const LARGE: usize, const SMALL: usize> {
     /// at least $`\log(n)^4`$-bit blocks.
     Sparse(Vec<usize>),
 
     /// less than $`\log(n)^4`$-bit blocks.
-    Dense,
+    Dense(Vec<u64>),
 }
 
-struct SelectPreprocess<const LARGE: usize, const SMALL: usize> {
-    ds: Vec<SelectPreprocessDs<LARGE, SMALL>>,
+struct SelectIndex<const LARGE: usize, const SMALL: usize> {
+    ds: Vec<SelectIndexInner<LARGE, SMALL>>,
 }
 
-impl<const LARGE: usize, const SMALL: usize> SelectPreprocessDs<LARGE, SMALL> {
+impl<const LARGE: usize, const SMALL: usize> SelectIndexInner<LARGE, SMALL> {
     fn new(a: Vec<usize>, range: RangeInclusive<usize>) -> Self {
         let start = *range.start();
-        let end = *range.end();
+        let end = *range.end() + 1;
         if end - start + 1 >= LARGE * LARGE {
-            // sparse
             Self::Sparse(a)
         } else {
-            // dense
-            todo!()
+            let len = end - start;
+            let mut tmp = vec![0_u64; (len + W - 1) / W];
+            for &ai in &a {
+                tmp[ai / W] |= 1 << (ai % W);
+            }
+            Self::Dense(tmp)
         }
     }
 }
 
-impl<const LARGE: usize, const SMALL: usize> SelectPreprocess<LARGE, SMALL> {
+impl<const LARGE: usize, const SMALL: usize> SelectIndex<LARGE, SMALL> {
     fn new<const X: bool>(a: &[bool]) -> Self {
         let n = a.len();
         let mut cur = vec![];
@@ -145,7 +150,7 @@ impl<const LARGE: usize, const SMALL: usize> SelectPreprocess<LARGE, SMALL> {
             }
             if cur.len() == LARGE || i == n - 1 {
                 let tmp = std::mem::take(&mut cur);
-                res.push(SelectPreprocessDs::new(tmp, start..=i));
+                res.push(SelectIndexInner::new(tmp, start..=i));
                 start = i + 1;
             }
         }
@@ -186,7 +191,7 @@ fn test_select_lookup() {
 fn sanity_check() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
     let b = compress_vec_bool::<3>(&a);
-    let rp = RankPreprocess::<12, 3>::new(b.clone());
+    let rp = RankIndex::<12, 3>::new(b.clone());
     for i in 0..a.len() {
         eprintln!("{i} -> {}", rp.rank1(i));
     }
