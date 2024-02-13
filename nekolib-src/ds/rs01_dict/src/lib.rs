@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::ops::{Range, RangeInclusive};
 
 fn compress_vec_bool<const W: usize>(buf: &[bool]) -> Vec<u64> {
     let n = buf.len();
@@ -16,8 +16,13 @@ const LG_N: usize = 8;
 
 const LARGE: usize = LG_N * LG_N;
 const SMALL: usize = LG_N / 2;
-const RANK_LOOKUP: [[u16; SMALL]; 1 << SMALL] = {
-    let mut table = [[0; SMALL]; 1 << SMALL];
+const POW2_SMALL: usize = 1 << SMALL;
+const RANK_LOOKUP: [[u16; SMALL]; POW2_SMALL] =
+    rank_lookup::<SMALL, POW2_SMALL>();
+
+const fn rank_lookup<const SMALL: usize, const POW2_SMALL: usize>()
+-> [[u16; SMALL]; POW2_SMALL] {
+    let mut table = [[0; SMALL]; POW2_SMALL];
     let mut i = 0;
     while i < (1 << SMALL) {
         table[i][0] = (i & 1) as u16;
@@ -29,7 +34,7 @@ const RANK_LOOKUP: [[u16; SMALL]; 1 << SMALL] = {
         i += 1;
     }
     table
-};
+}
 
 struct RankPreprocess<const LARGE: usize, const SMALL: usize> {
     buf: Vec<u64>,
@@ -128,15 +133,17 @@ macro_rules! bitvec {
 }
 
 #[test]
-fn rank_lookup() {
-    assert_eq!(&RANK_LOOKUP[0b000][0..3], [0, 0, 0]);
-    assert_eq!(&RANK_LOOKUP[0b100][0..3], [0, 0, 1]);
-    assert_eq!(&RANK_LOOKUP[0b010][0..3], [0, 1, 1]);
-    assert_eq!(&RANK_LOOKUP[0b110][0..3], [0, 1, 2]);
-    assert_eq!(&RANK_LOOKUP[0b001][0..3], [1, 1, 1]);
-    assert_eq!(&RANK_LOOKUP[0b101][0..3], [1, 1, 2]);
-    assert_eq!(&RANK_LOOKUP[0b011][0..3], [1, 2, 2]);
-    assert_eq!(&RANK_LOOKUP[0b111][0..3], [1, 2, 3]);
+fn test_rank_lookup() {
+    let table = rank_lookup::<3, 8>();
+
+    assert_eq!(&table[0b000][0..3], [0, 0, 0]);
+    assert_eq!(&table[0b100][0..3], [0, 0, 1]);
+    assert_eq!(&table[0b010][0..3], [0, 1, 1]);
+    assert_eq!(&table[0b110][0..3], [0, 1, 2]);
+    assert_eq!(&table[0b001][0..3], [1, 1, 1]);
+    assert_eq!(&table[0b101][0..3], [1, 1, 2]);
+    assert_eq!(&table[0b011][0..3], [1, 2, 2]);
+    assert_eq!(&table[0b111][0..3], [1, 2, 3]);
 }
 
 #[test]
