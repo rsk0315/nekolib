@@ -109,12 +109,36 @@ impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
     }
 }
 
+struct SimpleBitVec {
+    buf: Vec<u64>,
+    len: usize,
+}
+
+impl From<(Vec<u64>, usize)> for SimpleBitVec {
+    fn from((buf, len): (Vec<u64>, usize)) -> Self { Self { buf, len } }
+}
+
+impl SimpleBitVec {
+    fn new() -> Self { Self { buf: vec![], len: 0 } }
+
+    fn len(&self) -> usize { self.len }
+
+    fn get(&self, Range { start, end }: Range<usize>) -> u64 {
+        assert!(end - start <= 64);
+        todo!();
+    }
+
+    fn push(&mut self, w: u64, len: usize) { todo!() }
+
+    fn push_vec(&mut self, other: Self) { todo!() }
+}
+
 enum SelectIndexInner<const LARGE: usize, const SMALL: usize> {
     /// at least $`\log(n)^4`$-bit blocks.
     Sparse(Vec<usize>),
 
     /// less than $`\log(n)^4`$-bit blocks.
-    Dense(Vec<u64>),
+    Dense(SimpleBitVec),
 }
 
 struct SelectIndex<const LARGE: usize, const SMALL: usize> {
@@ -130,11 +154,47 @@ impl<const LARGE: usize, const SMALL: usize> SelectIndexInner<LARGE, SMALL> {
         } else {
             let len = end - start;
             let mut tmp = vec![0_u64; (len + W - 1) / W];
-            for &ai in &a {
+            for ai in a.iter().map(|&ai| ai - start) {
                 tmp[ai / W] |= 1 << (ai % W);
             }
-            Self::Dense(tmp)
+            Self::new_dense(tmp, len)
         }
+    }
+    fn new_dense(a: Vec<u64>, len: usize) -> Self {
+        let a = SimpleBitVec::from((a, len));
+        let leaf = {
+            let mut leaf = SimpleBitVec::new();
+            for i in 0..(len + SMALL - 1) / SMALL {
+                let w = a.get(i..i + SMALL);
+                leaf.push(RANK_LOOKUP[w as usize][SMALL - 1] as u64, SMALL);
+            }
+            leaf
+        };
+
+        let mut tree = vec![];
+        let mut last = leaf;
+        let branch = 3; // FIXME
+        let lg2_large = LARGE.trailing_zeros() as usize; // FIXME
+        while last.len() > lg2_large {
+            let mut cur = SimpleBitVec::new();
+            let child = branch * lg2_large;
+            for i in 0..(last.len() + child - 1) / child {
+                let mut sum = 0;
+                let upper = last.len().min(i + child);
+                for j in (i..upper).step_by(lg2_large) {
+                    sum += last.get(j..j + lg2_large);
+                }
+                cur.push(sum, lg2_large);
+            }
+            tree.push(last);
+            last = cur;
+        }
+
+        let mut res = SimpleBitVec::new();
+        while let Some(level) = tree.pop() {
+            res.push_vec(level);
+        }
+        Self::Dense(res)
     }
 }
 
