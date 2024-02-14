@@ -22,6 +22,22 @@ const POW2_SMALL: usize = 1 << LEAF_LEN;
 const RANK_LOOKUP: [[u16; LEAF_LEN]; POW2_SMALL] =
     rank_lookup::<LEAF_LEN, POW2_SMALL>();
 
+const SELECT_BRANCH: usize = 3;
+const SELECT_POPCNT: usize = 9;
+const SELECT_LG2_POPCNT: usize = 4;
+const SELECT_BIT_PATTERNS: usize = 1 << (SELECT_LG2_POPCNT * SELECT_BRANCH);
+const SELECT_LEAF_LEN: usize = 3;
+const SELECT_POW2_LEAF_LEN: usize = 1 << SELECT_LEAF_LEN;
+const SELECT_LOOKUP_TREE: [[(u16, u16); SELECT_POPCNT]; SELECT_BIT_PATTERNS] =
+    select_lookup_tree::<
+        SELECT_BIT_PATTERNS,
+        SELECT_BRANCH,
+        SELECT_POPCNT,
+        SELECT_LG2_POPCNT,
+    >();
+const SELECT_LOOKUP_WORD: [[u16; SELECT_LEAF_LEN]; 1 << SELECT_LEAF_LEN] =
+    select_lookup_word::<SELECT_POW2_LEAF_LEN, SELECT_LEAF_LEN>();
+
 const fn rank_lookup<
     const MAX_LEN: usize,      // log(n)/2
     const BIT_PATTERNS: usize, // sqrt(n)
@@ -40,13 +56,13 @@ const fn rank_lookup<
     table
 }
 
-const fn select_lookup<
+const fn select_lookup_tree<
     const BIT_PATTERNS: usize, // 2^(branch * large)
     const BRANCH: usize,       // sqrt(log(n))
-    const MAX_ONES: usize,     // log(n)^2
-    const LG2_MAX_ONES: usize, // O(log(log(n)))
->() -> [[u16; MAX_ONES]; BIT_PATTERNS] {
-    let mut table = [[0; MAX_ONES]; BIT_PATTERNS];
+    const POPCNT: usize,       // log(n)^2
+    const LG2_POPCNT: usize,   // O(log(log(n)))
+>() -> [[(u16, u16); POPCNT]; BIT_PATTERNS] {
+    let mut table = [[(0, 0); POPCNT]; BIT_PATTERNS];
     let mut i = 0;
     while i < BIT_PATTERNS {
         let mut j = 0;
@@ -54,12 +70,33 @@ const fn select_lookup<
         while j < BRANCH {
             // [0011, 0100, 0010] (0b_0010_0100_0011)
             // [0, 0, 0, 1, 1, 1, 1, 2, 2, 3, ...]
-            let count = i >> (j * LG2_MAX_ONES) & !(!0 << LG2_MAX_ONES);
+            let count = i >> (j * LG2_POPCNT) & !(!0 << LG2_POPCNT);
             let mut k = 0;
-            while k < count && index < MAX_ONES {
-                table[i][index] = j as u16;
+            while k < count && index < POPCNT {
+                table[i][index] = (j as u16, (index - k) as u16);
                 index += 1;
                 k += 1;
+            }
+            j += 1;
+        }
+        i += 1;
+    }
+    table
+}
+
+const fn select_lookup_word<
+    const BIT_PATTERNS: usize, // 2^leaflen
+    const LEAF_LEN: usize,     // log(n)/2
+>() -> [[u16; LEAF_LEN]; BIT_PATTERNS] {
+    let mut table = [[0; LEAF_LEN]; BIT_PATTERNS];
+    let mut i = 0;
+    while i < BIT_PATTERNS {
+        let mut j = 0;
+        let mut count = 0;
+        while j < LEAF_LEN {
+            if i >> j & 1 != 0 {
+                table[i][count] = j as u16;
+                count += 1;
             }
             j += 1;
         }
@@ -198,7 +235,7 @@ enum SelectIndexInner<
     Sparse(Vec<usize>),
 
     /// less than $`\log(n)^4`$-bit blocks.
-    Dense(SimpleBitVec),
+    Dense(Vec<SimpleBitVec>, SimpleBitVec),
 }
 
 struct SelectIndex<
@@ -262,13 +299,37 @@ impl<
             tree.push(tmp);
             last = cur;
         }
-        tree.push(last);
+        tree.reverse();
+        Self::Dense(tree, a)
+    }
 
-        let mut res = SimpleBitVec::new();
-        while let Some(level) = tree.pop() {
-            res.push_vec(level);
+    fn select(&self, i: usize) -> usize {
+        match self {
+            Self::Sparse(index) => index[i],
+            Self::Dense(tree, buf) => {
+                let mut i = i;
+                let mut cur = 0;
+                let mut off = 0;
+                let len = LG2_POPCNT * BRANCH;
+                for level in tree {
+                    let w = level.get(cur..level.len().min(cur + len)) as usize;
+                    // eprintln!("range: {:?}, {w:01$b}", cur..cur + len, len);
+                    let (br, count) = SELECT_LOOKUP_TREE[w][i];
+                    // eprintln!(" -> {:?}", (br, count));
+                    cur = (cur + LG2_POPCNT * br as usize) * BRANCH;
+                    off = off * BRANCH + br as usize;
+                    i -= count as usize;
+                }
+                // eprintln!("cur: {cur}, i: {i}");
+
+                let start = cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
+                let end = start + LEAF_LEN;
+                let leaf = buf.get(start..end);
+                // eprintln!("{leaf:00$b}", LEAF_LEN);
+
+                off * LEAF_LEN + SELECT_LOOKUP_WORD[leaf as usize][i] as usize
+            }
         }
-        Self::Dense(res)
     }
 }
 
@@ -297,6 +358,10 @@ impl<
         }
         Self { ds: res }
     }
+
+    fn select(&self, i: usize) -> usize {
+        self.ds[i / POPCNT].select(i % POPCNT)
+    }
 }
 
 macro_rules! bitvec {
@@ -324,8 +389,10 @@ fn test_rank_lookup() {
 
 #[test]
 fn test_select_lookup() {
-    let table = select_lookup::<4096, 3, 16, 4>();
-    assert_eq!(&table[0b_0010_0100_0011][0..9], [0, 0, 0, 1, 1, 1, 1, 2, 2]);
+    let table = select_lookup_tree::<4096, 3, 16, 4>();
+    let tmp: [_; 9] = table[0b_0010_0100_0011][0..9].try_into().unwrap();
+    assert_eq!(tmp.map(|x| x.0), [0, 0, 0, 1, 1, 1, 1, 2, 2]);
+    assert_eq!(tmp.map(|x| x.1), [0, 0, 0, 3, 3, 3, 3, 7, 7]);
 }
 
 #[test]
@@ -334,7 +401,7 @@ fn sanity_check_rank() {
     let b = compress_vec_bool::<3>(&a);
     let rp = RankIndex::<12, 3>::new(b.clone());
     for i in 0..a.len() {
-        eprintln!("{i} -> {}", rp.rank1(i));
+        eprintln!("rank({i}) -> {}", rp.rank1(i));
     }
 }
 
@@ -342,4 +409,15 @@ fn sanity_check_rank() {
 fn sanity_check_select() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
     let sp = SelectIndex::<12, 4, 3, 100, 3>::new::<true>(&a);
+    for i in 0..SELECT_POW2_LEAF_LEN {
+        for j in 0..SELECT_LEAF_LEN {
+            eprintln!(
+                "table[{i:00$b}][{j}] = {1}",
+                SELECT_LEAF_LEN, SELECT_LOOKUP_WORD[i][j]
+            );
+        }
+    }
+    for i in 0..9 {
+        eprintln!("select({i}) -> {}", sp.select(i));
+    }
 }
