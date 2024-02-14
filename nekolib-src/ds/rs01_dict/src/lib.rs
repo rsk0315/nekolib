@@ -17,10 +17,10 @@ const W: usize = u64::BITS as usize;
 const LG_N: usize = 8;
 
 const LARGE: usize = LG_N * LG_N;
-const SMALL: usize = LG_N / 2;
-const POW2_SMALL: usize = 1 << SMALL;
-const RANK_LOOKUP: [[u16; SMALL]; POW2_SMALL] =
-    rank_lookup::<SMALL, POW2_SMALL>();
+const LEAF_LEN: usize = LG_N / 2;
+const POW2_SMALL: usize = 1 << LEAF_LEN;
+const RANK_LOOKUP: [[u16; LEAF_LEN]; POW2_SMALL] =
+    rank_lookup::<LEAF_LEN, POW2_SMALL>();
 
 const fn rank_lookup<
     const MAX_LEN: usize,      // log(n)/2
@@ -109,6 +109,7 @@ impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct SimpleBitVec {
     buf: Vec<u64>,
     len: usize,
@@ -122,18 +123,77 @@ impl SimpleBitVec {
     fn new() -> Self { Self { buf: vec![], len: 0 } }
 
     fn len(&self) -> usize { self.len }
+    fn is_empty(&self) -> bool { self.len == 0 }
 
     fn get(&self, Range { start, end }: Range<usize>) -> u64 {
         assert!(end - start <= 64);
-        todo!();
+        assert!(end <= self.len);
+
+        let mask = !(!0 << (end - start));
+        if start == end {
+            0
+        } else if start % W == 0 {
+            self.buf[start / W] & mask
+        } else if end <= (start / W + 1) * W {
+            self.buf[start / W] >> (start % W) & mask
+        } else {
+            (self.buf[start / W] >> (start % W)
+                | self.buf[end / W] << (W - start % W))
+                & mask
+        }
     }
 
-    fn push(&mut self, w: u64, len: usize) { todo!() }
+    fn push(&mut self, w: u64, len: usize) {
+        assert!(
+            len == 0 || w & (!0 << len) == 0,
+            "w: {:064b}, len: {}",
+            w,
+            len
+        );
 
-    fn push_vec(&mut self, other: Self) { todo!() }
+        if len == 0 {
+            // nothing to do
+        } else if self.len % W == 0 {
+            // including the case `self.buf.is_empty()`
+            self.buf.push(w);
+        } else {
+            self.buf[self.len / W] |= w << (self.len % W);
+            if self.len % W + len > W {
+                self.buf.push(w >> (W - self.len % W));
+            }
+        }
+        self.len += len;
+    }
+
+    fn push_vec(&mut self, mut other: Self) {
+        if other.is_empty() {
+            // nothing to do
+        } else if self.len % W == 0 {
+            self.buf.append(&mut other.buf);
+            self.len += other.len;
+        } else {
+            // `self.len` is updated in `self.push(..)`
+            for &w in &other.buf[..other.len / W] {
+                self.push(w, W);
+            }
+            self.push(other.buf[other.len / W], other.len % W);
+        }
+    }
+
+    fn chunks(&self, size: usize) -> impl Iterator<Item = u64> + '_ {
+        (0..self.len)
+            .step_by(size)
+            .map(move |i| self.get(i..self.len.min(i + size)))
+    }
 }
 
-enum SelectIndexInner<const LARGE: usize, const SMALL: usize> {
+enum SelectIndexInner<
+    const POPCNT: usize,
+    const LG2_POPCNT: usize,
+    const LEAF_LEN: usize,
+    const SPARSE: usize,
+    const BRANCH: usize,
+> {
     /// at least $`\log(n)^4`$-bit blocks.
     Sparse(Vec<usize>),
 
@@ -141,15 +201,28 @@ enum SelectIndexInner<const LARGE: usize, const SMALL: usize> {
     Dense(SimpleBitVec),
 }
 
-struct SelectIndex<const LARGE: usize, const SMALL: usize> {
-    ds: Vec<SelectIndexInner<LARGE, SMALL>>,
+struct SelectIndex<
+    const POPCNT: usize,
+    const LG2_POPCNT: usize,
+    const LEAF_LEN: usize,
+    const SPARSE: usize,
+    const BRANCH: usize,
+> {
+    ds: Vec<SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE, BRANCH>>,
 }
 
-impl<const LARGE: usize, const SMALL: usize> SelectIndexInner<LARGE, SMALL> {
+impl<
+    const POPCNT: usize,
+    const LG2_POPCNT: usize,
+    const LEAF_LEN: usize,
+    const SPARSE: usize,
+    const BRANCH: usize,
+> SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE, BRANCH>
+{
     fn new(a: Vec<usize>, range: RangeInclusive<usize>) -> Self {
         let start = *range.start();
         let end = *range.end() + 1;
-        if end - start + 1 >= LARGE * LARGE {
+        if end - start + 1 >= SPARSE {
             Self::Sparse(a)
         } else {
             let len = end - start;
@@ -164,31 +237,32 @@ impl<const LARGE: usize, const SMALL: usize> SelectIndexInner<LARGE, SMALL> {
         let a = SimpleBitVec::from((a, len));
         let leaf = {
             let mut leaf = SimpleBitVec::new();
-            for i in 0..(len + SMALL - 1) / SMALL {
-                let w = a.get(i..i + SMALL);
-                leaf.push(RANK_LOOKUP[w as usize][SMALL - 1] as u64, SMALL);
+            for i in 0..(len + LEAF_LEN - 1) / LEAF_LEN {
+                let w = a.get(i * LEAF_LEN..(i + 1) * LEAF_LEN);
+                leaf.push(
+                    RANK_LOOKUP[w as usize][LEAF_LEN - 1] as u64,
+                    LG2_POPCNT,
+                );
             }
             leaf
         };
 
         let mut tree = vec![];
         let mut last = leaf;
-        let branch = 3; // FIXME
-        let lg2_large = LARGE.trailing_zeros() as usize; // FIXME
-        while last.len() > lg2_large {
+        while last.len() > LG2_POPCNT {
             let mut cur = SimpleBitVec::new();
-            let child = branch * lg2_large;
-            for i in 0..(last.len() + child - 1) / child {
-                let mut sum = 0;
-                let upper = last.len().min(i + child);
-                for j in (i..upper).step_by(lg2_large) {
-                    sum += last.get(j..j + lg2_large);
+            let tmp = last;
+            {
+                let mut it = tmp.chunks(LG2_POPCNT);
+                while let Some(mut sum) = it.next() {
+                    sum += (1..BRANCH).filter_map(|_| it.next()).sum::<u64>();
+                    cur.push(sum, LG2_POPCNT);
                 }
-                cur.push(sum, lg2_large);
             }
-            tree.push(last);
+            tree.push(tmp);
             last = cur;
         }
+        tree.push(last);
 
         let mut res = SimpleBitVec::new();
         while let Some(level) = tree.pop() {
@@ -198,7 +272,14 @@ impl<const LARGE: usize, const SMALL: usize> SelectIndexInner<LARGE, SMALL> {
     }
 }
 
-impl<const LARGE: usize, const SMALL: usize> SelectIndex<LARGE, SMALL> {
+impl<
+    const POPCNT: usize,
+    const LG2_POPCNT: usize,
+    const LEAF_LEN: usize,
+    const SPARSE: usize,
+    const BRANCH: usize,
+> SelectIndex<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE, BRANCH>
+{
     fn new<const X: bool>(a: &[bool]) -> Self {
         let n = a.len();
         let mut cur = vec![];
@@ -208,7 +289,7 @@ impl<const LARGE: usize, const SMALL: usize> SelectIndex<LARGE, SMALL> {
             if a[i] == X {
                 cur.push(i);
             }
-            if cur.len() == LARGE || i == n - 1 {
+            if cur.len() == POPCNT || i == n - 1 {
                 let tmp = std::mem::take(&mut cur);
                 res.push(SelectIndexInner::new(tmp, start..=i));
                 start = i + 1;
@@ -248,11 +329,17 @@ fn test_select_lookup() {
 }
 
 #[test]
-fn sanity_check() {
+fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
     let b = compress_vec_bool::<3>(&a);
     let rp = RankIndex::<12, 3>::new(b.clone());
     for i in 0..a.len() {
         eprintln!("{i} -> {}", rp.rank1(i));
     }
+}
+
+#[test]
+fn sanity_check_select() {
+    let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
+    let sp = SelectIndex::<12, 4, 3, 100, 3>::new::<true>(&a);
 }
