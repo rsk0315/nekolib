@@ -181,12 +181,7 @@ impl SimpleBitVec {
     }
 
     fn push(&mut self, w: u64, len: usize) {
-        assert!(
-            len == 0 || w & (!0 << len) == 0,
-            "w: {:064b}, len: {}",
-            w,
-            len
-        );
+        assert!(len == 0 || w & (!0 << len) == 0);
 
         if len == 0 {
             // nothing to do
@@ -313,19 +308,15 @@ impl<
                 let len = LG2_POPCNT * BRANCH;
                 for level in tree {
                     let w = level.get(cur..level.len().min(cur + len)) as usize;
-                    // eprintln!("range: {:?}, {w:01$b}", cur..cur + len, len);
                     let (br, count) = SELECT_LOOKUP_TREE[w][i];
-                    // eprintln!(" -> {:?}", (br, count));
                     cur = (cur + LG2_POPCNT * br as usize) * BRANCH;
                     off = off * BRANCH + br as usize;
                     i -= count as usize;
                 }
-                // eprintln!("cur: {cur}, i: {i}");
 
                 let start = cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
                 let end = start + LEAF_LEN;
                 let leaf = buf.get(start..end);
-                // eprintln!("{leaf:00$b}", LEAF_LEN);
 
                 off * LEAF_LEN + SELECT_LOOKUP_WORD[leaf as usize][i] as usize
             }
@@ -400,24 +391,20 @@ fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
     let b = compress_vec_bool::<3>(&a);
     let rp = RankIndex::<12, 3>::new(b.clone());
-    for i in 0..a.len() {
-        eprintln!("rank({i}) -> {}", rp.rank1(i));
-    }
+    let expected = [
+        0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
+        9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
+    ];
+    let actual: Vec<_> = (0..a.len()).map(|i| rp.rank1(i)).collect();
+    assert_eq!(actual, expected);
 }
 
 #[test]
 fn sanity_check_select() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
+    let ones = a.iter().filter(|&&x| x).count();
     let sp = SelectIndex::<12, 4, 3, 100, 3>::new::<true>(&a);
-    for i in 0..SELECT_POW2_LEAF_LEN {
-        for j in 0..SELECT_LEAF_LEN {
-            eprintln!(
-                "table[{i:00$b}][{j}] = {1}",
-                SELECT_LEAF_LEN, SELECT_LOOKUP_WORD[i][j]
-            );
-        }
-    }
-    for i in 0..9 {
-        eprintln!("select({i}) -> {}", sp.select(i));
-    }
+    let expected = [4, 6, 7, 12, 13, 14, 17, 22, 23];
+    let actual: Vec<_> = (0..ones).map(|i| sp.select(i)).collect();
+    assert_eq!(actual, expected);
 }
