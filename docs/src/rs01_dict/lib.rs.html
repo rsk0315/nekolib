@@ -842,9 +842,59 @@
 <a href="#617" id="617">617</a>
 <a href="#618" id="618">618</a>
 <a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::{Range, RangeInclusive};
 
-<span class="kw">pub struct </span>Rs01Dict&lt;
+<span class="kw">const </span>RANK_BLOCK: usize = <span class="number">64</span>;
+<span class="kw">const </span>RANK_POPCNT: usize = <span class="number">16</span>;
+<span class="kw">const </span>RANK_BIT_PATTERNS: usize = <span class="number">1 </span>&lt;&lt; RANK_POPCNT;
+
+<span class="kw">const </span>SELECT_LG2_POPCNT: usize = <span class="number">3</span>;
+<span class="kw">const </span>SELECT_POPCNT: usize = !(!<span class="number">0 </span>&lt;&lt; SELECT_LG2_POPCNT);
+<span class="kw">const </span>SELECT_LEAF_LEN: usize = <span class="number">12</span>;
+<span class="kw">const </span>SELECT_POW2_LEAF_LEN: usize = <span class="number">1 </span>&lt;&lt; SELECT_LEAF_LEN;
+<span class="kw">const </span>SELECT_SPARSE_LEN: usize = <span class="number">27648</span>;
+<span class="kw">const </span>SELECT_BRANCH: usize = <span class="number">4</span>;
+<span class="kw">const </span>SELECT_BIT_PATTERNS: usize = <span class="number">1 </span>&lt;&lt; (SELECT_BRANCH * SELECT_LG2_POPCNT);
+
+<span class="kw">pub type </span>Rs01Dict = Rs01DictParam&lt;
+    RANK_BIT_PATTERNS,
+    RANK_BLOCK,
+    RANK_POPCNT,
+    SELECT_BIT_PATTERNS,
+    SELECT_POPCNT,
+    SELECT_LG2_POPCNT,
+    SELECT_LEAF_LEN,
+    SELECT_POW2_LEAF_LEN,
+    SELECT_SPARSE_LEN,
+    SELECT_BRANCH,
+&gt;;
+
+<span class="kw">pub struct </span>Rs01DictParam&lt;
     <span class="kw">const </span>RANK_BIT_PATTERNS: usize,
     <span class="kw">const </span>RANK_LARGE: usize,
     <span class="kw">const </span>RANK_POPCNT: usize,
@@ -890,7 +940,7 @@
     <span class="kw">const </span>SELECT_SPARSE_LEN: usize,
     <span class="kw">const </span>SELECT_BRANCH: usize,
 &gt;
-    Rs01Dict&lt;
+    Rs01DictParam&lt;
         RANK_BIT_PATTERNS,
         RANK_LARGE,
         RANK_POPCNT,
@@ -1422,7 +1472,7 @@
 <span class="attr">#[test]
 </span><span class="kw">fn </span>sanity_check_rank() {
     <span class="kw">let </span>a = <span class="macro">bitvec!</span>(<span class="string">b"000 010 110 000; 111 001 000 011; 000 000 010 010"</span>);
-    <span class="kw">let </span>rs = Rs01Dict::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;::new(<span class="kw-2">&amp;</span>a);
+    <span class="kw">let </span>rs = Rs01DictParam::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;::new(<span class="kw-2">&amp;</span>a);
     <span class="kw">let </span>expected = [
         <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>,
         <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">10</span>, <span class="number">10</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">11</span>,
@@ -1435,7 +1485,7 @@
 </span><span class="kw">fn </span>sanity_check_select() {
     <span class="kw">let </span>a = <span class="macro">bitvec!</span>(<span class="string">b"000 010 110; 000 111 001; 000 011 000"</span>);
     <span class="kw">let </span>ones = a.iter().filter(|&amp;&amp;x| x).count();
-    <span class="kw">let </span>rs = Rs01Dict::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;::new(<span class="kw-2">&amp;</span>a);
+    <span class="kw">let </span>rs = Rs01DictParam::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;::new(<span class="kw-2">&amp;</span>a);
     <span class="kw">let </span>expected = [<span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">12</span>, <span class="number">13</span>, <span class="number">14</span>, <span class="number">17</span>, <span class="number">22</span>, <span class="number">23</span>];
     <span class="kw">let </span>actual: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..ones).map(|i| rs.select1(i)).collect();
     <span class="macro">assert_eq!</span>(actual, expected);
@@ -1443,7 +1493,7 @@
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>bench() {
-    <span class="kw">type </span>Rs = Rs01Dict&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;;
+    <span class="kw">type </span>Rs = Rs01DictParam&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;;
 
     <span class="macro">eprintln!</span>(<span class="string">"{:?}"</span>, <span class="kw-2">&amp;</span>RankIndex::&lt;<span class="number">8</span>, <span class="number">0</span>, <span class="number">3</span>&gt;::WORD[<span class="number">0</span>]);
 
