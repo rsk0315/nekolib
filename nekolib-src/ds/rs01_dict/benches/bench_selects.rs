@@ -1,34 +1,41 @@
 use criterion::{
     black_box, criterion_group, criterion_main, BenchmarkId, Criterion,
 };
-use rs01_dict::{select_word, SelectIndex};
+use rs01_dict::{select_word, Rs01Dict};
+
+const LG2_POPCNT: usize = 3;
+const POPCNT: usize = !(!0 << LG2_POPCNT);
+const LEAF_LEN: usize = 12;
+const POW2_LEAF_LEN: usize = 1 << LEAF_LEN;
+const SPARSE_LEN: usize = 10000; // we test dense cases
+const BRANCH: usize = 4;
+const BIT_PATTERNS: usize = 1 << (BRANCH * LG2_POPCNT);
+
+type Rs = Rs01Dict<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>;
+
+// type Rs = Rs01Dict<
+//     4096,
+//     12,
+//     3,
+//     BIT_PATTERNS,
+//     POPCNT,
+//     LG2_POPCNT,
+//     LEAF_LEN,
+//     POW2_LEAF_LEN,
+//     SPARSE_LEN,
+//     BRANCH,
+// >;
 
 fn bench_selects(c: &mut Criterion) {
-    const LG2_POPCNT: usize = 3;
-    const POPCNT: usize = !(!0 << LG2_POPCNT);
-    const LEAF_LEN: usize = 12;
-    const POW2_LEAF_LEN: usize = 1 << LEAF_LEN;
-    const SPARSE_LEN: usize = 10000; // we test dense cases
-    const BRANCH: usize = 4;
-    const BIT_PATTERNS: usize = 1 << (BRANCH * LG2_POPCNT);
-
     let w = 0x_3046_2FB7_58C1_EDA9_u64;
     let a: Vec<_> = (0..64).map(|i| w >> i & 1 != 0).collect();
 
-    let slt = SelectIndex::<
-        BIT_PATTERNS,
-        POPCNT,
-        LG2_POPCNT,
-        LEAF_LEN,
-        POW2_LEAF_LEN,
-        SPARSE_LEN,
-        BRANCH,
-    >::new::<true>(&a);
+    let rs = Rs::new(&a);
 
     let mut group = c.benchmark_group("select");
 
     for i in 0..32 {
-        let actual = slt.select(i) as u32;
+        let actual = rs.select1(i) as u32;
         let expected = select_word::<true>(w, i as _);
         assert_eq!(expected, actual);
     }
@@ -37,7 +44,7 @@ fn bench_selects(c: &mut Criterion) {
         .bench_function(BenchmarkId::new("index", w), |b| {
             b.iter(|| {
                 for i in 0..32 {
-                    black_box(slt.select(i));
+                    black_box(rs.select1(i));
                 }
             })
         })
@@ -189,35 +196,17 @@ fn bench_selects(c: &mut Criterion) {
     let a: Vec<_> =
         a.iter().flat_map(|&w| (0..64).map(move |i| w >> i & 1 != 0)).collect();
 
-    let slt1 = SelectIndex::<
-        BIT_PATTERNS,
-        POPCNT,
-        LG2_POPCNT,
-        LEAF_LEN,
-        POW2_LEAF_LEN,
-        SPARSE_LEN,
-        BRANCH,
-    >::new::<true>(&a);
+    let rs = Rs::new(&a);
 
     let expected: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
-    let actual: Vec<_> = (0..expected.len()).map(|i| slt1.select(i)).collect();
+    let actual: Vec<_> = (0..expected.len()).map(|i| rs.select1(i)).collect();
     assert_eq!(actual, expected);
 
     let count1 = expected.len();
     eprintln!("count1: {count1}");
 
-    let slt0 = SelectIndex::<
-        BIT_PATTERNS,
-        POPCNT,
-        LG2_POPCNT,
-        LEAF_LEN,
-        POW2_LEAF_LEN,
-        SPARSE_LEN,
-        BRANCH,
-    >::new::<false>(&a);
-
     let expected: Vec<_> = (0..a.len()).filter(|&i| !a[i]).collect();
-    let actual: Vec<_> = (0..expected.len()).map(|i| slt0.select(i)).collect();
+    let actual: Vec<_> = (0..expected.len()).map(|i| rs.select0(i)).collect();
     assert_eq!(actual, expected);
 
     let count0 = expected.len();
@@ -227,14 +216,14 @@ fn bench_selects(c: &mut Criterion) {
         .bench_function(BenchmarkId::new("index", 1), |b| {
             b.iter(|| {
                 for i in 0..count1 {
-                    black_box(slt1.select(i));
+                    black_box(rs.select1(i));
                 }
             })
         })
         .bench_function(BenchmarkId::new("index", 0), |b| {
             b.iter(|| {
                 for i in 0..count0 {
-                    black_box(slt0.select(i));
+                    black_box(rs.select0(i));
                 }
             })
         });

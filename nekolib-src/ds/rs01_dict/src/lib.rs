@@ -34,6 +34,69 @@ pub struct Rs01Dict<
     >,
 }
 
+impl<
+    const RANK_BIT_PATTERNS: usize,
+    const RANK_LARGE: usize,
+    const RANK_POPCNT: usize,
+    const SELECT_BIT_PATTERNS: usize,
+    const SELECT_POPCNT: usize,
+    const SELECT_LG2_POPCNT: usize,
+    const SELECT_LEAF_LEN: usize,
+    const SELECT_POW2_LEAF_LEN: usize,
+    const SELECT_SPARSE_LEN: usize,
+    const SELECT_BRANCH: usize,
+>
+    Rs01Dict<
+        RANK_BIT_PATTERNS,
+        RANK_LARGE,
+        RANK_POPCNT,
+        SELECT_BIT_PATTERNS,
+        SELECT_POPCNT,
+        SELECT_LG2_POPCNT,
+        SELECT_LEAF_LEN,
+        SELECT_POW2_LEAF_LEN,
+        SELECT_SPARSE_LEN,
+        SELECT_BRANCH,
+    >
+{
+    pub fn new(a: &[bool]) -> Self {
+        let buf = SimpleBitVec::from(a);
+        let rank_index =
+            RankIndex::<RANK_BIT_PATTERNS, RANK_LARGE, RANK_POPCNT>::new(&buf);
+        let select1_index = SelectIndex::<
+            SELECT_BIT_PATTERNS,
+            SELECT_POPCNT,
+            SELECT_LG2_POPCNT,
+            SELECT_LEAF_LEN,
+            SELECT_POW2_LEAF_LEN,
+            SELECT_SPARSE_LEN,
+            SELECT_BRANCH,
+        >::new::<true>(a, &buf);
+        let select0_index = SelectIndex::<
+            SELECT_BIT_PATTERNS,
+            SELECT_POPCNT,
+            SELECT_LG2_POPCNT,
+            SELECT_LEAF_LEN,
+            SELECT_POW2_LEAF_LEN,
+            SELECT_SPARSE_LEN,
+            SELECT_BRANCH,
+        >::new::<false>(a, &buf);
+        Self { buf, rank_index, select1_index, select0_index }
+    }
+
+    pub fn rank1(&self, i: usize) -> usize {
+        self.rank_index.rank(i, &self.buf)
+    }
+    pub fn rank0(&self, i: usize) -> usize { i + 1 - self.rank1(i) }
+
+    pub fn select1(&self, i: usize) -> usize {
+        self.select1_index.select::<true>(i, &self.buf)
+    }
+    pub fn select0(&self, i: usize) -> usize {
+        self.select0_index.select::<false>(i, &self.buf)
+    }
+}
+
 trait RankLookup<
     const BIT_PATTERNS: usize,
     const LARGE: usize,
@@ -49,18 +112,6 @@ impl<const BIT_PATTERNS: usize, const LARGE: usize, const POPCNT: usize>
 {
     const WORD: [[u16; POPCNT]; BIT_PATTERNS] =
         rank_lookup::<POPCNT, BIT_PATTERNS>();
-}
-
-fn compress_vec_bool<const W: usize>(buf: &[bool]) -> Vec<u64> {
-    let n = buf.len();
-    let len = (n + W - 1) / W;
-    let mut res = vec![0; len];
-    for i in 0..n {
-        if buf[i] {
-            res[i / W] |= 1 << (i % W);
-        }
-    }
-    res
 }
 
 const W: usize = u64::BITS as usize;
@@ -137,8 +188,6 @@ pub struct RankIndex<
     const LARGE: usize,
     const POPCNT: usize,
 > {
-    buf: Vec<u64>,
-
     /// $`\log(n)^2`$-bit blocks.
     large: Vec<u16>,
 
@@ -149,10 +198,11 @@ pub struct RankIndex<
 impl<const BIT_PATTERNS: usize, const LARGE: usize, const POPCNT: usize>
     RankIndex<BIT_PATTERNS, LARGE, POPCNT>
 {
-    // `a` should be the value returned by `compress_vec_bool::<SMALL>(_)`
-    pub fn new(a: Vec<u64>) -> Self {
-        let count: Vec<_> =
-            a.iter().map(|&ai| Self::WORD[ai as usize][POPCNT - 1]).collect();
+    fn new(a: &SimpleBitVec) -> Self {
+        let count: Vec<_> = a
+            .chunks::<true>(POPCNT)
+            .map(|ai| Self::WORD[ai as usize][POPCNT - 1])
+            .collect();
 
         let small: Vec<_> = count
             .chunks(LARGE / POPCNT)
@@ -168,13 +218,15 @@ impl<const BIT_PATTERNS: usize, const LARGE: usize, const POPCNT: usize>
             .scan(0, |acc, x| Some(std::mem::replace(acc, *acc + x)))
             .collect();
 
-        Self { buf: a, large, small }
+        Self { large, small }
     }
 
-    pub fn rank(&self, n: usize) -> usize {
+    fn rank(&self, n: usize, b: &SimpleBitVec) -> usize {
         let large = self.large[n / LARGE];
         let small = self.small[n / POPCNT];
-        let rem = Self::WORD[self.buf[n / POPCNT] as usize][n % POPCNT];
+        let rem = Self::WORD[b
+            .get::<true>(n / POPCNT * POPCNT..(n / POPCNT + 1) * POPCNT)
+            as usize][n % POPCNT];
         large as usize + small as usize + rem as usize
     }
 }
@@ -189,17 +241,31 @@ impl From<(Vec<u64>, usize)> for SimpleBitVec {
     fn from((buf, len): (Vec<u64>, usize)) -> Self { Self { buf, len } }
 }
 
+impl<'a> From<&'a [bool]> for SimpleBitVec {
+    fn from(a: &'a [bool]) -> Self {
+        let len = a.len();
+        let n = (len + W - 1) / W;
+        let mut buf = vec![0; n];
+        for i in 0..len {
+            if a[i] {
+                buf[i / W] |= 1 << (i % W);
+            }
+        }
+        Self { buf, len }
+    }
+}
+
 impl SimpleBitVec {
     fn new() -> Self { Self { buf: vec![], len: 0 } }
 
     fn len(&self) -> usize { self.len }
 
-    fn get(&self, Range { start, end }: Range<usize>) -> u64 {
+    fn get<const X: bool>(&self, Range { start, end }: Range<usize>) -> u64 {
         assert!(end - start <= 64);
         assert!(end <= self.len);
 
         let mask = !(!0 << (end - start));
-        if start == end {
+        let res = if start == end {
             0
         } else if start % W == 0 {
             self.buf[start / W] & mask
@@ -209,7 +275,8 @@ impl SimpleBitVec {
             (self.buf[start / W] >> (start % W)
                 | self.buf[end / W] << (W - start % W))
                 & mask
-        }
+        };
+        if X { res } else { !res & mask }
     }
 
     fn push(&mut self, w: u64, len: usize) {
@@ -229,10 +296,13 @@ impl SimpleBitVec {
         self.len += len;
     }
 
-    fn chunks(&self, size: usize) -> impl Iterator<Item = u64> + '_ {
+    fn chunks<const X: bool>(
+        &self,
+        size: usize,
+    ) -> impl Iterator<Item = u64> + '_ {
         (0..self.len)
             .step_by(size)
-            .map(move |i| self.get(i..self.len.min(i + size)))
+            .map(move |i| self.get::<X>(i..self.len.min(i + size)))
     }
 }
 
@@ -249,7 +319,7 @@ enum SelectIndexInner<
     Sparse(Vec<usize>),
 
     /// less than $`\log(n)^4`$-bit blocks.
-    Dense(Vec<SimpleBitVec>, SimpleBitVec),
+    Dense(Vec<SimpleBitVec>, usize),
 }
 
 pub struct SelectIndex<
@@ -330,28 +400,32 @@ impl<
         BRANCH,
     >
 {
-    fn new(a: Vec<usize>, range: RangeInclusive<usize>) -> Self {
+    fn new<const X: bool>(
+        a: Vec<usize>,
+        range: RangeInclusive<usize>,
+        b: &SimpleBitVec,
+    ) -> Self {
         let start = *range.start();
         let end = *range.end() + 1;
         if end - start >= SPARSE_LEN {
             Self::Sparse(a)
         } else {
-            let len = end - start;
-            let mut tmp = vec![0_u64; (len + W - 1) / W];
-            for ai in a.iter().map(|&ai| ai - start) {
-                tmp[ai / W] |= 1 << (ai % W);
-            }
-            Self::new_dense(tmp, len)
+            Self::new_dense::<X>(b, start..end)
         }
     }
-    fn new_dense(a: Vec<u64>, len: usize) -> Self {
+    fn new_dense<const X: bool>(
+        b: &SimpleBitVec,
+        Range { start, end }: Range<usize>,
+    ) -> Self {
         let rl = &RankIndex::<POW2_LEAF_LEN, 0, LEAF_LEN>::WORD;
+        let len = end - start;
 
-        let a = SimpleBitVec::from((a, len));
         let leaf = {
             let mut leaf = SimpleBitVec::new();
             for i in 0..(len + LEAF_LEN - 1) / LEAF_LEN {
-                let w = a.get(i * LEAF_LEN..len.min((i + 1) * LEAF_LEN));
+                let w = b.get::<X>(
+                    start + i * LEAF_LEN..start + len.min((i + 1) * LEAF_LEN),
+                );
                 leaf.push(rl[w as usize][LEAF_LEN - 1] as u64, LG2_POPCNT);
             }
             leaf
@@ -363,7 +437,7 @@ impl<
             let mut cur = SimpleBitVec::new();
             let tmp = last;
             {
-                let mut it = tmp.chunks(LG2_POPCNT);
+                let mut it = tmp.chunks::<true>(LG2_POPCNT);
                 while let Some(mut sum) = it.next() {
                     sum += (1..BRANCH).filter_map(|_| it.next()).sum::<u64>();
                     cur.push(sum, LG2_POPCNT);
@@ -373,29 +447,30 @@ impl<
             last = cur;
         }
         tree.reverse();
-        Self::Dense(tree, a)
+        Self::Dense(tree, start)
     }
 
-    fn select(&self, i: usize) -> usize {
+    fn select<const X: bool>(&self, i: usize, b: &SimpleBitVec) -> usize {
         match self {
             Self::Sparse(index) => index[i],
-            Self::Dense(tree, buf) => {
+            Self::Dense(tree, range_start) => {
                 let mut i = i;
                 let mut cur = 0;
                 let mut off = 0;
                 let len = LG2_POPCNT * BRANCH;
                 for level in tree {
-                    let w = level.get(cur..level.len().min(cur + len)) as usize;
+                    let w = level.get::<true>(cur..level.len().min(cur + len))
+                        as usize;
                     let (br, count) = Self::TREE[w][i];
                     cur = (cur + LG2_POPCNT * br as usize) * BRANCH;
                     off = off * BRANCH + br as usize;
                     i -= count as usize;
                 }
 
-                let start = cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
-                let end = buf.len().min(start + LEAF_LEN);
-                let leaf = buf.get(start..end);
-
+                let start =
+                    range_start + cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
+                let end = b.len().min(start + LEAF_LEN);
+                let leaf = b.get::<X>(start..end);
                 off * LEAF_LEN + Self::WORD[leaf as usize][i] as usize
             }
         }
@@ -421,8 +496,9 @@ impl<
         BRANCH,
     >
 {
-    pub fn new<const X: bool>(a: &[bool]) -> Self {
+    fn new<const X: bool>(a: &[bool], b: &SimpleBitVec) -> Self {
         let n = a.len();
+
         let mut cur = vec![];
         let mut res = vec![];
         let mut start = 0;
@@ -430,18 +506,21 @@ impl<
             if a[i] == X {
                 cur.push(i);
             }
-            if cur.len() == POPCNT || i == n - 1 {
+            if cur.len() >= POPCNT || i == n - 1 {
                 let tmp = std::mem::take(&mut cur);
-                res.push((start, SelectIndexInner::new(tmp, start..=i)));
+                res.push((
+                    start,
+                    SelectIndexInner::new::<X>(tmp, start..=i, b),
+                ));
                 start = i + 1;
             }
         }
         Self { ds: res }
     }
 
-    pub fn select(&self, i: usize) -> usize {
+    fn select<const X: bool>(&self, i: usize, b: &SimpleBitVec) -> usize {
         let ds = &self.ds[i / POPCNT];
-        ds.0 + ds.1.select(i % POPCNT)
+        ds.0 + ds.1.select::<X>(i % POPCNT, b)
     }
 }
 
@@ -499,13 +578,12 @@ fn test_select_lookup() {
 #[test]
 fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
-    let b = compress_vec_bool::<3>(&a);
-    let rp = RankIndex::<4096, 12, 3>::new(b.clone());
+    let rs = Rs01Dict::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
     let expected = [
         0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
         9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
     ];
-    let actual: Vec<_> = (0..a.len()).map(|i| rp.rank(i)).collect();
+    let actual: Vec<_> = (0..a.len()).map(|i| rs.rank1(i)).collect();
     assert_eq!(actual, expected);
 }
 
@@ -513,8 +591,29 @@ fn sanity_check_rank() {
 fn sanity_check_select() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
     let ones = a.iter().filter(|&&x| x).count();
-    let sp = SelectIndex::<4096, 12, 4, 3, 8, 100, 3>::new::<true>(&a);
+    let rs = Rs01Dict::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
     let expected = [4, 6, 7, 12, 13, 14, 17, 22, 23];
-    let actual: Vec<_> = (0..ones).map(|i| sp.select(i)).collect();
+    let actual: Vec<_> = (0..ones).map(|i| rs.select1(i)).collect();
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn bench() {
+    type Rs = Rs01Dict<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>;
+
+    eprintln!("{:?}", &RankIndex::<8, 0, 3>::WORD[0]);
+
+    let w = 0x_3046_2FB7_58C1_EDA9_u64;
+    let a: Vec<_> = (0..64).map(|i| w >> i & 1 != 0).collect();
+
+    let rs = Rs::new(&a);
+
+    eprintln!("{w:064b}");
+
+    for i in 0..32 {
+        eprintln!("select1({i}) -> {}", rs.select1(i));
+    }
+    for i in 0..32 {
+        eprintln!("select0({i}) -> {}", rs.select0(i));
+    }
 }
