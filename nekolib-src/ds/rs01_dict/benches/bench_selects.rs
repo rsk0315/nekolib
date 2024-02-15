@@ -3,34 +3,11 @@ use criterion::{
 };
 use rs01_dict::{select_word, Rs01Dict};
 
-const LG2_POPCNT: usize = 3;
-const POPCNT: usize = !(!0 << LG2_POPCNT);
-const LEAF_LEN: usize = 12;
-const POW2_LEAF_LEN: usize = 1 << LEAF_LEN;
-const SPARSE_LEN: usize = 10000; // we test dense cases
-const BRANCH: usize = 4;
-const BIT_PATTERNS: usize = 1 << (BRANCH * LG2_POPCNT);
-
-type Rs = Rs01Dict<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>;
-
-// type Rs = Rs01Dict<
-//     4096,
-//     12,
-//     3,
-//     BIT_PATTERNS,
-//     POPCNT,
-//     LG2_POPCNT,
-//     LEAF_LEN,
-//     POW2_LEAF_LEN,
-//     SPARSE_LEN,
-//     BRANCH,
-// >;
-
 fn bench_selects(c: &mut Criterion) {
     let w = 0x_3046_2FB7_58C1_EDA9_u64;
     let a: Vec<_> = (0..64).map(|i| w >> i & 1 != 0).collect();
 
-    let rs = Rs::new(&a);
+    let rs = Rs01Dict::new(&a);
 
     let mut group = c.benchmark_group("select");
 
@@ -196,7 +173,7 @@ fn bench_selects(c: &mut Criterion) {
     let a: Vec<_> =
         a.iter().flat_map(|&w| (0..64).map(move |i| w >> i & 1 != 0)).collect();
 
-    let rs = Rs::new(&a);
+    let rs = Rs01Dict::new(&a);
 
     let expected: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
     let actual: Vec<_> = (0..expected.len()).map(|i| rs.select1(i)).collect();

@@ -1,6 +1,31 @@
 use std::ops::{Range, RangeInclusive};
 
-pub struct Rs01Dict<
+const RANK_BLOCK: usize = 64;
+const RANK_POPCNT: usize = 16;
+const RANK_BIT_PATTERNS: usize = 1 << RANK_POPCNT;
+
+const SELECT_LG2_POPCNT: usize = 3;
+const SELECT_POPCNT: usize = !(!0 << SELECT_LG2_POPCNT);
+const SELECT_LEAF_LEN: usize = 12;
+const SELECT_POW2_LEAF_LEN: usize = 1 << SELECT_LEAF_LEN;
+const SELECT_SPARSE_LEN: usize = 27648;
+const SELECT_BRANCH: usize = 4;
+const SELECT_BIT_PATTERNS: usize = 1 << (SELECT_BRANCH * SELECT_LG2_POPCNT);
+
+pub type Rs01Dict = Rs01DictParam<
+    RANK_BIT_PATTERNS,
+    RANK_BLOCK,
+    RANK_POPCNT,
+    SELECT_BIT_PATTERNS,
+    SELECT_POPCNT,
+    SELECT_LG2_POPCNT,
+    SELECT_LEAF_LEN,
+    SELECT_POW2_LEAF_LEN,
+    SELECT_SPARSE_LEN,
+    SELECT_BRANCH,
+>;
+
+pub struct Rs01DictParam<
     const RANK_BIT_PATTERNS: usize,
     const RANK_LARGE: usize,
     const RANK_POPCNT: usize,
@@ -46,7 +71,7 @@ impl<
     const SELECT_SPARSE_LEN: usize,
     const SELECT_BRANCH: usize,
 >
-    Rs01Dict<
+    Rs01DictParam<
         RANK_BIT_PATTERNS,
         RANK_LARGE,
         RANK_POPCNT,
@@ -578,7 +603,7 @@ fn test_select_lookup() {
 #[test]
 fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
-    let rs = Rs01Dict::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
+    let rs = Rs01DictParam::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
     let expected = [
         0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
         9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
@@ -591,7 +616,7 @@ fn sanity_check_rank() {
 fn sanity_check_select() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
     let ones = a.iter().filter(|&&x| x).count();
-    let rs = Rs01Dict::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
+    let rs = Rs01DictParam::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
     let expected = [4, 6, 7, 12, 13, 14, 17, 22, 23];
     let actual: Vec<_> = (0..ones).map(|i| rs.select1(i)).collect();
     assert_eq!(actual, expected);
@@ -599,7 +624,7 @@ fn sanity_check_select() {
 
 #[test]
 fn bench() {
-    type Rs = Rs01Dict<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>;
+    type Rs = Rs01DictParam<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>;
 
     eprintln!("{:?}", &RankIndex::<8, 0, 3>::WORD[0]);
 
