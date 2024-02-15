@@ -1,5 +1,56 @@
 use std::ops::{Range, RangeInclusive};
 
+pub struct Rs01Dict<
+    const RANK_BIT_PATTERNS: usize,
+    const RANK_LARGE: usize,
+    const RANK_POPCNT: usize,
+    const SELECT_BIT_PATTERNS: usize,
+    const SELECT_POPCNT: usize,
+    const SELECT_LG2_POPCNT: usize,
+    const SELECT_LEAF_LEN: usize,
+    const SELECT_POW2_LEAF_LEN: usize,
+    const SELECT_SPARSE_LEN: usize,
+    const SELECT_BRANCH: usize,
+> {
+    buf: SimpleBitVec,
+    rank_index: RankIndex<RANK_BIT_PATTERNS, RANK_LARGE, RANK_POPCNT>,
+    select1_index: SelectIndex<
+        SELECT_BIT_PATTERNS,
+        SELECT_POPCNT,
+        SELECT_LG2_POPCNT,
+        SELECT_LEAF_LEN,
+        SELECT_POW2_LEAF_LEN,
+        SELECT_SPARSE_LEN,
+        SELECT_BRANCH,
+    >,
+    select0_index: SelectIndex<
+        SELECT_BIT_PATTERNS,
+        SELECT_POPCNT,
+        SELECT_LG2_POPCNT,
+        SELECT_LEAF_LEN,
+        SELECT_POW2_LEAF_LEN,
+        SELECT_SPARSE_LEN,
+        SELECT_BRANCH,
+    >,
+}
+
+trait RankLookup<
+    const BIT_PATTERNS: usize,
+    const LARGE: usize,
+    const POPCNT: usize,
+>
+{
+    const WORD: [[u16; POPCNT]; BIT_PATTERNS];
+}
+
+impl<const BIT_PATTERNS: usize, const LARGE: usize, const POPCNT: usize>
+    RankLookup<BIT_PATTERNS, LARGE, POPCNT>
+    for RankIndex<BIT_PATTERNS, LARGE, POPCNT>
+{
+    const WORD: [[u16; POPCNT]; BIT_PATTERNS] =
+        rank_lookup::<POPCNT, BIT_PATTERNS>();
+}
+
 fn compress_vec_bool<const W: usize>(buf: &[bool]) -> Vec<u64> {
     let n = buf.len();
     let len = (n + W - 1) / W;
@@ -13,13 +64,6 @@ fn compress_vec_bool<const W: usize>(buf: &[bool]) -> Vec<u64> {
 }
 
 const W: usize = u64::BITS as usize;
-
-const LG_N: usize = 24;
-
-const LEAF_LEN: usize = LG_N / 2;
-const POW2_SMALL: usize = 1 << LEAF_LEN;
-const RANK_LOOKUP: [[u16; LEAF_LEN]; POW2_SMALL] =
-    rank_lookup::<LEAF_LEN, POW2_SMALL>();
 
 const fn rank_lookup<
     const MAX_LEN: usize,      // log(n)/2
@@ -88,7 +132,11 @@ const fn select_lookup_word<
     table
 }
 
-pub struct RankIndex<const LARGE: usize, const SMALL: usize> {
+pub struct RankIndex<
+    const BIT_PATTERNS: usize,
+    const LARGE: usize,
+    const POPCNT: usize,
+> {
     buf: Vec<u64>,
 
     /// $`\log(n)^2`$-bit blocks.
@@ -98,14 +146,16 @@ pub struct RankIndex<const LARGE: usize, const SMALL: usize> {
     small: Vec<u16>,
 }
 
-impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
+impl<const BIT_PATTERNS: usize, const LARGE: usize, const POPCNT: usize>
+    RankIndex<BIT_PATTERNS, LARGE, POPCNT>
+{
     // `a` should be the value returned by `compress_vec_bool::<SMALL>(_)`
     pub fn new(a: Vec<u64>) -> Self {
         let count: Vec<_> =
-            a.iter().map(|&ai| RANK_LOOKUP[ai as usize][SMALL]).collect();
+            a.iter().map(|&ai| Self::WORD[ai as usize][POPCNT - 1]).collect();
 
         let small: Vec<_> = count
-            .chunks(LARGE / SMALL)
+            .chunks(LARGE / POPCNT)
             .flat_map(|c| {
                 c.iter()
                     .scan(0, |acc, x| Some(std::mem::replace(acc, *acc + x)))
@@ -113,7 +163,7 @@ impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
             .collect();
 
         let large: Vec<_> = count
-            .chunks(LARGE / SMALL)
+            .chunks(LARGE / POPCNT)
             .map(|c| c.iter().sum::<u16>())
             .scan(0, |acc, x| Some(std::mem::replace(acc, *acc + x)))
             .collect();
@@ -123,8 +173,8 @@ impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
 
     pub fn rank(&self, n: usize) -> usize {
         let large = self.large[n / LARGE];
-        let small = self.small[n / SMALL];
-        let rem = RANK_LOOKUP[self.buf[n / SMALL] as usize][n % SMALL];
+        let small = self.small[n / POPCNT];
+        let rem = Self::WORD[self.buf[n / POPCNT] as usize][n % POPCNT];
         large as usize + small as usize + rem as usize
     }
 }
@@ -143,7 +193,6 @@ impl SimpleBitVec {
     fn new() -> Self { Self { buf: vec![], len: 0 } }
 
     fn len(&self) -> usize { self.len }
-    fn is_empty(&self) -> bool { self.len == 0 }
 
     fn get(&self, Range { start, end }: Range<usize>) -> u64 {
         assert!(end - start <= 64);
@@ -178,21 +227,6 @@ impl SimpleBitVec {
             }
         }
         self.len += len;
-    }
-
-    fn push_vec(&mut self, mut other: Self) {
-        if other.is_empty() {
-            // nothing to do
-        } else if self.len % W == 0 {
-            self.buf.append(&mut other.buf);
-            self.len += other.len;
-        } else {
-            // `self.len` is updated in `self.push(..)`
-            for &w in &other.buf[..other.len / W] {
-                self.push(w, W);
-            }
-            self.push(other.buf[other.len / W], other.len % W);
-        }
     }
 
     fn chunks(&self, size: usize) -> impl Iterator<Item = u64> + '_ {
@@ -311,15 +345,14 @@ impl<
         }
     }
     fn new_dense(a: Vec<u64>, len: usize) -> Self {
+        let rl = &RankIndex::<POW2_LEAF_LEN, 0, LEAF_LEN>::WORD;
+
         let a = SimpleBitVec::from((a, len));
         let leaf = {
             let mut leaf = SimpleBitVec::new();
             for i in 0..(len + LEAF_LEN - 1) / LEAF_LEN {
                 let w = a.get(i * LEAF_LEN..len.min((i + 1) * LEAF_LEN));
-                leaf.push(
-                    RANK_LOOKUP[w as usize][LEAF_LEN - 1] as u64,
-                    LG2_POPCNT,
-                );
+                leaf.push(rl[w as usize][LEAF_LEN - 1] as u64, LG2_POPCNT);
             }
             leaf
         };
@@ -431,6 +464,7 @@ pub fn select_word<const X: bool>(mut w: u64, mut i: u32) -> u32 {
     res
 }
 
+#[cfg(test)]
 macro_rules! bitvec {
     ($lit:literal) => {
         $lit.iter()
@@ -466,7 +500,7 @@ fn test_select_lookup() {
 fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
     let b = compress_vec_bool::<3>(&a);
-    let rp = RankIndex::<12, 3>::new(b.clone());
+    let rp = RankIndex::<4096, 12, 3>::new(b.clone());
     let expected = [
         0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
         9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
