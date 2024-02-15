@@ -14,29 +14,12 @@ fn compress_vec_bool<const W: usize>(buf: &[bool]) -> Vec<u64> {
 
 const W: usize = u64::BITS as usize;
 
-const LG_N: usize = 8;
+const LG_N: usize = 24;
 
-const LARGE: usize = LG_N * LG_N;
 const LEAF_LEN: usize = LG_N / 2;
 const POW2_SMALL: usize = 1 << LEAF_LEN;
 const RANK_LOOKUP: [[u16; LEAF_LEN]; POW2_SMALL] =
     rank_lookup::<LEAF_LEN, POW2_SMALL>();
-
-const SELECT_BRANCH: usize = 3;
-const SELECT_POPCNT: usize = 9;
-const SELECT_LG2_POPCNT: usize = 4;
-const SELECT_BIT_PATTERNS: usize = 1 << (SELECT_LG2_POPCNT * SELECT_BRANCH);
-const SELECT_LEAF_LEN: usize = 3;
-const SELECT_POW2_LEAF_LEN: usize = 1 << SELECT_LEAF_LEN;
-const SELECT_LOOKUP_TREE: [[(u16, u16); SELECT_POPCNT]; SELECT_BIT_PATTERNS] =
-    select_lookup_tree::<
-        SELECT_BIT_PATTERNS,
-        SELECT_BRANCH,
-        SELECT_POPCNT,
-        SELECT_LG2_POPCNT,
-    >();
-const SELECT_LOOKUP_WORD: [[u16; SELECT_LEAF_LEN]; 1 << SELECT_LEAF_LEN] =
-    select_lookup_word::<SELECT_POW2_LEAF_LEN, SELECT_LEAF_LEN>();
 
 const fn rank_lookup<
     const MAX_LEN: usize,      // log(n)/2
@@ -105,7 +88,7 @@ const fn select_lookup_word<
     table
 }
 
-struct RankIndex<const LARGE: usize, const SMALL: usize> {
+pub struct RankIndex<const LARGE: usize, const SMALL: usize> {
     buf: Vec<u64>,
 
     /// $`\log(n)^2`$-bit blocks.
@@ -117,7 +100,7 @@ struct RankIndex<const LARGE: usize, const SMALL: usize> {
 
 impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
     // `a` should be the value returned by `compress_vec_bool::<SMALL>(_)`
-    fn new(a: Vec<u64>) -> Self {
+    pub fn new(a: Vec<u64>) -> Self {
         let count: Vec<_> =
             a.iter().map(|&ai| RANK_LOOKUP[ai as usize][SMALL]).collect();
 
@@ -138,7 +121,7 @@ impl<const LARGE: usize, const SMALL: usize> RankIndex<LARGE, SMALL> {
         Self { buf: a, large, small }
     }
 
-    fn rank1(&self, n: usize) -> usize {
+    pub fn rank(&self, n: usize) -> usize {
         let large = self.large[n / LARGE];
         let small = self.small[n / SMALL];
         let rem = RANK_LOOKUP[self.buf[n / SMALL] as usize][n % SMALL];
@@ -220,9 +203,11 @@ impl SimpleBitVec {
 }
 
 enum SelectIndexInner<
+    const BIT_PATTERNS: usize,
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
+    const POW2_LEAF_LEN: usize,
     const SPARSE_LEN: usize,
     const BRANCH: usize,
 > {
@@ -233,23 +218,83 @@ enum SelectIndexInner<
     Dense(Vec<SimpleBitVec>, SimpleBitVec),
 }
 
-struct SelectIndex<
+pub struct SelectIndex<
+    const BIT_PATTERNS: usize,
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
+    const POW2_LEAF_LEN: usize,
     const SPARSE_LEN: usize,
     const BRANCH: usize,
 > {
-    ds: Vec<SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE_LEN, BRANCH>>,
+    ds: Vec<(
+        usize,
+        SelectIndexInner<
+            BIT_PATTERNS,
+            POPCNT,
+            LG2_POPCNT,
+            LEAF_LEN,
+            POW2_LEAF_LEN,
+            SPARSE_LEN,
+            BRANCH,
+        >,
+    )>,
+}
+
+trait SelectLookup<
+    const BIT_PATTERNS: usize,
+    const POPCNT: usize,
+    const POW2_LEAF_LEN: usize,
+    const LEAF_LEN: usize,
+>
+{
+    const TREE: [[(u16, u16); POPCNT]; BIT_PATTERNS];
+    const WORD: [[u16; LEAF_LEN]; POW2_LEAF_LEN];
 }
 
 impl<
+    const BIT_PATTERNS: usize,
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
+    const POW2_LEAF_LEN: usize,
     const SPARSE_LEN: usize,
     const BRANCH: usize,
-> SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE_LEN, BRANCH>
+> SelectLookup<BIT_PATTERNS, POPCNT, POW2_LEAF_LEN, LEAF_LEN>
+    for SelectIndexInner<
+        BIT_PATTERNS,
+        POPCNT,
+        LG2_POPCNT,
+        LEAF_LEN,
+        POW2_LEAF_LEN,
+        SPARSE_LEN,
+        BRANCH,
+    >
+{
+    const TREE: [[(u16, u16); POPCNT]; BIT_PATTERNS] =
+        select_lookup_tree::<BIT_PATTERNS, BRANCH, POPCNT, LG2_POPCNT>();
+    const WORD: [[u16; LEAF_LEN]; POW2_LEAF_LEN] =
+        select_lookup_word::<POW2_LEAF_LEN, LEAF_LEN>();
+}
+
+impl<
+    const BIT_PATTERNS: usize,
+    const POPCNT: usize,
+    const LG2_POPCNT: usize,
+    const LEAF_LEN: usize,
+    const POW2_LEAF_LEN: usize,
+    const SPARSE_LEN: usize,
+    const BRANCH: usize,
+>
+    SelectIndexInner<
+        BIT_PATTERNS,
+        POPCNT,
+        LG2_POPCNT,
+        LEAF_LEN,
+        POW2_LEAF_LEN,
+        SPARSE_LEN,
+        BRANCH,
+    >
 {
     fn new(a: Vec<usize>, range: RangeInclusive<usize>) -> Self {
         let start = *range.start();
@@ -270,7 +315,7 @@ impl<
         let leaf = {
             let mut leaf = SimpleBitVec::new();
             for i in 0..(len + LEAF_LEN - 1) / LEAF_LEN {
-                let w = a.get(i * LEAF_LEN..(i + 1) * LEAF_LEN);
+                let w = a.get(i * LEAF_LEN..len.min((i + 1) * LEAF_LEN));
                 leaf.push(
                     RANK_LOOKUP[w as usize][LEAF_LEN - 1] as u64,
                     LG2_POPCNT,
@@ -308,31 +353,42 @@ impl<
                 let len = LG2_POPCNT * BRANCH;
                 for level in tree {
                     let w = level.get(cur..level.len().min(cur + len)) as usize;
-                    let (br, count) = SELECT_LOOKUP_TREE[w][i];
+                    let (br, count) = Self::TREE[w][i];
                     cur = (cur + LG2_POPCNT * br as usize) * BRANCH;
                     off = off * BRANCH + br as usize;
                     i -= count as usize;
                 }
 
                 let start = cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
-                let end = start + LEAF_LEN;
+                let end = buf.len().min(start + LEAF_LEN);
                 let leaf = buf.get(start..end);
 
-                off * LEAF_LEN + SELECT_LOOKUP_WORD[leaf as usize][i] as usize
+                off * LEAF_LEN + Self::WORD[leaf as usize][i] as usize
             }
         }
     }
 }
 
 impl<
+    const BIT_PATTERNS: usize,
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
+    const POW2_LEAF_LEN: usize,
     const SPARSE_LEN: usize,
     const BRANCH: usize,
-> SelectIndex<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE_LEN, BRANCH>
+>
+    SelectIndex<
+        BIT_PATTERNS,
+        POPCNT,
+        LG2_POPCNT,
+        LEAF_LEN,
+        POW2_LEAF_LEN,
+        SPARSE_LEN,
+        BRANCH,
+    >
 {
-    fn new<const X: bool>(a: &[bool]) -> Self {
+    pub fn new<const X: bool>(a: &[bool]) -> Self {
         let n = a.len();
         let mut cur = vec![];
         let mut res = vec![];
@@ -343,16 +399,36 @@ impl<
             }
             if cur.len() == POPCNT || i == n - 1 {
                 let tmp = std::mem::take(&mut cur);
-                res.push(SelectIndexInner::new(tmp, start..=i));
+                res.push((start, SelectIndexInner::new(tmp, start..=i)));
                 start = i + 1;
             }
         }
         Self { ds: res }
     }
 
-    fn select(&self, i: usize) -> usize {
-        self.ds[i / POPCNT].select(i % POPCNT)
+    pub fn select(&self, i: usize) -> usize {
+        let ds = &self.ds[i / POPCNT];
+        ds.0 + ds.1.select(i % POPCNT)
     }
+}
+
+pub fn select_word<const X: bool>(mut w: u64, mut i: u32) -> u32 {
+    if !X {
+        w = !w;
+    }
+
+    let mut res = 0;
+    for lg2 in (0..6).rev() {
+        let len = 1 << lg2;
+        let mask = !(!0 << len);
+        let count = (w & mask).count_ones();
+        if count <= i {
+            w >>= len;
+            i -= count;
+            res += len;
+        }
+    }
+    res
 }
 
 macro_rules! bitvec {
@@ -395,7 +471,7 @@ fn sanity_check_rank() {
         0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
         9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
     ];
-    let actual: Vec<_> = (0..a.len()).map(|i| rp.rank1(i)).collect();
+    let actual: Vec<_> = (0..a.len()).map(|i| rp.rank(i)).collect();
     assert_eq!(actual, expected);
 }
 
@@ -403,7 +479,7 @@ fn sanity_check_rank() {
 fn sanity_check_select() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
     let ones = a.iter().filter(|&&x| x).count();
-    let sp = SelectIndex::<12, 4, 3, 100, 3>::new::<true>(&a);
+    let sp = SelectIndex::<4096, 12, 4, 3, 8, 100, 3>::new::<true>(&a);
     let expected = [4, 6, 7, 12, 13, 14, 17, 22, 23];
     let actual: Vec<_> = (0..ones).map(|i| sp.select(i)).collect();
     assert_eq!(actual, expected);

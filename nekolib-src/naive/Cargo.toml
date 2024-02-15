@@ -10,4 +10,4 @@ inner = { path = "../inner" }
 disjoint-set = { path = "disjoint-set" }
 assoc-list = { path = "assoc-list" }
 concat-monoid = { path = "concat-monoid" }
-rs01_dict = { path = "rs01_dict" }
+# rs01_dict = { path = "rs01_dict" }
