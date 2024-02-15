@@ -223,7 +223,7 @@ enum SelectIndexInner<
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
-    const SPARSE: usize,
+    const SPARSE_LEN: usize,
     const BRANCH: usize,
 > {
     /// at least $`\log(n)^4`$-bit blocks.
@@ -237,24 +237,24 @@ struct SelectIndex<
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
-    const SPARSE: usize,
+    const SPARSE_LEN: usize,
     const BRANCH: usize,
 > {
-    ds: Vec<SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE, BRANCH>>,
+    ds: Vec<SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE_LEN, BRANCH>>,
 }
 
 impl<
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
-    const SPARSE: usize,
+    const SPARSE_LEN: usize,
     const BRANCH: usize,
-> SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE, BRANCH>
+> SelectIndexInner<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE_LEN, BRANCH>
 {
     fn new(a: Vec<usize>, range: RangeInclusive<usize>) -> Self {
         let start = *range.start();
         let end = *range.end() + 1;
-        if end - start + 1 >= SPARSE {
+        if end - start >= SPARSE_LEN {
             Self::Sparse(a)
         } else {
             let len = end - start;
@@ -328,9 +328,9 @@ impl<
     const POPCNT: usize,
     const LG2_POPCNT: usize,
     const LEAF_LEN: usize,
-    const SPARSE: usize,
+    const SPARSE_LEN: usize,
     const BRANCH: usize,
-> SelectIndex<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE, BRANCH>
+> SelectIndex<POPCNT, LG2_POPCNT, LEAF_LEN, SPARSE_LEN, BRANCH>
 {
     fn new<const X: bool>(a: &[bool]) -> Self {
         let n = a.len();
