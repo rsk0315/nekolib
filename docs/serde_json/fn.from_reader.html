@@ -1,0 +1,307 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Deserialize an instance of type `T` from an I/O stream of JSON."><title>from_reader in serde_json - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="serde_json" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (ee9c7c940 2024-02-14)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../static.files/storage-4c98445ec4002617.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+
+<!-- The loading of KaTeX is deferred to speed up page rendering -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+
+<style>
+  code.code-math {
+      background-color: transparent;
+  }
+</style>
+
+<script>
+  'use strict';
+
+  const macros = {
+    // '\\foo': '42',
+    // '\\bar': '\\operatorname{bar}^{#1}',
+    '\\halfopen': '[#1, #2)',
+    '\\floor': '\\lfloor #1\\rfloor',
+    '\\ceil': '\\lceil #1\\rceil',
+    '\\rounded': '\\lfloor #1\\rceil',
+    '\\Floor': '\\left\\lfloor #1\\right\\rfloor',
+    '\\Ceil': '\\left\\lceil #1\\right\\rceil',
+    '\\Rounded': '\\left\\lfloor #1\\right\\rceil',
+    '\\angled': '\\langle #1\\rangle',
+    '\\Angled': '\\left\\langle #1\\right\\rangle',
+    '\\lcm': '\\operatorname*{lcm}',
+    '\\gcd': '\\operatorname*{gcd}',
+    '\\poly': '\\operatorname{poly}',
+    '\\polylog': '\\operatorname{polylog}',
+    '\\concat': '\\mathrel{+\\!\\!+}',
+    '\\mex': '\\operatorname*{mex}',
+    '\\qed': '\\square',
+    '\\Q': '\\mathbb{Q}',
+    '\\dd': '\\mathrm{d}',
+    '\\ForallL': '{}^{\\forall}#1.\\:#2',
+    '\\Forall': '{}^{\\forall}#1.\\,\\left[#2\\right]',
+    '\\ExistsL': '{}^{\\exists}#1.\\:#2',
+    '\\Exists': '{}^{\\exists}#1.\\,\\left[#2\\right]',
+    '\\roundp': '(\\kern-.2em[#1]\\kern-.2em)',
+    '\\bigroundp': '\\big(\\kern-.25em\\big[#1\\big]\\kern-.25em\\big)',
+    '\\Bigroundp': '\\Big(\\kern-.3em\\Big[#1\\Big]\\kern-.3em\\Big)',
+    '\\biggroundp': '\\bigg(\\kern-.3em\\bigg[#1\\bigg]\\kern-.3em\\bigg)',
+    '\\Biggroundp': '\\Bigg(\\kern-.35em\\Bigg[#1\\Bigg]\\kern-.35em\\Bigg)',
+    '\\hfloor': '\\lfloor\\hspace{-.25em}\\lfloor#1\\rfloor\\hspace{-.25em}\\rfloor',
+    '\\xgets': '\\xleftarrow{#1}',
+    '\\eod': '\\blacksquare', // end of \<details\>
+    '\\lldot': '\\mathop{.\\,.}',
+    '\\dp': '\\mathrm{dp}',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
+    }
+
+    const codes = Array.from(document.getElementsByTagName('code'));
+    for (const elt of codes) {
+      if (elt.classList.contains('language-math')) continue;
+      if (elt.classList.contains('language-inline-math')) {
+        katex.render(elt.innerText, elt, { macros });
+        continue;
+      }
+
+      const parent = elt.parentNode;
+      if (parent.nodeName.toLowerCase() === 'pre') {
+        continue;
+      }
+
+      parent.style.overflowX = 'unset';
+      const content = parent.outerHTML.replaceAll(
+        /\$<code>([^<]*?)<\/code>\$/g,
+        ((match, inner) => {
+          return `<code class="code-math">${katex.renderToString(inner, { macros })}</code>`;
+        }),
+      );
+
+      try {
+        parent.outerHTML = content;
+      } catch (DOMException) {
+        continue;
+      }
+    }
+  });
+</script>
+
+<script>
+  'use strict';
+
+  const cratesLs = {
+    "algo": [
+      "bisect",
+      "tortoise_hare"
+    ],
+    "corro": [
+      "borrow"
+    ],
+    "discussion": [
+      "dp",
+      "plane-sweep"
+    ],
+    "ds": [
+      "foldable_deque",
+      "foldable_queue",
+      "rs01_dict",
+      "union-find",
+      "vec_segtree"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "graph": [
+      "bfs01",
+      "dijkstra"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "pdep_pext"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "divisors",
+      "factors",
+      "linear_sieve",
+      "modint"
+    ],
+    "naive": [
+      "assoc-list",
+      "concat-monoid",
+      "disjoint-set",
+      "rs01_dict"
+    ],
+    "ops": [
+      "monoid",
+      "op_add",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support"
+    ],
+    "random": [
+      "randgen"
+    ],
+    "seq": [
+      "inversion",
+      "lis",
+      "majority_vote",
+      "suffix_array"
+    ],
+    "snippet": [
+      "proconio"
+    ],
+    "uslice": [
+      "bucket_sort",
+      "permutation"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const crates = [...document.getElementsByClassName('block crate')][0];
+
+    const links = new Map([...crates.querySelectorAll('a')].map((e) => [
+      e.innerText,
+      {
+        name: e.innerText,
+        href: e.href,
+        current: e.parentNode.classList.contains('current'),
+      },
+    ]));
+
+    const tree = new Map();
+    for (const mod of Object.keys(cratesLs)) {
+      for (const crate of cratesLs[mod]) {
+        const crate_ = crate.replaceAll('-', '_');
+        if (!links.has(crate_)) continue;
+
+        if (!tree.has(mod)) {
+          tree.set(mod, []);
+        }
+
+        tree.get(mod).push(links.get(crate_));
+      }
+    }
+
+    const cratesElt = document.createElement('ul');
+    cratesElt.classList.add('block');
+    cratesElt.classList.add('crate');
+    for (const [modName, mod] of tree) {
+      {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        const link = links.get(modName);
+        a.href = link.href;
+        if (link.current) li.classList.add('current');
+        a.innerText = link.name;
+        li.appendChild(a);
+        cratesElt.appendChild(li);
+      }
+
+      const ul = document.createElement('ul');
+      for (const crate of mod) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = crate.href;
+        if (crate.current) li.classList.add('current');
+        a.innerText = crate.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      cratesElt.appendChild(ul);
+    }
+
+    crates.outerHTML = cratesElt.outerHTML;
+  });
+</script>
+
+</head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../serde_json/index.html">serde_json</a><span class="version">1.0.113</span></h2></div><div class="sidebar-elems"></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../serde_json/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Function <a href="index.html">serde_json</a>::<wbr><a class="fn" href="#">from_reader</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/serde_json/de.rs.html#2589-2595">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub fn from_reader&lt;R, T&gt;(rdr: R) -&gt; <a class="type" href="type.Result.html" title="type serde_json::Result">Result</a>&lt;T&gt;<div class="where">where
+    R: <a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html" title="trait std::io::Read">Read</a>,
+    T: <a class="trait" href="../serde/de/trait.DeserializeOwned.html" title="trait serde::de::DeserializeOwned">DeserializeOwned</a>,</div></code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Deserialize an instance of type <code>T</code> from an I/O stream of JSON.</p>
+<p>The content of the I/O stream is deserialized directly from the stream
+without being buffered in memory by serde_json.</p>
+<p>When reading from a source against which short reads are not efficient, such
+as a <a href="https://doc.rust-lang.org/std/fs/struct.File.html"><code>File</code></a>, you will want to apply your own buffering because serde_json
+will not buffer the input. See <a href="https://doc.rust-lang.org/std/io/struct.BufReader.html"><code>std::io::BufReader</code></a>.</p>
+<p>It is expected that the input stream ends after the deserialized object.
+If the stream does not end, such as in the case of a persistent socket connection,
+this function will not return. It is possible instead to deserialize from a prefix of an input
+stream without looking for EOF by managing your own <a href="struct.Deserializer.html" title="struct serde_json::Deserializer"><code>Deserializer</code></a>.</p>
+<p>Note that counter to intuition, this function is usually slower than
+reading a file completely into memory and then applying <a href="./fn.from_str.html"><code>from_str</code></a>
+or <a href="./fn.from_slice.html"><code>from_slice</code></a> on it. See <a href="https://github.com/serde-rs/json/issues/160">issue #160</a>.</p>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<p>Reading the contents of a file.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde::Deserialize;
+
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io::BufReader;
+<span class="kw">use </span>std::path::Path;
+
+<span class="attr">#[derive(Deserialize, Debug)]
+</span><span class="kw">struct </span>User {
+    fingerprint: String,
+    location: String,
+}
+
+<span class="kw">fn </span>read_user_from_file&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;User, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="comment">// Open the file in read-only mode with buffer.
+    </span><span class="kw">let </span>file = File::open(path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>reader = BufReader::new(file);
+
+    <span class="comment">// Read the JSON contents of the file as an instance of `User`.
+    </span><span class="kw">let </span>u = serde_json::from_reader(reader)<span class="question-mark">?</span>;
+
+    <span class="comment">// Return the `User`.
+    </span><span class="prelude-val">Ok</span>(u)
+}
+
+<span class="kw">fn </span>main() {
+    <span class="kw">let </span>u = read_user_from_file(<span class="string">"test.json"</span>).unwrap();
+    <span class="macro">println!</span>(<span class="string">"{:#?}"</span>, u);
+}</code></pre></div>
+<p>Reading from a persistent socket connection.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>serde::Deserialize;
+
+<span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::net::{TcpListener, TcpStream};
+
+<span class="attr">#[derive(Deserialize, Debug)]
+</span><span class="kw">struct </span>User {
+    fingerprint: String,
+    location: String,
+}
+
+<span class="kw">fn </span>read_user_from_stream(tcp_stream: TcpStream) -&gt; <span class="prelude-ty">Result</span>&lt;User, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>de = serde_json::Deserializer::from_reader(tcp_stream);
+    <span class="kw">let </span>u = User::deserialize(<span class="kw-2">&amp;mut </span>de)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(u)
+}
+
+<span class="kw">fn </span>main() {
+    <span class="kw">let </span>listener = TcpListener::bind(<span class="string">"127.0.0.1:4000"</span>).unwrap();
+
+    <span class="kw">for </span>stream <span class="kw">in </span>listener.incoming() {
+        <span class="macro">println!</span>(<span class="string">"{:#?}"</span>, read_user_from_stream(stream.unwrap()));
+    }
+}</code></pre></div>
+<h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>
+<p>This conversion can fail if the structure of the input does not match the
+structure expected by <code>T</code>, for example if <code>T</code> is a struct type but the input
+contains something other than a JSON map. It can also fail if the structure
+is correct but <code>T</code>’s implementation of <code>Deserialize</code> decides that something
+is wrong with the data, for example required struct fields are missing from
+the JSON map or some number is too big to fit in the expected primitive
+type.</p>
+</div></details></section></div></main></body></html>
