@@ -579,12 +579,19 @@ fn test_select_lookup() {
 fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
     let rs = Rs01DictParam::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
-    let expected = [
+    let expected1 = [
         0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
         9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
     ];
-    let actual: Vec<_> = (0..a.len()).map(|i| rs.rank1(i)).collect();
-    assert_eq!(actual, expected);
+    let actual1: Vec<_> = (0..a.len()).map(|i| rs.rank1(i)).collect();
+    assert_eq!(actual1, expected1);
+
+    let expected0 = [
+        1, 2, 3, 4, 4, 5, 5, 5, 6, 7, 8, 9, 9, 9, 9, 10, 11, 11, 12, 13, 14,
+        15, 15, 15, 16, 17, 18, 19, 20, 21, 22, 22, 23, 24, 24, 25,
+    ];
+    let actual0: Vec<_> = (0..a.len()).map(|i| rs.rank0(i)).collect();
+    assert_eq!(actual0, expected0);
 }
 
 #[test]
