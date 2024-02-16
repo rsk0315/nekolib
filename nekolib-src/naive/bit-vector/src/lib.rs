@@ -196,7 +196,10 @@ impl SelectIndexNLlInner {
     }
 }
 
-pub type Rs01DictNLl = Rs01DictNLlParam<64, 1024>;
+const POPCNT: usize = 64; // log(n)
+const SPARSE_LEN: usize = 4096; // log(n)^2
+
+pub type Rs01DictNLl = Rs01DictNLlParam<POPCNT, SPARSE_LEN>;
 
 pub struct Rs01DictNLlParam<const POPCNT: usize, const SPARSE_LEN: usize> {
     rank_index: RankIndexNC,

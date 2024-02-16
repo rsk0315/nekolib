@@ -1,15 +1,15 @@
 use std::ops::{Range, RangeInclusive};
 
-const RANK_BLOCK: usize = 64;
-const RANK_POPCNT: usize = 16;
+const RANK_BLOCK: usize = 1024; // (1/4) log(n)^2
+const RANK_POPCNT: usize = 16; // (1/2) log(n)/2
 const RANK_BIT_PATTERNS: usize = 1 << RANK_POPCNT;
 
-const SELECT_LG2_POPCNT: usize = 3;
+const SELECT_LG2_POPCNT: usize = 4; // (ceil . 1/2) log(log(n^2))
 const SELECT_POPCNT: usize = !(!0 << SELECT_LG2_POPCNT);
-const SELECT_LEAF_LEN: usize = 12;
+const SELECT_LEAF_LEN: usize = 16; // (1/2) log(n)/2
 const SELECT_POW2_LEAF_LEN: usize = 1 << SELECT_LEAF_LEN;
-const SELECT_SPARSE_LEN: usize = 27648;
-const SELECT_BRANCH: usize = 4;
+const SELECT_SPARSE_LEN: usize = 12946; // (ceil . (1/6)^4) log(n)^4
+const SELECT_BRANCH: usize = 4; // (1/2) sqrt(log(n))
 const SELECT_BIT_PATTERNS: usize = 1 << (SELECT_BRANCH * SELECT_LG2_POPCNT);
 
 pub type Rs01Dict = Rs01DictParam<
