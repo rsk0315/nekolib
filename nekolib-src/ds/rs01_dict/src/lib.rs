@@ -214,7 +214,7 @@ pub struct RankIndex<
     const POPCNT: usize,
 > {
     /// $`\log(n)^2`$-bit blocks.
-    large: Vec<u16>,
+    large: Vec<u64>,
 
     /// $`O(\tfrac12\log(n))`$-bit blocks.
     small: Vec<u16>,
@@ -239,7 +239,7 @@ impl<const BIT_PATTERNS: usize, const LARGE: usize, const POPCNT: usize>
 
         let large: Vec<_> = count
             .chunks(LARGE / POPCNT)
-            .map(|c| c.iter().sum::<u16>())
+            .map(|c| c.iter().map(|&x| x as u64).sum::<u64>())
             .scan(0, |acc, x| Some(std::mem::replace(acc, *acc + x)))
             .collect();
 
@@ -266,8 +266,8 @@ impl From<(Vec<u64>, usize)> for SimpleBitVec {
     fn from((buf, len): (Vec<u64>, usize)) -> Self { Self { buf, len } }
 }
 
-impl<'a> From<&'a [bool]> for SimpleBitVec {
-    fn from(a: &'a [bool]) -> Self {
+impl From<&[bool]> for SimpleBitVec {
+    fn from(a: &[bool]) -> Self {
         let len = a.len();
         let n = (len + W - 1) / W;
         let mut buf = vec![0; n];
@@ -356,8 +356,7 @@ pub struct SelectIndex<
     const SPARSE_LEN: usize,
     const BRANCH: usize,
 > {
-    ds: Vec<(
-        usize,
+    inner: Vec<
         SelectIndexInner<
             BIT_PATTERNS,
             POPCNT,
@@ -367,7 +366,7 @@ pub struct SelectIndex<
             SPARSE_LEN,
             BRANCH,
         >,
-    )>,
+    >,
 }
 
 trait SelectLookup<
@@ -478,7 +477,7 @@ impl<
     fn select<const X: bool>(&self, i: usize, b: &SimpleBitVec) -> usize {
         match self {
             Self::Sparse(index) => index[i],
-            Self::Dense(tree, range_start) => {
+            Self::Dense(tree, start) => {
                 let mut i = i;
                 let mut cur = 0;
                 let mut off = 0;
@@ -492,11 +491,10 @@ impl<
                     i -= count as usize;
                 }
 
-                let start =
-                    range_start + cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
-                let end = b.len().min(start + LEAF_LEN);
-                let leaf = b.get::<X>(start..end);
-                off * LEAF_LEN + Self::WORD[leaf as usize][i] as usize
+                let bstart = start + cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
+                let bend = b.len().min(bstart + LEAF_LEN);
+                let leaf = b.get::<X>(bstart..bend);
+                start + off * LEAF_LEN + Self::WORD[leaf as usize][i] as usize
             }
         }
     }
@@ -533,39 +531,16 @@ impl<
             }
             if cur.len() >= POPCNT || i == n - 1 {
                 let tmp = std::mem::take(&mut cur);
-                res.push((
-                    start,
-                    SelectIndexInner::new::<X>(tmp, start..=i, b),
-                ));
+                res.push(SelectIndexInner::new::<X>(tmp, start..=i, b));
                 start = i + 1;
             }
         }
-        Self { ds: res }
+        Self { inner: res }
     }
 
     fn select<const X: bool>(&self, i: usize, b: &SimpleBitVec) -> usize {
-        let ds = &self.ds[i / POPCNT];
-        ds.0 + ds.1.select::<X>(i % POPCNT, b)
+        self.inner[i / POPCNT].select::<X>(i % POPCNT, b)
     }
-}
-
-pub fn select_word<const X: bool>(mut w: u64, mut i: u32) -> u32 {
-    if !X {
-        w = !w;
-    }
-
-    let mut res = 0;
-    for lg2 in (0..6).rev() {
-        let len = 1 << lg2;
-        let mask = !(!0 << len);
-        let count = (w & mask).count_ones();
-        if count <= i {
-            w >>= len;
-            i -= count;
-            res += len;
-        }
-    }
-    res
 }
 
 #[cfg(test)]
@@ -613,11 +588,21 @@ fn sanity_check_rank() {
 }
 
 #[test]
-fn sanity_check_select() {
+fn sanity_check_select_dense() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
     let ones = a.iter().filter(|&&x| x).count();
     let rs = Rs01DictParam::<4096, 12, 3, 4096, 12, 4, 3, 8, 100, 3>::new(&a);
     let expected = [4, 6, 7, 12, 13, 14, 17, 22, 23];
+    let actual: Vec<_> = (0..ones).map(|i| rs.select1(i)).collect();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn sanity_check_select_sparse() {
+    let a = bitvec!(b"001 010 000; 000 000 110");
+    let ones = a.iter().filter(|&&x| x).count();
+    let rs = Rs01DictParam::<4096, 12, 3, 2, 1, 1, 1, 2, 0, 1>::new(&a);
+    let expected = [2, 4, 15, 16];
     let actual: Vec<_> = (0..ones).map(|i| rs.select1(i)).collect();
     assert_eq!(actual, expected);
 }

@@ -1,7 +1,29 @@
 use criterion::{
     black_box, criterion_group, criterion_main, BenchmarkId, Criterion,
 };
-use rs01_dict::{select_word, Rs01Dict};
+use rs01_dict::Rs01Dict;
+
+use crate::benchmarks::select_word;
+
+mod benchmarks {
+    pub fn select_word<const X: bool>(mut w: u64, mut i: u32) -> u32 {
+        if !X {
+            w = !w;
+        }
+        let mut res = 0;
+        for lg2 in (0..6).rev() {
+            let len = 1 << lg2;
+            let mask = !(!0 << len);
+            let count = (w & mask).count_ones();
+            if count <= i {
+                w >>= len;
+                i -= count;
+                res += len;
+            }
+        }
+        res
+    }
+}
 
 fn bench_selects(c: &mut Criterion) {
     let w = 0x_3046_2FB7_58C1_EDA9_u64;
@@ -18,7 +40,7 @@ fn bench_selects(c: &mut Criterion) {
     }
 
     group
-        .bench_function(BenchmarkId::new("index", w), |b| {
+        .bench_function(BenchmarkId::new("mofr", w), |b| {
             b.iter(|| {
                 for i in 0..32 {
                     black_box(rs.select1(i));
@@ -175,32 +197,46 @@ fn bench_selects(c: &mut Criterion) {
 
     let rs = Rs01Dict::new(&a);
 
-    let expected: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
-    let actual: Vec<_> = (0..expected.len()).map(|i| rs.select1(i)).collect();
-    assert_eq!(actual, expected);
+    let expected1: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
+    let actual1: Vec<_> = (0..expected1.len()).map(|i| rs.select1(i)).collect();
+    assert_eq!(actual1, expected1);
 
-    let count1 = expected.len();
+    let count1 = expected1.len();
     eprintln!("count1: {count1}");
 
-    let expected: Vec<_> = (0..a.len()).filter(|&i| !a[i]).collect();
-    let actual: Vec<_> = (0..expected.len()).map(|i| rs.select0(i)).collect();
-    assert_eq!(actual, expected);
+    let expected0: Vec<_> = (0..a.len()).filter(|&i| !a[i]).collect();
+    let actual0: Vec<_> = (0..expected0.len()).map(|i| rs.select0(i)).collect();
+    assert_eq!(actual0, expected0);
 
-    let count0 = expected.len();
+    let count0 = expected0.len();
     eprintln!("count0: {count0}");
 
     group
-        .bench_function(BenchmarkId::new("index", 1), |b| {
+        .bench_function(BenchmarkId::new("mofr", 1), |b| {
             b.iter(|| {
                 for i in 0..count1 {
                     black_box(rs.select1(i));
                 }
             })
         })
-        .bench_function(BenchmarkId::new("index", 0), |b| {
+        .bench_function(BenchmarkId::new("mofr", 0), |b| {
             b.iter(|| {
                 for i in 0..count0 {
                     black_box(rs.select0(i));
+                }
+            })
+        })
+        .bench_function(BenchmarkId::new("array", 1), |b| {
+            b.iter(|| {
+                for i in 0..count1 {
+                    black_box(expected1[i]);
+                }
+            })
+        })
+        .bench_function(BenchmarkId::new("array", 0), |b| {
+            b.iter(|| {
+                for i in 0..count0 {
+                    black_box(expected0[i]);
                 }
             })
         });
