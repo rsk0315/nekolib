@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["select_word"],"struct":["RankIndex","Rs01DictParam","SelectIndex"],"type":["Rs01Dict"]};
+window.SIDEBAR_ITEMS = {"struct":["RankIndex","Rs01DictParam","SelectIndex"],"type":["Rs01Dict"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/ds/rs01_dict/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rs01_dict" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (ee9c7c940 2024-02-14)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/ds/rs01_dict/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rs01_dict" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (a4472498d 2024-02-15)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -133,9 +133,9 @@
     ],
     "naive": [
       "assoc-list",
+      "bit-vector",
       "concat-monoid",
-      "disjoint-set",
-      "rs01_dict"
+      "disjoint-set"
     ],
     "ops": [
       "monoid",
@@ -859,14 +859,6 @@
 <a href="#634" id="634">634</a>
 <a href="#635" id="635">635</a>
 <a href="#636" id="636">636</a>
-<a href="#637" id="637">637</a>
-<a href="#638" id="638">638</a>
-<a href="#639" id="639">639</a>
-<a href="#640" id="640">640</a>
-<a href="#641" id="641">641</a>
-<a href="#642" id="642">642</a>
-<a href="#643" id="643">643</a>
-<a href="#644" id="644">644</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::{Range, RangeInclusive};
 
 <span class="kw">const </span>RANK_BLOCK: usize = <span class="number">64</span>;
@@ -1083,7 +1075,7 @@
     <span class="kw">const </span>POPCNT: usize,
 &gt; {
     <span class="doccomment">/// $`\log(n)^2`$-bit blocks.
-    </span>large: Vec&lt;u16&gt;,
+    </span>large: Vec&lt;u64&gt;,
 
     <span class="doccomment">/// $`O(\tfrac12\log(n))`$-bit blocks.
     </span>small: Vec&lt;u16&gt;,
@@ -1108,7 +1100,7 @@
 
         <span class="kw">let </span>large: Vec&lt;<span class="kw">_</span>&gt; = count
             .chunks(LARGE / POPCNT)
-            .map(|c| c.iter().sum::&lt;u16&gt;())
+            .map(|c| c.iter().map(|<span class="kw-2">&amp;</span>x| x <span class="kw">as </span>u64).sum::&lt;u64&gt;())
             .scan(<span class="number">0</span>, |acc, x| <span class="prelude-val">Some</span>(std::mem::replace(acc, <span class="kw-2">*</span>acc + x)))
             .collect();
 
@@ -1135,8 +1127,8 @@
     <span class="kw">fn </span>from((buf, len): (Vec&lt;u64&gt;, usize)) -&gt; <span class="self">Self </span>{ <span class="self">Self </span>{ buf, len } }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[bool]&gt; <span class="kw">for </span>SimpleBitVec {
-    <span class="kw">fn </span>from(a: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[bool]) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>[bool]&gt; <span class="kw">for </span>SimpleBitVec {
+    <span class="kw">fn </span>from(a: <span class="kw-2">&amp;</span>[bool]) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>len = a.len();
         <span class="kw">let </span>n = (len + W - <span class="number">1</span>) / W;
         <span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[<span class="number">0</span>; n];
@@ -1225,8 +1217,7 @@
     <span class="kw">const </span>SPARSE_LEN: usize,
     <span class="kw">const </span>BRANCH: usize,
 &gt; {
-    ds: Vec&lt;(
-        usize,
+    inner: Vec&lt;
         SelectIndexInner&lt;
             BIT_PATTERNS,
             POPCNT,
@@ -1236,7 +1227,7 @@
             SPARSE_LEN,
             BRANCH,
         &gt;,
-    )&gt;,
+    &gt;,
 }
 
 <span class="kw">trait </span>SelectLookup&lt;
@@ -1347,7 +1338,7 @@
     <span class="kw">fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>SimpleBitVec) -&gt; usize {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Sparse(index) =&gt; index[i],
-            <span class="self">Self</span>::Dense(tree, range_start) =&gt; {
+            <span class="self">Self</span>::Dense(tree, start) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>i = i;
                 <span class="kw">let </span><span class="kw-2">mut </span>cur = <span class="number">0</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>off = <span class="number">0</span>;
@@ -1361,11 +1352,10 @@
                     i -= count <span class="kw">as </span>usize;
                 }
 
-                <span class="kw">let </span>start =
-                    range_start + cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
-                <span class="kw">let </span>end = b.len().min(start + LEAF_LEN);
-                <span class="kw">let </span>leaf = b.get::&lt;X&gt;(start..end);
-                off * LEAF_LEN + <span class="self">Self</span>::WORD[leaf <span class="kw">as </span>usize][i] <span class="kw">as </span>usize
+                <span class="kw">let </span>bstart = start + cur / (BRANCH * LG2_POPCNT) * LEAF_LEN;
+                <span class="kw">let </span>bend = b.len().min(bstart + LEAF_LEN);
+                <span class="kw">let </span>leaf = b.get::&lt;X&gt;(bstart..bend);
+                start + off * LEAF_LEN + <span class="self">Self</span>::WORD[leaf <span class="kw">as </span>usize][i] <span class="kw">as </span>usize
             }
         }
     }
@@ -1402,39 +1392,16 @@
             }
             <span class="kw">if </span>cur.len() &gt;= POPCNT || i == n - <span class="number">1 </span>{
                 <span class="kw">let </span>tmp = std::mem::take(<span class="kw-2">&amp;mut </span>cur);
-                res.push((
-                    start,
-                    SelectIndexInner::new::&lt;X&gt;(tmp, start..=i, b),
-                ));
+                res.push(SelectIndexInner::new::&lt;X&gt;(tmp, start..=i, b));
                 start = i + <span class="number">1</span>;
             }
         }
-        <span class="self">Self </span>{ ds: res }
+        <span class="self">Self </span>{ inner: res }
     }
 
     <span class="kw">fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>SimpleBitVec) -&gt; usize {
-        <span class="kw">let </span>ds = <span class="kw-2">&amp;</span><span class="self">self</span>.ds[i / POPCNT];
-        ds.<span class="number">0 </span>+ ds.<span class="number">1</span>.select::&lt;X&gt;(i % POPCNT, b)
+        <span class="self">self</span>.inner[i / POPCNT].select::&lt;X&gt;(i % POPCNT, b)
     }
-}
-
-<span class="kw">pub fn </span>select_word&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">mut </span>w: u64, <span class="kw-2">mut </span>i: u32) -&gt; u32 {
-    <span class="kw">if </span>!X {
-        w = !w;
-    }
-
-    <span class="kw">let </span><span class="kw-2">mut </span>res = <span class="number">0</span>;
-    <span class="kw">for </span>lg2 <span class="kw">in </span>(<span class="number">0</span>..<span class="number">6</span>).rev() {
-        <span class="kw">let </span>len = <span class="number">1 </span>&lt;&lt; lg2;
-        <span class="kw">let </span>mask = !(!<span class="number">0 </span>&lt;&lt; len);
-        <span class="kw">let </span>count = (w &amp; mask).count_ones();
-        <span class="kw">if </span>count &lt;= i {
-            w &gt;&gt;= len;
-            i -= count;
-            res += len;
-        }
-    }
-    res
 }
 
 <span class="attr">#[cfg(test)]
@@ -1473,20 +1440,37 @@
 </span><span class="kw">fn </span>sanity_check_rank() {
     <span class="kw">let </span>a = <span class="macro">bitvec!</span>(<span class="string">b"000 010 110 000; 111 001 000 011; 000 000 010 010"</span>);
     <span class="kw">let </span>rs = Rs01DictParam::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;::new(<span class="kw-2">&amp;</span>a);
-    <span class="kw">let </span>expected = [
+    <span class="kw">let </span>expected1 = [
         <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>,
         <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">10</span>, <span class="number">10</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">11</span>,
     ];
-    <span class="kw">let </span>actual: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..a.len()).map(|i| rs.rank1(i)).collect();
-    <span class="macro">assert_eq!</span>(actual, expected);
+    <span class="kw">let </span>actual1: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..a.len()).map(|i| rs.rank1(i)).collect();
+    <span class="macro">assert_eq!</span>(actual1, expected1);
+
+    <span class="kw">let </span>expected0 = [
+        <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">11</span>, <span class="number">12</span>, <span class="number">13</span>, <span class="number">14</span>,
+        <span class="number">15</span>, <span class="number">15</span>, <span class="number">15</span>, <span class="number">16</span>, <span class="number">17</span>, <span class="number">18</span>, <span class="number">19</span>, <span class="number">20</span>, <span class="number">21</span>, <span class="number">22</span>, <span class="number">22</span>, <span class="number">23</span>, <span class="number">24</span>, <span class="number">24</span>, <span class="number">25</span>,
+    ];
+    <span class="kw">let </span>actual0: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..a.len()).map(|i| rs.rank0(i)).collect();
+    <span class="macro">assert_eq!</span>(actual0, expected0);
 }
 
 <span class="attr">#[test]
-</span><span class="kw">fn </span>sanity_check_select() {
+</span><span class="kw">fn </span>sanity_check_select_dense() {
     <span class="kw">let </span>a = <span class="macro">bitvec!</span>(<span class="string">b"000 010 110; 000 111 001; 000 011 000"</span>);
     <span class="kw">let </span>ones = a.iter().filter(|&amp;&amp;x| x).count();
     <span class="kw">let </span>rs = Rs01DictParam::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">4096</span>, <span class="number">12</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">8</span>, <span class="number">100</span>, <span class="number">3</span>&gt;::new(<span class="kw-2">&amp;</span>a);
     <span class="kw">let </span>expected = [<span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">12</span>, <span class="number">13</span>, <span class="number">14</span>, <span class="number">17</span>, <span class="number">22</span>, <span class="number">23</span>];
+    <span class="kw">let </span>actual: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..ones).map(|i| rs.select1(i)).collect();
+    <span class="macro">assert_eq!</span>(actual, expected);
+}
+
+<span class="attr">#[test]
+</span><span class="kw">fn </span>sanity_check_select_sparse() {
+    <span class="kw">let </span>a = <span class="macro">bitvec!</span>(<span class="string">b"001 010 000; 000 000 110"</span>);
+    <span class="kw">let </span>ones = a.iter().filter(|&amp;&amp;x| x).count();
+    <span class="kw">let </span>rs = Rs01DictParam::&lt;<span class="number">4096</span>, <span class="number">12</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>&gt;::new(<span class="kw-2">&amp;</span>a);
+    <span class="kw">let </span>expected = [<span class="number">2</span>, <span class="number">4</span>, <span class="number">15</span>, <span class="number">16</span>];
     <span class="kw">let </span>actual: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..ones).map(|i| rs.select1(i)).collect();
     <span class="macro">assert_eq!</span>(actual, expected);
 }

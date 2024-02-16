@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["select_word"],"struct":["RankIndexNlC","Rs01DictNLlParam","Rs01DictNlC","SelectIndexNlC"],"type":["Rs01DictNLl"]};
