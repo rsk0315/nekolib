@@ -529,6 +529,18 @@
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
 </pre></div><pre class="rust"><code><span class="comment">// N: O(n)
 // Nl: O(n log(n))
 // Nll: O(n log(log(n)))
@@ -628,14 +640,14 @@
     <span class="kw">pub fn </span>select0(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; usize { <span class="self">self</span>.select::&lt;<span class="bool-val">false</span>&gt;(i) }
 }
 
-<span class="kw">struct </span>RankIndexNC {
+<span class="kw">struct </span>RankIndexNLl {
     block: Vec&lt;usize&gt;,
     buf: Vec&lt;u64&gt;,
 }
 
 <span class="kw">const </span>W: usize = u64::BITS <span class="kw">as </span>usize;
 
-<span class="kw">impl </span>RankIndexNC {
+<span class="kw">impl </span>RankIndexNLl {
     <span class="kw">pub fn </span>new(a: <span class="kw-2">&amp;</span>[bool]) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>len = a.len();
         <span class="kw">let </span>n = (len + W - <span class="number">1</span>) / W;
@@ -659,6 +671,23 @@
         <span class="kw">let </span>mini = <span class="self">self</span>.buf[large] &amp; !(!<span class="number">0 </span>&lt;&lt; small);
         <span class="kw">let </span>count1 = <span class="self">self</span>.block[large] + mini.count_ones() <span class="kw">as </span>usize;
         <span class="kw">if </span>X { count1 } <span class="kw">else </span>{ i - count1 }
+    }
+    <span class="kw">pub fn </span>rank_bisect&lt;<span class="kw">const </span>X: bool&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        i: usize,
+        range: Range&lt;usize&gt;,
+    ) -&gt; usize {
+        <span class="kw">let </span><span class="kw-2">mut </span>lo = range.start / W;
+        <span class="kw">let </span><span class="kw-2">mut </span>hi = (range.end + W - <span class="number">1</span>) / W;
+        <span class="kw">while </span>hi - lo &gt; <span class="number">1 </span>{
+            <span class="kw">let </span>mid = lo + (hi - lo) / <span class="number">2</span>;
+            <span class="kw">let </span>count1 = <span class="self">self</span>.block[mid];
+            <span class="kw">let </span>count = <span class="kw">if </span>X { count1 } <span class="kw">else </span>{ mid * W - count1 };
+            <span class="kw-2">*</span>(<span class="kw">if </span>count &lt;= i { <span class="kw-2">&amp;mut </span>lo } <span class="kw">else </span>{ <span class="kw-2">&amp;mut </span>hi }) = mid;
+        }
+        <span class="kw">let </span>count1 = <span class="self">self</span>.block[lo];
+        <span class="kw">let </span>count = <span class="kw">if </span>X { count1 } <span class="kw">else </span>{ lo * W - count1 };
+        lo * W + select_word::&lt;X&gt;(<span class="self">self</span>.buf[lo], (i - count) <span class="kw">as _</span>) <span class="kw">as </span>usize
     }
 }
 
@@ -691,7 +720,7 @@
         <span class="self">Self </span>{ inner: res }
     }
 
-    <span class="kw">pub fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, r: <span class="kw-2">&amp;</span>RankIndexNC) -&gt; usize {
+    <span class="kw">pub fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, r: <span class="kw-2">&amp;</span>RankIndexNLl) -&gt; usize {
         <span class="self">self</span>.inner[i / POPCNT].select::&lt;X&gt;(i, i % POPCNT, r)
     }
 }
@@ -706,22 +735,17 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         i: usize,
         i_rem: usize,
-        r: <span class="kw-2">&amp;</span>RankIndexNC,
+        r: <span class="kw-2">&amp;</span>RankIndexNLl,
     ) -&gt; usize {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Sparse(pos) =&gt; pos[i_rem],
             <span class="self">Self</span>::Dense(Range { start, end }) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>lo = <span class="kw-2">*</span>start;
-                <span class="kw">let </span><span class="kw-2">mut </span>hi = <span class="kw-2">*</span>end;
+                <span class="kw">let </span>lo = <span class="kw-2">*</span>start;
+                <span class="kw">let </span>hi = <span class="kw-2">*</span>end;
                 <span class="kw">if </span>r.rank::&lt;X&gt;(lo) &gt; i {
                     <span class="kw">return </span>lo;
                 }
-                <span class="kw">while </span>hi - lo &gt; <span class="number">1 </span>{
-                    <span class="kw">let </span>mid = lo + (hi - lo) / <span class="number">2</span>;
-                    <span class="kw-2">*</span>(<span class="kw">if </span>r.rank::&lt;X&gt;(mid) &lt;= i { <span class="kw-2">&amp;mut </span>lo } <span class="kw">else </span>{ <span class="kw-2">&amp;mut </span>hi }) =
-                        mid;
-                }
-                hi
+                r.rank_bisect::&lt;X&gt;(i, lo..hi)
             }
         }
     }
@@ -733,7 +757,7 @@
 </span><span class="kw">pub type </span>Rs01DictNLl = Rs01DictNLlParam&lt;POPCNT, SPARSE_LEN&gt;;
 
 <span class="kw">pub struct </span>Rs01DictNLlParam&lt;<span class="kw">const </span>POPCNT: usize, <span class="kw">const </span>SPARSE_LEN: usize&gt; {
-    rank_index: RankIndexNC,
+    rank_index: RankIndexNLl,
     select1_index: SelectIndexNLl&lt;POPCNT, SPARSE_LEN&gt;,
     select0_index: SelectIndexNLl&lt;POPCNT, SPARSE_LEN&gt;,
 }
@@ -743,7 +767,7 @@
 {
     <span class="kw">pub fn </span>new(a: <span class="kw-2">&amp;</span>[bool]) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            rank_index: RankIndexNC::new(a),
+            rank_index: RankIndexNLl::new(a),
             select1_index: SelectIndexNLl::new::&lt;<span class="bool-val">true</span>&gt;(a),
             select0_index: SelectIndexNLl::new::&lt;<span class="bool-val">false</span>&gt;(a),
         }
