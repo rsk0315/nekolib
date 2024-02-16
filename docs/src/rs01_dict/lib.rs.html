@@ -861,17 +861,17 @@
 <a href="#636" id="636">636</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::{Range, RangeInclusive};
 
-<span class="kw">const </span>RANK_BLOCK: usize = <span class="number">64</span>;
-<span class="kw">const </span>RANK_POPCNT: usize = <span class="number">16</span>;
-<span class="kw">const </span>RANK_BIT_PATTERNS: usize = <span class="number">1 </span>&lt;&lt; RANK_POPCNT;
+<span class="kw">const </span>RANK_BLOCK: usize = <span class="number">1024</span>; <span class="comment">// (1/4) log(n)^2
+</span><span class="kw">const </span>RANK_POPCNT: usize = <span class="number">16</span>; <span class="comment">// (1/2) log(n)/2
+</span><span class="kw">const </span>RANK_BIT_PATTERNS: usize = <span class="number">1 </span>&lt;&lt; RANK_POPCNT;
 
-<span class="kw">const </span>SELECT_LG2_POPCNT: usize = <span class="number">3</span>;
-<span class="kw">const </span>SELECT_POPCNT: usize = !(!<span class="number">0 </span>&lt;&lt; SELECT_LG2_POPCNT);
-<span class="kw">const </span>SELECT_LEAF_LEN: usize = <span class="number">12</span>;
-<span class="kw">const </span>SELECT_POW2_LEAF_LEN: usize = <span class="number">1 </span>&lt;&lt; SELECT_LEAF_LEN;
-<span class="kw">const </span>SELECT_SPARSE_LEN: usize = <span class="number">27648</span>;
-<span class="kw">const </span>SELECT_BRANCH: usize = <span class="number">4</span>;
-<span class="kw">const </span>SELECT_BIT_PATTERNS: usize = <span class="number">1 </span>&lt;&lt; (SELECT_BRANCH * SELECT_LG2_POPCNT);
+<span class="kw">const </span>SELECT_LG2_POPCNT: usize = <span class="number">4</span>; <span class="comment">// (ceil . 1/2) log(log(n^2))
+</span><span class="kw">const </span>SELECT_POPCNT: usize = !(!<span class="number">0 </span>&lt;&lt; SELECT_LG2_POPCNT);
+<span class="kw">const </span>SELECT_LEAF_LEN: usize = <span class="number">16</span>; <span class="comment">// (1/2) log(n)/2
+</span><span class="kw">const </span>SELECT_POW2_LEAF_LEN: usize = <span class="number">1 </span>&lt;&lt; SELECT_LEAF_LEN;
+<span class="kw">const </span>SELECT_SPARSE_LEN: usize = <span class="number">12946</span>; <span class="comment">// (ceil . (1/6)^4) log(n)^4
+</span><span class="kw">const </span>SELECT_BRANCH: usize = <span class="number">4</span>; <span class="comment">// (1/2) sqrt(log(n))
+</span><span class="kw">const </span>SELECT_BIT_PATTERNS: usize = <span class="number">1 </span>&lt;&lt; (SELECT_BRANCH * SELECT_LG2_POPCNT);
 
 <span class="kw">pub type </span>Rs01Dict = Rs01DictParam&lt;
     RANK_BIT_PATTERNS,

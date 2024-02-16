@@ -526,6 +526,9 @@
 <a href="#301" id="301">301</a>
 <a href="#302" id="302">302</a>
 <a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
 </pre></div><pre class="rust"><code><span class="comment">// N: O(n)
 // Nl: O(n log(n))
 // Nll: O(n log(log(n)))
@@ -724,7 +727,10 @@
     }
 }
 
-<span class="kw">pub type </span>Rs01DictNLl = Rs01DictNLlParam&lt;<span class="number">64</span>, <span class="number">1024</span>&gt;;
+<span class="kw">const </span>POPCNT: usize = <span class="number">64</span>; <span class="comment">// log(n)
+</span><span class="kw">const </span>SPARSE_LEN: usize = <span class="number">4096</span>; <span class="comment">// log(n)^2
+
+</span><span class="kw">pub type </span>Rs01DictNLl = Rs01DictNLlParam&lt;POPCNT, SPARSE_LEN&gt;;
 
 <span class="kw">pub struct </span>Rs01DictNLlParam&lt;<span class="kw">const </span>POPCNT: usize, <span class="kw">const </span>SPARSE_LEN: usize&gt; {
     rank_index: RankIndexNC,
