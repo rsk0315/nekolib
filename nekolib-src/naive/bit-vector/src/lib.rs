@@ -38,7 +38,6 @@ pub fn select_word<const X: bool>(mut w: u64, mut i: u32) -> u32 {
     if !X {
         w = !w;
     }
-
     let mut res = 0;
     for lg2 in (0..6).rev() {
         let len = 1 << lg2;
