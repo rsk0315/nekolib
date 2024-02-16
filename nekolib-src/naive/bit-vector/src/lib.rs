@@ -108,7 +108,7 @@ impl RankIndexNC {
     pub fn new(a: &[bool]) -> Self {
         let len = a.len();
         let n = (len + W - 1) / W;
-        let mut buf = vec![0_u64; n];
+        let mut buf = vec![0_u64; n + 1];
         for i in 0..len {
             if a[i] {
                 buf[i / W] |= 1 << (i % W);
@@ -180,11 +180,11 @@ impl SelectIndexNLlInner {
         match self {
             Self::Sparse(pos) => pos[i_rem],
             Self::Dense(Range { start, end }) => {
-                if r.rank::<X>(0) > i {
-                    return 0;
-                }
                 let mut lo = *start;
                 let mut hi = *end;
+                if r.rank::<X>(lo) > i {
+                    return lo;
+                }
                 while hi - lo > 1 {
                     let mid = lo + (hi - lo) / 2;
                     *(if r.rank::<X>(mid) <= i { &mut lo } else { &mut hi }) =
@@ -196,14 +196,16 @@ impl SelectIndexNLlInner {
     }
 }
 
-pub struct Rs01DictNLl<const POPCNT: usize, const SPARSE_LEN: usize> {
+pub type Rs01DictNLl = Rs01DictNLlParam<64, 1024>;
+
+pub struct Rs01DictNLlParam<const POPCNT: usize, const SPARSE_LEN: usize> {
     rank_index: RankIndexNC,
     select1_index: SelectIndexNLl<POPCNT, SPARSE_LEN>,
     select0_index: SelectIndexNLl<POPCNT, SPARSE_LEN>,
 }
 
 impl<const POPCNT: usize, const SPARSE_LEN: usize>
-    Rs01DictNLl<POPCNT, SPARSE_LEN>
+    Rs01DictNLlParam<POPCNT, SPARSE_LEN>
 {
     pub fn new(a: &[bool]) -> Self {
         Self {
@@ -256,7 +258,7 @@ macro_rules! bitvec {
 #[test]
 fn sanity_check_rank() {
     let a = bitvec!(b"000 010 110 000; 111 001 000 011; 000 000 010 010");
-    let rs = Rs01DictNLl::<100, 100>::new(&a);
+    let rs = Rs01DictNLlParam::<100, 100>::new(&a);
     let expected1 = [
         0, 0, 0, 0, 1, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 9,
         9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 11, 11,
@@ -277,7 +279,7 @@ fn sanity_check_select_dense() {
     let a = bitvec!(b"000 010 110; 000 111 001; 000 011 000");
     let ones = a.iter().filter(|&&x| x).count();
     let zeros = a.len() - ones;
-    let rs = Rs01DictNLl::<100, 100>::new(&a);
+    let rs = Rs01DictNLlParam::<100, 100>::new(&a);
     let expected1: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
     let expected0: Vec<_> = (0..a.len()).filter(|&i| !a[i]).collect();
     let actual1: Vec<_> = (0..ones).map(|i| rs.select1(i)).collect();
@@ -291,7 +293,7 @@ fn sanity_check_select_sparse() {
     let a = bitvec!(b"001 010 000; 000 000 110");
     let ones = a.iter().filter(|&&x| x).count();
     let zeros = a.len() - ones;
-    let rs = Rs01DictNLl::<2, 0>::new(&a);
+    let rs = Rs01DictNLlParam::<2, 0>::new(&a);
     let expected1: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
     let expected0: Vec<_> = (0..a.len()).filter(|&i| !a[i]).collect();
     let actual1: Vec<_> = (0..ones).map(|i| rs.select1(i)).collect();

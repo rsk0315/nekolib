@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 criterion = "0.5.1"
 
+[dev-dependencies]
+bit-vector = { path = "../../naive/bit-vector" }
+
 [[bench]]
 name = "bench_selects"
 harness = false

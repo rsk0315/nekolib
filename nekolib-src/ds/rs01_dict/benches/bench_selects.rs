@@ -1,59 +1,11 @@
+use bit_vector::{Rs01DictNLl, Rs01DictNlC};
 use criterion::{
     black_box, criterion_group, criterion_main, BenchmarkId, Criterion,
 };
 use rs01_dict::Rs01Dict;
 
-use crate::benchmarks::select_word;
-
-mod benchmarks {
-    pub fn select_word<const X: bool>(mut w: u64, mut i: u32) -> u32 {
-        if !X {
-            w = !w;
-        }
-        let mut res = 0;
-        for lg2 in (0..6).rev() {
-            let len = 1 << lg2;
-            let mask = !(!0 << len);
-            let count = (w & mask).count_ones();
-            if count <= i {
-                w >>= len;
-                i -= count;
-                res += len;
-            }
-        }
-        res
-    }
-}
-
 fn bench_selects(c: &mut Criterion) {
-    let w = 0x_3046_2FB7_58C1_EDA9_u64;
-    let a: Vec<_> = (0..64).map(|i| w >> i & 1 != 0).collect();
-
-    let rs = Rs01Dict::new(&a);
-
     let mut group = c.benchmark_group("select");
-
-    for i in 0..32 {
-        let actual = rs.select1(i) as u32;
-        let expected = select_word::<true>(w, i as _);
-        assert_eq!(expected, actual);
-    }
-
-    group
-        .bench_function(BenchmarkId::new("mofr", w), |b| {
-            b.iter(|| {
-                for i in 0..32 {
-                    black_box(rs.select1(i));
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("word", w), |b| {
-            b.iter(|| {
-                for i in 0..32 {
-                    black_box(select_word::<true>(w, i));
-                }
-            })
-        });
 
     // % bc <<< "obase=16; ibase=2; $(gshuf -re {0,1}{0,1}{0,1}{0,1} -n$((20*16)))" \
     //       | tr -d \\n \
@@ -196,47 +148,112 @@ fn bench_selects(c: &mut Criterion) {
         a.iter().flat_map(|&w| (0..64).map(move |i| w >> i & 1 != 0)).collect();
 
     let rs = Rs01Dict::new(&a);
+    let rs_nlc = Rs01DictNlC::new(&a);
+    let rs_nll = Rs01DictNLl::new(&a);
 
-    let expected1: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
-    let actual1: Vec<_> = (0..expected1.len()).map(|i| rs.select1(i)).collect();
-    assert_eq!(actual1, expected1);
-
-    let count1 = expected1.len();
-    eprintln!("count1: {count1}");
-
-    let expected0: Vec<_> = (0..a.len()).filter(|&i| !a[i]).collect();
-    let actual0: Vec<_> = (0..expected0.len()).map(|i| rs.select0(i)).collect();
-    assert_eq!(actual0, expected0);
-
-    let count0 = expected0.len();
+    let expected_select0 = || (0..a.len()).filter(|&i| !a[i]);
+    let count0 = expected_select0().count();
     eprintln!("count0: {count0}");
 
+    let expected_select1 = || (0..a.len()).filter(|&i| a[i]);
+    let count1 = expected_select1().count();
+    eprintln!("count1: {count1}");
+
+    assert!((0..count0).map(|i| rs.select0(i)).eq(expected_select0()));
+    assert!((0..count0).map(|i| rs_nlc.select0(i)).eq(expected_select0()));
+    assert!((0..count0).map(|i| rs_nll.select0(i)).eq(expected_select0()));
+
+    assert!((0..count1).map(|i| rs.select1(i)).eq(expected_select1()));
+    assert!((0..count1).map(|i| rs_nlc.select1(i)).eq(expected_select1()));
+    assert!((0..count1).map(|i| rs_nll.select1(i)).eq(expected_select1()));
+
+    assert!((0..count0).map(|i| rs.select0(i)).eq(expected_select0()));
+    assert!((0..count0).map(|i| rs_nlc.select0(i)).eq(expected_select0()));
+    assert!((0..count0).map(|i| rs_nll.select0(i)).eq(expected_select0()));
+
+    assert!((0..count1).map(|i| rs.select1(i)).eq(expected_select1()));
+    assert!((0..count1).map(|i| rs_nlc.select1(i)).eq(expected_select1()));
+    assert!((0..count1).map(|i| rs_nll.select1(i)).eq(expected_select1()));
+
+    let expected_rank0 = || {
+        (0..a.len()).map(|i| !a[i] as usize).scan(0, |acc, x| {
+            *acc += x;
+            Some(*acc)
+        })
+    };
+    let expected_rank1 = || {
+        (0..a.len()).map(|i| a[i] as usize).scan(0, |acc, x| {
+            *acc += x;
+            Some(*acc)
+        })
+    };
+
+    assert!((0..a.len()).map(|i| rs.rank0(i)).eq(expected_rank0()));
+    assert!((0..a.len()).map(|i| rs_nlc.rank0(i)).eq(expected_rank0()));
+    assert!((0..a.len()).map(|i| rs_nll.rank0(i)).eq(expected_rank0()));
+
+    assert!((0..a.len()).map(|i| rs.rank1(i)).eq(expected_rank1()));
+    assert!((0..a.len()).map(|i| rs_nlc.rank1(i)).eq(expected_rank1()));
+    assert!((0..a.len()).map(|i| rs_nll.rank1(i)).eq(expected_rank1()));
+
     group
-        .bench_function(BenchmarkId::new("mofr", 1), |b| {
+        .bench_function(BenchmarkId::new("succinct", "rank"), |b| {
             b.iter(|| {
+                for i in 0..a.len() {
+                    black_box(rs.rank0(i));
+                }
+                for i in 0..a.len() {
+                    black_box(rs.rank1(i));
+                }
+            })
+        })
+        .bench_function(BenchmarkId::new("naive", "rank"), |b| {
+            b.iter(|| {
+                for i in 0..a.len() {
+                    black_box(rs_nlc.rank0(i));
+                }
+                for i in 0..a.len() {
+                    black_box(rs_nlc.rank1(i));
+                }
+            })
+        })
+        .bench_function(BenchmarkId::new("compact", "rank"), |b| {
+            b.iter(|| {
+                for i in 0..a.len() {
+                    black_box(rs_nll.rank0(i));
+                }
+                for i in 0..a.len() {
+                    black_box(rs_nll.rank1(i));
+                }
+            })
+        })
+        .bench_function(BenchmarkId::new("succinct", "select"), |b| {
+            b.iter(|| {
+                for i in 0..count0 {
+                    black_box(rs.select0(i));
+                }
                 for i in 0..count1 {
                     black_box(rs.select1(i));
                 }
             })
         })
-        .bench_function(BenchmarkId::new("mofr", 0), |b| {
+        .bench_function(BenchmarkId::new("naive", "select"), |b| {
             b.iter(|| {
                 for i in 0..count0 {
-                    black_box(rs.select0(i));
+                    black_box(rs_nlc.select0(i));
                 }
-            })
-        })
-        .bench_function(BenchmarkId::new("array", 1), |b| {
-            b.iter(|| {
                 for i in 0..count1 {
-                    black_box(expected1[i]);
+                    black_box(rs_nlc.select1(i));
                 }
             })
         })
-        .bench_function(BenchmarkId::new("array", 0), |b| {
+        .bench_function(BenchmarkId::new("compact", "select"), |b| {
             b.iter(|| {
                 for i in 0..count0 {
-                    black_box(expected0[i]);
+                    black_box(rs_nll.select0(i));
+                }
+                for i in 0..count1 {
+                    black_box(rs_nll.select1(i));
                 }
             })
         });
