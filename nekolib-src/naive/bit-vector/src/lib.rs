@@ -97,14 +97,14 @@ impl Rs01DictNlC {
     pub fn select0(&self, i: usize) -> usize { self.select::<false>(i) }
 }
 
-struct RankIndexNC {
+struct RankIndexNLl {
     block: Vec<usize>,
     buf: Vec<u64>,
 }
 
 const W: usize = u64::BITS as usize;
 
-impl RankIndexNC {
+impl RankIndexNLl {
     pub fn new(a: &[bool]) -> Self {
         let len = a.len();
         let n = (len + W - 1) / W;
@@ -128,6 +128,23 @@ impl RankIndexNC {
         let mini = self.buf[large] & !(!0 << small);
         let count1 = self.block[large] + mini.count_ones() as usize;
         if X { count1 } else { i - count1 }
+    }
+    pub fn rank_bisect<const X: bool>(
+        &self,
+        i: usize,
+        range: Range<usize>,
+    ) -> usize {
+        let mut lo = range.start / W;
+        let mut hi = (range.end + W - 1) / W;
+        while hi - lo > 1 {
+            let mid = lo + (hi - lo) / 2;
+            let count1 = self.block[mid];
+            let count = if X { count1 } else { mid * W - count1 };
+            *(if count <= i { &mut lo } else { &mut hi }) = mid;
+        }
+        let count1 = self.block[lo];
+        let count = if X { count1 } else { lo * W - count1 };
+        lo * W + select_word::<X>(self.buf[lo], (i - count) as _) as usize
     }
 }
 
@@ -160,7 +177,7 @@ impl<const POPCNT: usize, const SPARSE_LEN: usize>
         Self { inner: res }
     }
 
-    pub fn select<const X: bool>(&self, i: usize, r: &RankIndexNC) -> usize {
+    pub fn select<const X: bool>(&self, i: usize, r: &RankIndexNLl) -> usize {
         self.inner[i / POPCNT].select::<X>(i, i % POPCNT, r)
     }
 }
@@ -175,22 +192,17 @@ impl SelectIndexNLlInner {
         &self,
         i: usize,
         i_rem: usize,
-        r: &RankIndexNC,
+        r: &RankIndexNLl,
     ) -> usize {
         match self {
             Self::Sparse(pos) => pos[i_rem],
             Self::Dense(Range { start, end }) => {
-                let mut lo = *start;
-                let mut hi = *end;
+                let lo = *start;
+                let hi = *end;
                 if r.rank::<X>(lo) > i {
                     return lo;
                 }
-                while hi - lo > 1 {
-                    let mid = lo + (hi - lo) / 2;
-                    *(if r.rank::<X>(mid) <= i { &mut lo } else { &mut hi }) =
-                        mid;
-                }
-                hi
+                r.rank_bisect::<X>(i, lo..hi)
             }
         }
     }
@@ -202,7 +214,7 @@ const SPARSE_LEN: usize = 4096; // log(n)^2
 pub type Rs01DictNLl = Rs01DictNLlParam<POPCNT, SPARSE_LEN>;
 
 pub struct Rs01DictNLlParam<const POPCNT: usize, const SPARSE_LEN: usize> {
-    rank_index: RankIndexNC,
+    rank_index: RankIndexNLl,
     select1_index: SelectIndexNLl<POPCNT, SPARSE_LEN>,
     select0_index: SelectIndexNLl<POPCNT, SPARSE_LEN>,
 }
@@ -212,7 +224,7 @@ impl<const POPCNT: usize, const SPARSE_LEN: usize>
 {
     pub fn new(a: &[bool]) -> Self {
         Self {
-            rank_index: RankIndexNC::new(a),
+            rank_index: RankIndexNLl::new(a),
             select1_index: SelectIndexNLl::new::<true>(a),
             select0_index: SelectIndexNLl::new::<false>(a),
         }

@@ -1042,6 +1042,7 @@ fn bench_selects(c: &mut Criterion) {
     let mut group = c.benchmark_group("rs01dict");
     let a: Vec<_> =
         A.iter().flat_map(|&w| (0..64).map(move |i| w >> i & 1 != 0)).collect();
+    let a = a.repeat(16);
 
     let rs = Rs01Dict::new(&a);
     let rs_nlc = Rs01DictNlC::new(&a);
