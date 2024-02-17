@@ -8,6 +8,8 @@ criterion = "0.5.1"
 
 [dev-dependencies]
 bit-vector = { path = "../../naive/bit-vector" }
+rand = "0.8.5"
+rand_chacha = "0.3.1"
 
 [[bench]]
 name = "bench_selects"
