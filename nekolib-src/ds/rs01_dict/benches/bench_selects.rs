@@ -34,7 +34,7 @@ fn bench_selects(c: &mut Criterion) {
         0xF5, 0xDD, 0x07, 0x06, 0xAE, 0xE4, 0x5A, 0xDC,
     ]);
     let len = 1 << 20;
-    let dist = Bernoulli::new(0.5).unwrap();
+    let dist = Bernoulli::new(1.0e-3).unwrap();
     let a: Vec<_> = (0..len).map(|_| dist.sample(&mut rng)).collect();
 
     let rs = Rs01Dict::new(&a);
