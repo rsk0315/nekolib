@@ -11,3 +11,4 @@ modint = { path = "modint" }
 linear_sieve = { path = "linear_sieve" }
 divisors = { path = "divisors" }
 factors = { path = "factors" }
+gcd = { path = "gcd" }
