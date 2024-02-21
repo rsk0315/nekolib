@@ -6,7 +6,7 @@ const RANK_LARGE_LEN: usize = 1024; // (1/4) log(n)^2
 const RANK_SMALL_LEN: usize = 16; // (1/2) log(n)/2
 const RANK_BIT_PATTERNS: usize = 1 << RANK_SMALL_LEN;
 
-const SELECT_SMALL_LEN: usize = 16; // (1/2) log(n)/2
+const SELECT_SMALL_LEN: usize = 15; // (1/2) log(n)/2
 const SELECT_LARGE_SPARSE_LEN: usize = 12946;
 const SELECT_LARGE_POPCNT: usize = 15;
 const SELECT_LARGE_NODE_LEN: usize = 4;
@@ -316,7 +316,7 @@ impl SimpleBitVec {
     }
 
     fn push(&mut self, w: u64, len: usize) {
-        assert_eq!(w & (!0 << len), 0);
+        assert!(len == W || w & (!0 << len) == 0);
 
         if len == 0 {
             // nothing to do
@@ -400,8 +400,9 @@ impl<const LARGE_LEN: usize, const SMALL_LEN: usize, const BIT_PATTERNS: usize>
     fn rank(&self, n: usize, b: &SimpleBitVec) -> usize {
         let large_acc = self.large[n / LARGE_LEN] as usize;
         let small_acc = self.small[n / SMALL_LEN] as usize;
-        let i = n / SMALL_LEN * SMALL_LEN;
-        let w = b.get::<true>(i..i + SMALL_LEN);
+        let il = n / SMALL_LEN * SMALL_LEN;
+        let ir = b.len().min(il + SMALL_LEN);
+        let w = b.get::<true>(il..ir);
         let small = Self::WORD[w as usize][n % SMALL_LEN] as usize;
         large_acc + small_acc + small
     }
@@ -531,7 +532,7 @@ impl<
             let mut leaf = SimpleBitVec::new();
             for i in 0..(len + SMALL_LEN - 1) / SMALL_LEN {
                 let il = start + i * SMALL_LEN;
-                let ir = b.len().min(il + SMALL_LEN);
+                let ir = end.min(il + SMALL_LEN);
                 let w = b.get::<X>(il..ir);
                 leaf.push(rl[w as usize][SMALL_LEN - 1] as u64, LARGE_NODE_LEN);
             }
@@ -593,7 +594,7 @@ impl<
 
                 nth_word /= LARGE_BRANCH;
                 let il = start + nth_word * SMALL_LEN;
-                let ir = il + SMALL_LEN;
+                let ir = b.len().min(il + SMALL_LEN);
                 let w = b.get::<X>(il..ir);
                 start
                     + nth_word * SMALL_LEN
@@ -668,6 +669,20 @@ mod tests {
         let expected: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
         for i in 0..expected.len() {
             assert_eq!(slt.select::<true>(i, &b), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_all_zero() {
+        let n = 1000;
+        let a = vec![false; n];
+        let b = SimpleBitVec::from(a.as_slice());
+        let rs = Rs01Dict::new(&a);
+
+        for i in 0..n {
+            assert_eq!(rs.rank1(i), 0);
+            assert_eq!(rs.rank0(i), i + 1);
+            assert_eq!(rs.select0(i), i);
         }
     }
 }
