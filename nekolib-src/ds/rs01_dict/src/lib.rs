@@ -15,15 +15,13 @@ const SELECT_WORD_BIT_PATTERNS: usize = 1 << SELECT_SMALL_LEN;
 const SELECT_TREE_BIT_PATTERNS: usize =
     1 << (SELECT_LARGE_NODE_LEN * SELECT_LARGE_BRANCH);
 
-const ASSERTION: () = {
+const _ASSERTION: () = {
     let popcnt = SELECT_LARGE_POPCNT;
     let node_len = SELECT_LARGE_NODE_LEN;
     let branch = SELECT_LARGE_BRANCH;
 
     let node_popcnt = !(!0 << node_len);
-    if node_popcnt * branch >= popcnt {
-        () // ok
-    } else {
+    if node_popcnt * branch < popcnt {
         panic!();
     }
 };
@@ -108,7 +106,7 @@ enum SelectIndexInner<
     const TREE_BIT_PATTERNS: usize,
 > {
     Sparse(Vec<usize>),
-    Dense(Vec<SimpleBitVec>, usize),
+    Dense(SimpleBitVec, usize),
 }
 
 trait RankLookup<const SMALL_LEN: usize, const BIT_PATTERNS: usize> {
@@ -217,7 +215,7 @@ impl SimpleBitVec {
 
     fn get_single(&self, i: usize) -> bool {
         debug_assert!(i < self.len);
-        self.buf[i / W] >> (i % W) != 0
+        self.buf[i / W] >> (i % W) & 1 != 0
     }
 
     fn get<const X: bool>(&self, Range { start, end }: Range<usize>) -> u64 {
@@ -253,6 +251,14 @@ impl SimpleBitVec {
             }
         }
         self.len += len;
+    }
+
+    fn push_vec(&mut self, other: Self) {
+        todo!();
+    }
+
+    fn pad_zero(&mut self, new_len: usize) {
+        todo!();
     }
 
     fn chunks<const X: bool>(
@@ -393,16 +399,16 @@ impl<
         b: &SimpleBitVec,
         Range { start, end }: Range<usize>,
     ) -> Self {
-        let rl = &RankIndex::<SMALL_LEN, 0, WORD_BIT_PATTERNS>::WORD;
+        let rl = &RankIndex::<0, SMALL_LEN, WORD_BIT_PATTERNS>::WORD;
         let len = end - start;
 
         let leaf = {
             let mut leaf = SimpleBitVec::new();
             for i in 0..(len + SMALL_LEN - 1) / SMALL_LEN {
                 let il = start + i * SMALL_LEN;
-                let ir = len.min(il + SMALL_LEN);
+                let ir = b.len().min(il + SMALL_LEN);
                 let w = b.get::<X>(il..ir);
-                leaf.push(rl[w as usize][SMALL_LEN - 1] as u64, SMALL_LEN);
+                leaf.push(rl[w as usize][SMALL_LEN - 1] as u64, LARGE_NODE_LEN);
             }
             leaf
         };
@@ -410,12 +416,11 @@ impl<
         let mut nodes = leaf.len() / SMALL_LEN;
         let mut tree = vec![];
         let mut last = leaf;
-        let mut width = SMALL_LEN;
-        while nodes / LARGE_BRANCH > 1 {
+        while last.len() > LARGE_NODE_LEN {
             let mut cur = SimpleBitVec::new();
             let tmp = last;
             {
-                let mut it = tmp.chunks::<true>(width);
+                let mut it = tmp.chunks::<true>(LARGE_NODE_LEN);
                 while let Some(mut sum) = it.next() {
                     sum += (1..LARGE_BRANCH)
                         .filter_map(|_| it.next())
@@ -425,24 +430,38 @@ impl<
             }
             tree.push(tmp);
             last = cur;
-            width = LARGE_NODE_LEN;
             nodes /= LARGE_BRANCH;
         }
-        tree.push(last);
-        tree.reverse();
-        Self::Dense(tree, start)
+
+        let mut len = LARGE_NODE_LEN * LARGE_BRANCH;
+        let mut tree_flatten = SimpleBitVec::new();
+        for level in tree.into_iter().rev() {
+            tree_flatten.push_vec(level);
+            tree_flatten.pad_zero(len);
+            len *= LARGE_BRANCH;
+        }
+
+        Self::Dense(tree_flatten, start)
     }
 
     fn select<const X: bool>(&self, i: usize, b: &SimpleBitVec) -> usize {
         match self {
             Self::Sparse(index) => index[i],
             Self::Dense(tree, start) => {
-                // 葉ノードだけ一つあたりのビット長が異なるので注意が必要。
-                // フィールドを分けた方がよい？ ちょっと考えた方がいいかも。
                 todo!()
             }
         }
     }
+}
+
+#[cfg(test)]
+macro_rules! bitvec {
+    ($lit:literal) => {
+        $lit.iter()
+            .filter(|&&b| matches!(b, b'0' | b'1'))
+            .map(|&b| b != b'0')
+            .collect::<Vec<_>>()
+    };
 }
 
 #[cfg(test)]
@@ -485,5 +504,16 @@ mod tests {
         assert_eq!(&table[0b101][..2], [0, 2]);
         assert_eq!(&table[0b110][..2], [1, 2]);
         assert_eq!(&table[0b111][..3], [0, 1, 2]);
+    }
+
+    #[test]
+    fn test_ctor() {
+        let a = bitvec!(b"110 001 001 000 010 010");
+        let b = SimpleBitVec::from(a.as_slice());
+        let slt = SelectIndex::<3, 1000, 12, 4, 3, 8, 4096>::new::<true>(&b);
+
+        // [6]
+        // [4, 2]
+        // [2, 1, 1, 0, 1, 1]
     }
 }
