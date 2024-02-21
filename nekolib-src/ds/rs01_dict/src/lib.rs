@@ -117,12 +117,12 @@ trait SelectLookup<
     const NODE_LEN: usize,
     const POPCNT: usize,
     const TREE_BIT_PATTERNS: usize,
-    const LEAF_LEN: usize,
+    const SMALL_LEN: usize,
     const WORD_BIT_PATTERNS: usize,
 >
 {
     const TREE: [[(u8, u8); POPCNT]; TREE_BIT_PATTERNS];
-    const WORD: [[u8; LEAF_LEN]; WORD_BIT_PATTERNS];
+    const WORD: [[u8; SMALL_LEN]; WORD_BIT_PATTERNS];
 }
 
 const fn rank_lookup<const SMALL_LEN: usize, const BIT_PATTERNS: usize>()
@@ -254,11 +254,20 @@ impl SimpleBitVec {
     }
 
     fn push_vec(&mut self, other: Self) {
-        todo!();
+        for (k, &w) in other.buf.iter().enumerate() {
+            let il = k * W;
+            let ir = other.len.min(il + W);
+            self.push(w, ir - il);
+        }
     }
 
     fn pad_zero(&mut self, new_len: usize) {
-        todo!();
+        if new_len <= self.len {
+            return;
+        }
+        let n = (new_len + W - 1) / W;
+        self.buf.resize(n, 0);
+        self.len = new_len;
     }
 
     fn chunks<const X: bool>(
@@ -293,7 +302,7 @@ impl<const LARGE_LEN: usize, const SMALL_LEN: usize, const BIT_PATTERNS: usize>
             .map(|ai| Self::WORD[ai as usize][SMALL_LEN - 1])
             .zip((0..per).cycle())
         {
-            small.push(c);
+            small.push(small_acc);
             if i == per - 1 {
                 small_acc = 0;
             } else {
@@ -371,6 +380,43 @@ impl<
     const WORD_BIT_PATTERNS: usize,
     const TREE_BIT_PATTERNS: usize,
 >
+    SelectLookup<
+        LARGE_NODE_LEN,
+        LARGE_POPCNT,
+        TREE_BIT_PATTERNS,
+        SMALL_LEN,
+        WORD_BIT_PATTERNS,
+    >
+    for SelectIndexInner<
+        SMALL_LEN,
+        LARGE_SPARSE_LEN,
+        LARGE_POPCNT,
+        LARGE_NODE_LEN,
+        LARGE_BRANCH,
+        WORD_BIT_PATTERNS,
+        TREE_BIT_PATTERNS,
+    >
+{
+    const TREE: [[(u8, u8); LARGE_POPCNT]; TREE_BIT_PATTERNS] =
+        select_tree_lookup::<
+            LARGE_NODE_LEN,
+            LARGE_POPCNT,
+            LARGE_BRANCH,
+            TREE_BIT_PATTERNS,
+        >();
+    const WORD: [[u8; SMALL_LEN]; WORD_BIT_PATTERNS] =
+        select_word_lookup::<SMALL_LEN, WORD_BIT_PATTERNS>();
+}
+
+impl<
+    const SMALL_LEN: usize,
+    const LARGE_SPARSE_LEN: usize,
+    const LARGE_POPCNT: usize,
+    const LARGE_NODE_LEN: usize,
+    const LARGE_BRANCH: usize,
+    const WORD_BIT_PATTERNS: usize,
+    const TREE_BIT_PATTERNS: usize,
+>
     SelectIndexInner<
         SMALL_LEN,
         LARGE_SPARSE_LEN,
@@ -413,7 +459,6 @@ impl<
             leaf
         };
 
-        let mut nodes = leaf.len() / SMALL_LEN;
         let mut tree = vec![];
         let mut last = leaf;
         while last.len() > LARGE_NODE_LEN {
@@ -430,25 +475,50 @@ impl<
             }
             tree.push(tmp);
             last = cur;
-            nodes /= LARGE_BRANCH;
         }
 
-        let mut len = LARGE_NODE_LEN * LARGE_BRANCH;
+        let mut level_len = LARGE_NODE_LEN * LARGE_BRANCH;
+        let mut tree_len = level_len;
         let mut tree_flatten = SimpleBitVec::new();
         for level in tree.into_iter().rev() {
             tree_flatten.push_vec(level);
-            tree_flatten.pad_zero(len);
-            len *= LARGE_BRANCH;
+            tree_flatten.pad_zero(tree_len);
+            level_len *= LARGE_BRANCH;
+            tree_len += level_len;
         }
 
         Self::Dense(tree_flatten, start)
     }
 
+    // [0, 1, 2]
+    // [3, 4, 5], [6, 7, 8], [9, 10, 11]
+    // [12, 13, 14], ...,
     fn select<const X: bool>(&self, i: usize, b: &SimpleBitVec) -> usize {
         match self {
             Self::Sparse(index) => index[i],
             Self::Dense(tree, start) => {
-                todo!()
+                let mut i = i;
+                let mut nth_word = 0;
+                let mut level_off = 0;
+                let mut level_count = LARGE_BRANCH;
+                while level_off * LARGE_NODE_LEN < tree.len() {
+                    let il = (level_off + nth_word) * LARGE_NODE_LEN;
+                    let ir = il + LARGE_NODE_LEN * LARGE_BRANCH;
+                    let w = tree.get::<true>(il..ir);
+                    let (branch, rank) = Self::TREE[w as usize][i];
+                    nth_word = (nth_word + branch as usize) * LARGE_BRANCH;
+                    level_off += level_count;
+                    level_count *= LARGE_BRANCH;
+                    i -= rank as usize;
+                }
+
+                nth_word /= LARGE_BRANCH;
+                let il = start + nth_word * SMALL_LEN;
+                let ir = il + SMALL_LEN;
+                let w = b.get::<X>(il..ir);
+                start
+                    + nth_word * SMALL_LEN
+                    + Self::WORD[w as usize][i] as usize
             }
         }
     }
@@ -507,7 +577,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ctor() {
+    fn test_select_index() {
         let a = bitvec!(b"110 001 001 000 010 010");
         let b = SimpleBitVec::from(a.as_slice());
         let slt = SelectIndex::<3, 1000, 12, 4, 3, 8, 4096>::new::<true>(&b);
@@ -515,5 +585,10 @@ mod tests {
         // [6]
         // [4, 2]
         // [2, 1, 1, 0, 1, 1]
+
+        let expected: Vec<_> = (0..a.len()).filter(|&i| a[i]).collect();
+        for i in 0..expected.len() {
+            assert_eq!(slt.select::<true>(i, &b), expected[i]);
+        }
     }
 }
