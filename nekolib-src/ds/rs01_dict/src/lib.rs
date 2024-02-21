@@ -676,7 +676,6 @@ mod tests {
     fn test_all_zero() {
         let n = 1000;
         let a = vec![false; n];
-        let b = SimpleBitVec::from(a.as_slice());
         let rs = Rs01Dict::new(&a);
 
         for i in 0..n {
