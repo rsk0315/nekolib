@@ -8,7 +8,7 @@ const RANK_BIT_PATTERNS: usize = 1 << RANK_SMALL_LEN;
 
 const SELECT_SMALL_LEN: usize = 16; // (1/2) log(n)/2
 const SELECT_LARGE_SPARSE_LEN: usize = 12946;
-const SELECT_LARGE_POPCNT: usize = 60;
+const SELECT_LARGE_POPCNT: usize = 15;
 const SELECT_LARGE_NODE_LEN: usize = 4;
 const SELECT_LARGE_BRANCH: usize = 4;
 const SELECT_WORD_BIT_PATTERNS: usize = 1 << SELECT_SMALL_LEN;
@@ -25,6 +25,19 @@ const _ASSERTION: () = {
         panic!();
     }
 };
+
+pub type Rs01Dict = Rs01DictGenerics<
+    RANK_LARGE_LEN,
+    RANK_SMALL_LEN,
+    RANK_BIT_PATTERNS,
+    SELECT_SMALL_LEN,
+    SELECT_LARGE_SPARSE_LEN,
+    SELECT_LARGE_POPCNT,
+    SELECT_LARGE_NODE_LEN,
+    SELECT_LARGE_BRANCH,
+    SELECT_WORD_BIT_PATTERNS,
+    SELECT_TREE_BIT_PATTERNS,
+>;
 
 pub struct Rs01DictGenerics<
     const RANK_LARGE_LEN: usize,
@@ -188,6 +201,72 @@ const fn select_word_lookup<
         i += 1;
     }
     table
+}
+
+impl<
+    const RANK_LARGE_LEN: usize,
+    const RANK_SMALL_LEN: usize,
+    const RANK_BIT_PATTERNS: usize,
+    const SELECT_SMALL_LEN: usize,
+    const SELECT_LARGE_SPARSE_LEN: usize,
+    const SELECT_LARGE_POPCNT: usize,
+    const SELECT_LARGE_NODE_LEN: usize,
+    const SELECT_LARGE_BRANCH: usize,
+    const SELECT_WORD_BIT_PATTERNS: usize,
+    const SELECT_TREE_BIT_PATTERNS: usize,
+>
+    Rs01DictGenerics<
+        RANK_LARGE_LEN,
+        RANK_SMALL_LEN,
+        RANK_BIT_PATTERNS,
+        SELECT_SMALL_LEN,
+        SELECT_LARGE_SPARSE_LEN,
+        SELECT_LARGE_POPCNT,
+        SELECT_LARGE_NODE_LEN,
+        SELECT_LARGE_BRANCH,
+        SELECT_WORD_BIT_PATTERNS,
+        SELECT_TREE_BIT_PATTERNS,
+    >
+{
+    pub fn new(a: &[bool]) -> Self {
+        let buf = SimpleBitVec::from(a);
+        let rank_index = RankIndex::<
+            RANK_LARGE_LEN,
+            RANK_SMALL_LEN,
+            RANK_BIT_PATTERNS,
+        >::new(&buf);
+        let select1_index = SelectIndex::<
+            SELECT_SMALL_LEN,
+            SELECT_LARGE_SPARSE_LEN,
+            SELECT_LARGE_POPCNT,
+            SELECT_LARGE_NODE_LEN,
+            SELECT_LARGE_BRANCH,
+            SELECT_WORD_BIT_PATTERNS,
+            SELECT_TREE_BIT_PATTERNS,
+        >::new::<true>(&buf);
+        let select0_index = SelectIndex::<
+            SELECT_SMALL_LEN,
+            SELECT_LARGE_SPARSE_LEN,
+            SELECT_LARGE_POPCNT,
+            SELECT_LARGE_NODE_LEN,
+            SELECT_LARGE_BRANCH,
+            SELECT_WORD_BIT_PATTERNS,
+            SELECT_TREE_BIT_PATTERNS,
+        >::new::<false>(&buf);
+        Self { buf, rank_index, select1_index, select0_index }
+    }
+
+    pub fn rank1(&self, i: usize) -> usize {
+        self.rank_index.rank(i, &self.buf)
+    }
+    pub fn rank0(&self, i: usize) -> usize { i + 1 - self.rank1(i) }
+
+    pub fn select1(&self, i: usize) -> usize {
+        self.select1_index.select::<true>(i, &self.buf)
+    }
+    pub fn select0(&self, i: usize) -> usize {
+        self.select0_index.select::<false>(i, &self.buf)
+    }
 }
 
 impl From<(Vec<u64>, usize)> for SimpleBitVec {
