@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["foldable_deque","foldable_queue","rs01_dict","union_find","vec_segtree"],"struct":["FoldableDeque","FoldableQueue","PeekMutTmp","RankIndex","Rs01DictParam","SelectIndex","UnionFind","VecSegtree"],"type":["Rs01Dict"]};
+window.SIDEBAR_ITEMS = {"mod":["foldable_deque","foldable_queue","rs01_dict","union_find","vec_segtree"],"struct":["FoldableDeque","FoldableQueue","PeekMutTmp","Rs01DictGenerics","UnionFind","VecSegtree"],"type":["Rs01Dict"]};
