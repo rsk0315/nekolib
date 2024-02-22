@@ -911,7 +911,6 @@
 <a href="#685" id="685">685</a>
 <a href="#686" id="686">686</a>
 <a href="#687" id="687">687</a>
-<a href="#688" id="688">688</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::{Range, RangeInclusive};
 
 <span class="kw">const </span>W: usize = u64::BITS <span class="kw">as </span>usize;
@@ -1590,7 +1589,6 @@
     </span><span class="kw">fn </span>test_all_zero() {
         <span class="kw">let </span>n = <span class="number">1000</span>;
         <span class="kw">let </span>a = <span class="macro">vec!</span>[<span class="bool-val">false</span>; n];
-        <span class="kw">let </span>b = SimpleBitVec::from(a.as_slice());
         <span class="kw">let </span>rs = Rs01Dict::new(<span class="kw-2">&amp;</span>a);
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..n {
