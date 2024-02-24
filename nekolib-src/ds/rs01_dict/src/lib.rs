@@ -8,7 +8,7 @@ const RANK_BIT_PATTERNS: usize = 1 << RANK_SMALL_LEN;
 
 const SELECT_SMALL_LEN: usize = 15; // (1/2) log(n)/2
 const SELECT_LARGE_SPARSE_LEN: usize = 12946;
-const SELECT_LARGE_POPCNT: usize = 15;
+const SELECT_LARGE_POPCNT: usize = 17;
 const SELECT_LARGE_NODE_LEN: usize = 4;
 const SELECT_LARGE_BRANCH: usize = 4;
 const SELECT_WORD_BIT_PATTERNS: usize = 1 << SELECT_SMALL_LEN;
@@ -84,7 +84,7 @@ struct RankIndex<
     const BIT_PATTERNS: usize,
 > {
     large: Vec<u32>,
-    small: Vec<u8>,
+    small: Vec<u16>,
 }
 
 struct SelectIndex<
@@ -154,6 +154,7 @@ const fn rank_lookup<const SMALL_LEN: usize, const BIT_PATTERNS: usize>()
     table
 }
 
+#[warn(long_running_const_eval)]
 const fn select_tree_lookup<
     const NODE_LEN: usize,
     const POPCNT: usize,
@@ -378,15 +379,11 @@ impl<const LARGE_LEN: usize, const SMALL_LEN: usize, const BIT_PATTERNS: usize>
         let per = LARGE_LEN / SMALL_LEN;
         for (c, i) in a
             .chunks::<true>(SMALL_LEN)
-            .map(|ai| Self::WORD[ai as usize][SMALL_LEN - 1])
+            .map(|ai| Self::WORD[ai as usize][SMALL_LEN - 1] as u16)
             .zip((0..per).cycle())
         {
             small.push(small_acc);
-            if i == per - 1 {
-                small_acc = 0;
-            } else {
-                small_acc += c;
-            }
+            small_acc = if i < per - 1 { small_acc + c } else { 0 };
 
             if i == 0 {
                 large.push(large_acc);
@@ -546,11 +543,21 @@ impl<
             let tmp = last;
             {
                 let mut it = tmp.chunks::<true>(LARGE_NODE_LEN);
+                let mut trunc = None;
                 while let Some(mut sum) = it.next() {
                     sum += (1..LARGE_BRANCH)
                         .filter_map(|_| it.next())
                         .sum::<u64>();
+                    if sum & (!0 << LARGE_NODE_LEN) != 0 {
+                        trunc = Some(sum);
+                        sum &= !(!0 << LARGE_NODE_LEN);
+                    }
                     cur.push(sum, LARGE_NODE_LEN);
+                }
+                if let Some(sum) = trunc {
+                    if cur.len() > LARGE_NODE_LEN {
+                        panic!("invalid popcount, {}", sum);
+                    }
                 }
             }
             tree.push(tmp);

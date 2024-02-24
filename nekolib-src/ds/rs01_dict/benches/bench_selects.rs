@@ -1,3 +1,5 @@
+#![allow(long_running_const_eval)]
+
 use bit_vector::{Rs01DictNLl, Rs01DictNlC};
 use criterion::{
     black_box, criterion_group, criterion_main, BenchmarkId, Criterion,
@@ -34,7 +36,7 @@ fn bench_selects(c: &mut Criterion) {
         0xF5, 0xDD, 0x07, 0x06, 0xAE, 0xE4, 0x5A, 0xDC,
     ]);
     let len = 1 << 20;
-    let p = 0.5;
+    let p = 1.0e-3;
     let dist = Bernoulli::new(p).unwrap();
     let a: Vec<_> = (0..len).map(|_| dist.sample(&mut rng)).collect();
 
@@ -91,8 +93,6 @@ fn bench_selects(c: &mut Criterion) {
     let select0_query = rand_seq(0..count0, &mut rng);
     let select1_query = rand_seq(0..count1, &mut rng);
 
-    let rep = 1;
-
     group
         .bench_function(BenchmarkId::new("succinct", "preprocess"), |b| {
             b.iter(|| black_box(Rs01Dict::new(&a)))
@@ -102,151 +102,48 @@ fn bench_selects(c: &mut Criterion) {
         })
         .bench_function(BenchmarkId::new("compact", "preprocess"), |b| {
             b.iter(|| black_box(Rs01DictNLl::new(&a)))
-        })
-        .bench_function(BenchmarkId::new("succinct", "rank-seq"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for i in 0..a.len() {
-                        black_box(rs.rank0(i));
-                    }
-                    for i in 0..a.len() {
-                        black_box(rs.rank1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("naive", "rank-seq"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for i in 0..a.len() {
-                        black_box(rs_nlc.rank0(i));
-                    }
-                    for i in 0..a.len() {
-                        black_box(rs_nlc.rank1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("compact", "rank-seq"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for i in 0..a.len() {
-                        black_box(rs_nll.rank0(i));
-                    }
-                    for i in 0..a.len() {
-                        black_box(rs_nll.rank1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("succinct", "select-seq"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for i in 0..count0 {
-                        black_box(rs.select0(i));
-                    }
-                    for i in 0..count1 {
-                        black_box(rs.select1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("naive", "select-seq"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for i in 0..count0 {
-                        black_box(rs_nlc.select0(i));
-                    }
-                    for i in 0..count1 {
-                        black_box(rs_nlc.select1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("compact", "select-seq"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for i in 0..count0 {
-                        black_box(rs_nll.select0(i));
-                    }
-                    for i in 0..count1 {
-                        black_box(rs_nll.select1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("succinct", "rank-rand"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for &i in &rank_query {
-                        black_box(rs.rank0(i));
-                    }
-                    for &i in &rank_query {
-                        black_box(rs.rank1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("naive", "rank-rand"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for &i in &rank_query {
-                        black_box(rs_nlc.rank0(i));
-                    }
-                    for &i in &rank_query {
-                        black_box(rs_nlc.rank1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("compact", "rank-rand"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for &i in &rank_query {
-                        black_box(rs_nll.rank0(i));
-                    }
-                    for &i in &rank_query {
-                        black_box(rs_nll.rank1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("succinct", "select-rand"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for &i in &select0_query {
-                        black_box(rs.select0(i));
-                    }
-                    for &i in &select1_query {
-                        black_box(rs.select1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("naive", "select-rand"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for &i in &select0_query {
-                        black_box(rs_nlc.select0(i));
-                    }
-                    for &i in &select1_query {
-                        black_box(rs_nlc.select1(i));
-                    }
-                }
-            })
-        })
-        .bench_function(BenchmarkId::new("compact", "select-rand"), |b| {
-            b.iter(|| {
-                for _ in 0..rep {
-                    for &i in &select0_query {
-                        black_box(rs_nll.select0(i));
-                    }
-                    for &i in &select1_query {
-                        black_box(rs_nll.select1(i));
-                    }
-                }
-            })
         });
+
+    macro_rules! bench_fn {
+        ($g:ident, $name:ident, $fn:ident, $fst:literal, $snd:literal, $iter:expr) => {
+            $g.bench_function(BenchmarkId::new($fst, $snd), |b| {
+                b.iter(|| {
+                    for i in $iter {
+                        black_box($name.$fn(i));
+                    }
+                })
+            });
+        };
+    }
+
+    bench_fn! { group, rs, rank0, "succinct", "rank0-seq", 0..a.len() }
+    bench_fn! { group, rs, rank1, "succinct", "rank1-seq", 0..a.len() }
+    bench_fn! { group, rs, rank0, "succinct", "rank0-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs, rank1, "succinct", "rank1-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs, select0, "succinct", "select0-seq", 0..count0 }
+    bench_fn! { group, rs, select1, "succinct", "select1-seq", 0..count1 }
+    bench_fn! { group, rs, select0, "succinct", "select0-rand", select0_query.iter().copied() }
+    bench_fn! { group, rs, select1, "succinct", "select1-rand", select1_query.iter().copied() }
+
+    bench_fn! { group, rs_nll, rank0, "compact", "rank0-seq", 0..a.len() }
+    bench_fn! { group, rs_nll, rank1, "compact", "rank1-seq", 0..a.len() }
+    bench_fn! { group, rs_nll, rank0, "compact", "rank0-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nll, rank1, "compact", "rank1-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nll, select0, "compact", "select0-seq", 0..count0 }
+    bench_fn! { group, rs_nll, select1, "compact", "select1-seq", 0..count1 }
+    bench_fn! { group, rs_nll, select0, "compact", "select0-rand", select0_query.iter().copied() }
+    bench_fn! { group, rs_nll, select1, "compact", "select1-rand", select1_query.iter().copied() }
+
+    bench_fn! { group, rs_nlc, rank0, "naive", "rank0-seq", 0..a.len() }
+    bench_fn! { group, rs_nlc, rank1, "naive", "rank1-seq", 0..a.len() }
+    bench_fn! { group, rs_nlc, rank0, "naive", "rank0-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nlc, rank1, "naive", "rank1-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nlc, select0, "naive", "select0-seq", 0..count0 }
+    bench_fn! { group, rs_nlc, select1, "naive", "select1-seq", 0..count1 }
+    bench_fn! { group, rs_nlc, select0, "naive", "select0-rand", select0_query.iter().copied() }
+    bench_fn! { group, rs_nlc, select1, "naive", "select1-rand", select1_query.iter().copied() }
+
+    group.finish();
 }
 
 criterion_group!(benches, bench_selects);
