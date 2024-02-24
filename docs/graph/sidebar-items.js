@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["bfs01","dijkstra"],"struct":["Bfs01Sssp","DijkstraSssp"]};
+window.SIDEBAR_ITEMS = {"mod":["bfs01","dijkstra","scc"],"struct":["Bfs01Sssp","DijkstraSssp","Scc"]};
