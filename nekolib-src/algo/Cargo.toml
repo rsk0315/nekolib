@@ -9,3 +9,4 @@ edition = "2021"
 inner = { path = "../inner" }
 bisect = { path = "bisect" }
 tortoise_hare = { path = "tortoise_hare" }
+twosat = { path = "twosat" }
