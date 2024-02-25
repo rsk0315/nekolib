@@ -100,6 +100,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["syn",["",[["gen",[],["clone.rs"]]],["attr.rs","bigint.rs","buffer.rs","custom_keyword.rs","custom_punctuation.rs","data.rs","derive.rs","discouraged.rs","drops.rs","error.rs","export.rs","expr.rs","ext.rs","gen_helper.rs","generics.rs","group.rs","ident.rs","lib.rs","lifetime.rs","lit.rs","lookahead.rs","mac.rs","macros.rs","meta.rs","op.rs","parse.rs","parse_macro_input.rs","parse_quote.rs","path.rs","print.rs","punctuated.rs","restriction.rs","sealed.rs","span.rs","spanned.rs","thread.rs","token.rs","ty.rs","verbatim.rs"]]],\
 ["tinytemplate",["",[],["compiler.rs","error.rs","instruction.rs","lib.rs","syntax.rs","template.rs"]]],\
 ["tortoise_hare",["",[],["lib.rs"]]],\
+["twosat",["",[],["lib.rs"]]],\
 ["unicode_ident",["",[],["lib.rs","tables.rs"]]],\
 ["union_find",["",[],["lib.rs"]]],\
 ["usize_bounds",["",[],["lib.rs"]]],\
