@@ -8,3 +8,4 @@ inner = { path = "../inner" }
 dijkstra = { path = "dijkstra" }
 bfs01 = { path = "bfs01" }
 scc = { path = "scc" }
+lowlink = { path = "lowlink" }
