@@ -1,5 +1,7 @@
 use std::ops::{Range, RangeBounds, RangeInclusive};
 
+use usize_bounds::UsizeBounds;
+
 const W: usize = u64::BITS as usize;
 
 const RANK_LARGE_LEN: usize = 1024; // (1/4) log(n)^2
@@ -262,6 +264,10 @@ impl<
     }
     pub fn rank0(&self, i: usize) -> usize { i + 1 - self.rank1(i) }
 
+    fn rank<const X: bool>(&self, i: usize) -> usize {
+        if X { self.rank1(i) } else { self.rank0(i) }
+    }
+
     pub fn select1(&self, i: usize) -> usize {
         self.select1_index.select::<true>(i, &self.buf)
     }
@@ -270,7 +276,14 @@ impl<
     }
 
     fn count<const X: bool>(&self, range: impl RangeBounds<usize>) -> usize {
-        todo!()
+        let Range { start, end } = range.to_range(self.buf.len);
+        if start == end {
+            0
+        } else if start == 0 {
+            self.rank::<X>(end - 1)
+        } else {
+            self.rank::<X>(end - 1) - self.rank::<X>(start - 1)
+        }
     }
 
     pub fn count1(&self, range: impl RangeBounds<usize>) -> usize {

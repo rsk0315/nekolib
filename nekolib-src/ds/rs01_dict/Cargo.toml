@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-criterion = "0.5.1"
+usize_bounds = { path = "../../ops/usize_bounds" }
 
 [dev-dependencies]
+criterion = "0.5.1"
 bit-vector = { path = "../../naive/bit-vector" }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
