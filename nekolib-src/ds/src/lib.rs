@@ -6,4 +6,5 @@ doc_inline_reexport! {
     rs01_dict,
     union_find,
     vec_segtree,
+    wavelet_matrix,
 }

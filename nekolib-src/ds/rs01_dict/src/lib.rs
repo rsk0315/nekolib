@@ -1,4 +1,4 @@
-use std::ops::{Range, RangeInclusive};
+use std::ops::{Range, RangeBounds, RangeInclusive};
 
 const W: usize = u64::BITS as usize;
 
@@ -267,6 +267,17 @@ impl<
     }
     pub fn select0(&self, i: usize) -> usize {
         self.select0_index.select::<false>(i, &self.buf)
+    }
+
+    fn count<const X: bool>(&self, range: impl RangeBounds<usize>) -> usize {
+        todo!()
+    }
+
+    pub fn count1(&self, range: impl RangeBounds<usize>) -> usize {
+        self.count::<true>(range)
+    }
+    pub fn count0(&self, range: impl RangeBounds<usize>) -> usize {
+        self.count::<false>(range)
     }
 }
 
