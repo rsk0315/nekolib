@@ -1,0 +1,8 @@
+[package]
+name = "draft"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+inner = { path = "../inner" }
+rs01dict_runtime = { path = "rs01dict_runtime" }
