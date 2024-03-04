@@ -15,6 +15,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["disjoint_set",["",[],["lib.rs"]]],\
 ["divisors",["",[],["lib.rs"]]],\
 ["dp",["",[],["lib.rs"]]],\
+["draft",["",[],["lib.rs"]]],\
 ["ds",["",[],["lib.rs"]]],\
 ["factors",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
@@ -55,6 +56,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["random",["",[],["lib.rs"]]],\
 ["readable",["",[],["lib.rs"]]],\
 ["rs01_dict",["",[],["lib.rs"]]],\
+["rs01dict_runtime",["",[],["lib.rs"]]],\
 ["scc",["",[],["lib.rs"]]],\
 ["seq",["",[],["lib.rs"]]],\
 ["snippet",["",[],["lib.rs"]]],\
