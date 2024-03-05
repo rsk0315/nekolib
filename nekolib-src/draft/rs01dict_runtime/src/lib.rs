@@ -34,7 +34,7 @@ struct RankIndex {
 //     Dense(IntVec, usize),
 // }
 
-type SelectIndex = ();
+struct SelectIndex;
 
 impl IntVec {
     pub fn new(unit: usize) -> Self { Self { unit, buf: vec![], len: 0 } }
@@ -89,16 +89,28 @@ fn bitlen(n: usize) -> usize {
     // max {1, ceil(log2(|{0, 1, ..., n-1}|))}
     1.max((n + 1).next_power_of_two().trailing_zeros() as usize)
 }
+fn lg_half(n: usize) -> usize {
+    // log(n)/2
+    (1_usize..).find(|&i| 4_usize.saturating_pow(i as _) >= n).unwrap()
+}
+// fn lglg(n: usize) -> usize {
+//     // log(log(n))
+//     (1_usize..).find(|&i| (1_u128 << (1 << i)) >= n).unwrap()
+// }
+fn lglg2(n: usize) -> usize {
+    // log(log(n))^2
+    todo!()
+}
 
 impl RankIndex {
     pub fn new(buf: &[bool]) -> Self {
         let len = buf.len();
         let small_len = (1_usize..)
             .find(|&i| 4_usize.saturating_pow(i as _) >= len)
-            .unwrap();
-        let large_len = (2 * small_len).pow(2);
+            .unwrap(); // log(n)/2
+        let large_len = (2 * small_len).pow(2); // log(n)^2
 
-        let small_bitlen = bitlen(large_len);
+        let small_bitlen = bitlen(len.min(large_len));
         let large_bitlen = bitlen(len);
 
         let mut small = IntVec::new(small_bitlen);
@@ -166,12 +178,59 @@ impl RankIndex {
     }
 }
 
-// impl SelectIndex {
-//     pub fn new(buf: &[bool]) -> Self {
-//         // let count =
-//         todo!();
-//     }
-// }
+impl SelectIndex {
+    pub fn new<const X: bool>(buf: &[bool]) -> Self {
+        let len = buf.len();
+        let small_popcnt = lg_half(len);
+        let large_popcnt = (2 * small_popcnt).pow(2); // log(n)^2
+        // ceil(lg(lg(len)))^2 だと大きすぎるので ceil(lg(lg(len))^2) とかにしたい
+        let small_dense_max = lglg2(len);
+        let large_dense_max = large_popcnt.pow(2); // log(n)^4
+        let mut large_start = IntVec::new(bitlen(len) + 1);
+        let mut large_sparse = IntVec::new(bitlen(len));
+        let mut small_start = IntVec::new(bitlen(large_dense_max) + 1);
+        let mut small_sparse = IntVec::new(bitlen(large_dense_max));
+
+        let mut start = 0;
+        let mut pos = vec![];
+        for i in 0..len {
+            if buf[i] == X {
+                pos.push(i);
+                if pos.len() == large_popcnt || i == len - 1 {
+                    let end = i;
+                    if end + 1 - start > large_dense_max {
+                        large_start.push((large_sparse.len() << 1 | 0) as _);
+                        for j in pos.drain(..) {
+                            large_sparse.push(j as _);
+                        }
+                    } else {
+                        large_start.push((small_start.len() << 1 | 1) as _);
+                        // 必要な情報足りてる？ 簡潔になってる？
+                        for ch in pos.chunks(small_popcnt) {
+                            let start = ch[0];
+                            let end = ch[ch.len() - 1];
+                            if end + 1 - start > small_dense_max {
+                                small_start
+                                    .push((small_sparse.len() << 1 | 0) as _);
+                                for j in ch {
+                                    small_sparse.push((j - start) as _); // (?)
+                                }
+                            } else {
+                                small_start
+                                    .push(((start - pos[0]) << 1 | 1) as _);
+                            }
+                        }
+                        pos.clear();
+                    }
+
+                    start = i + 1;
+                }
+            }
+        }
+
+        Self
+    }
+}
 
 // impl SelectIndex {}
 
@@ -184,7 +243,13 @@ impl Rs01DictRuntime {
         for &x in a {
             buf.push(x as _);
         }
-        Self { buf, rank_index, select_index: ((), ()) }
+        let select_index =
+            (SelectIndex::new::<false>(&a), SelectIndex::new::<true>(&a));
+
+        // select.0 と select.1 で同じ lookup table を作るの無駄だから、
+        // rank も含めてそれらは親のクラスで持つ設計でもいいかも？
+        // buf と一緒に table も渡す感じで
+        Self { buf, rank_index, select_index }
     }
 
     pub fn rank<const X: bool>(&self, i: usize) -> usize {
