@@ -29,6 +29,7 @@ struct SelectIndex {
     small_start: IntVec,
     small_indir: IntVec,
     small_sparse: IntVec,
+    small_sparse_offset: IntVec,
     small_dense_max: usize,
     large_popcnt: usize,
     large_start: IntVec,
@@ -196,6 +197,7 @@ impl SelectIndex {
         let mut small_start = IntVec::new(bitlen(large_dense_max));
         let mut small_indir = IntVec::new(bitlen(large_dense_max) + 1);
         let mut small_sparse = IntVec::new(bitlen(large_dense_max));
+        let mut small_sparse_offset = IntVec::new(bitlen(len));
 
         eprintln!("large_popcnt: {large_popcnt}");
         eprintln!("small_popcnt: {small_popcnt}");
@@ -215,7 +217,7 @@ impl SelectIndex {
             let cur_large_start = start;
             let cur_large_end = i;
             large_start.push(cur_large_start as _);
-
+            small_sparse_offset.push(small_sparse.len() as _);
             if cur_large_end + 1 - cur_large_start > large_dense_max {
                 large_indir.push((large_sparse.len() << 1 | 0) as _);
                 for p in pos.drain(..) {
@@ -224,6 +226,7 @@ impl SelectIndex {
             } else {
                 large_indir.push((small_start.len() << 1 | 1) as _);
                 let small_start_offset = small_start.len();
+                let small_sparse_offset = small_sparse.len();
                 let mut cur_small_start = cur_large_start;
                 eprintln!("pos: {pos:?}");
                 for j in (0..pos.len()).step_by(small_popcnt) {
@@ -238,11 +241,8 @@ impl SelectIndex {
                     small_start.push((start - cur_large_start) as _);
                     eprintln!("end: {end}, start: {start}");
                     if end + 1 - start > small_dense_max {
-                        eprintln!(
-                            "tmp = {} - {small_start_offset}",
-                            small_sparse.len()
-                        );
-                        let tmp = small_sparse.len() - small_start_offset; // ?
+                        let tmp = (small_sparse.len() - small_sparse_offset)
+                            / small_popcnt;
                         small_indir.push((tmp << 1 | 0) as _);
                         for &p in &pos[j..pos.len().min(j + small_popcnt)] {
                             let pos_offset = p - start;
@@ -265,6 +265,7 @@ impl SelectIndex {
         eprintln!("small_indir: {small_indir:?}");
         eprintln!("small_start: {small_start:?}");
         eprintln!("small_sparse: {small_sparse:?}");
+        eprintln!("small_sparse_offset: {small_sparse_offset:?}");
 
         let table = Self::table(small_dense_max);
         Self {
@@ -272,6 +273,7 @@ impl SelectIndex {
             small_start,
             small_indir,
             small_sparse,
+            small_sparse_offset,
             small_dense_max,
             large_popcnt,
             large_start,
@@ -288,7 +290,7 @@ impl SelectIndex {
             let mut cur = 0;
             for j in 0..len {
                 if i >> j & 1 != 0 {
-                    table.push(cur as _);
+                    table.push(j as _);
                     cur += 1;
                 }
             }
@@ -320,7 +322,7 @@ impl SelectIndex {
                 "small_indir[(large_i = {large_i}) + (is_div = {is_div})]"
             );
             let small = self.small_indir.get_usize(large_i + is_div);
-            let (small_i, small_ty) = (large_i + (small >> 1), small & 1);
+            let (small_i, small_ty) = (small >> 1, small & 1);
             eprintln!("small_i: {small_i}");
             let small_start = self.small_start.get_usize(large_i + is_div);
             if small_ty == 0 {
@@ -328,8 +330,10 @@ impl SelectIndex {
                 eprintln!(
                     "small_sparse[(small_i = {small_i}) + (is_mod = {is_mod})]"
                 );
-                let small_sparse =
-                    self.small_sparse.get_usize(small_i + is_mod);
+                let offset = self.small_sparse_offset.get_usize(il_div);
+                let small_sparse = self
+                    .small_sparse
+                    .get_usize(offset + small_i * self.small_popcnt + is_mod);
                 eprintln!(
                     "large_start: {large_start}, small_start: {small_start}, small_sparse: {small_sparse}"
                 );
@@ -338,6 +342,8 @@ impl SelectIndex {
                 let offset = large_start + small_start;
                 let w =
                     b.bits_range::<X>(offset..offset + self.small_dense_max);
+                eprintln!("offset: {offset}, w: {w:064b}, i: {is_mod}");
+                eprintln!("-> {}", offset + self.lookup(w, is_mod));
                 offset + self.lookup(w, is_mod)
             }
         }
@@ -443,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_rank() {
-        for len in Some(0).into_iter().chain((0..=3).map(|e| 10_usize.pow(e))) {
+        for len in Some(0).into_iter().chain((0..=7).map(|e| 10_usize.pow(e))) {
             for &p in &[1.0, 0.999, 0.9, 0.5, 0.1, 1.0e-3, 0.0] {
                 test_rank_internal(len, p);
             }
@@ -452,7 +458,7 @@ mod tests {
 
     #[test]
     fn test_select() {
-        for len in Some(0).into_iter().chain((0..=3).map(|e| 10_usize.pow(e))) {
+        for len in Some(0).into_iter().chain((0..=7).map(|e| 10_usize.pow(e))) {
             for &p in &[1.0, 0.999, 0.9, 0.5, 0.1, 1.0e-3, 0.0] {
                 test_select_internal(len, p);
             }
