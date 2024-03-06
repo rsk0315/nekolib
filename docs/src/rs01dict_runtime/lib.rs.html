@@ -641,6 +641,24 @@
 <a href="#408" id="408">408</a>
 <a href="#409" id="409">409</a>
 <a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(unused)]
 
 </span><span class="kw">use </span>std::ops::Range;
@@ -670,12 +688,13 @@
 <span class="kw">struct </span>SelectIndex {
     small_popcnt: usize,
     small_start: IntVec,
+    small_indir: IntVec,
     small_sparse: IntVec,
     small_dense_max: usize,
     large_popcnt: usize,
     large_start: IntVec,
+    large_indir: IntVec,
     large_sparse: IntVec,
-    large_offset: IntVec,
     table: IntVec,
 }
 
@@ -701,6 +720,8 @@
         }
         <span class="self">self</span>.len += <span class="number">1</span>;
     }
+
+    <span class="kw">pub fn </span>get_usize(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; usize { <span class="self">self</span>.get::&lt;<span class="bool-val">true</span>&gt;(i) <span class="kw">as _ </span>}
 
     <span class="kw">pub fn </span>get&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; u64 {
         <span class="kw">let </span>start = i * <span class="self">self</span>.unit;
@@ -788,17 +809,17 @@
 
     <span class="kw">fn </span>lookup(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; usize {
         <span class="kw">let </span>wi = w <span class="kw">as </span>usize * <span class="self">self</span>.small_len + i;
-        <span class="self">self</span>.table.get::&lt;<span class="bool-val">true</span>&gt;(wi) <span class="kw">as _
-    </span>}
+        <span class="self">self</span>.table.get_usize(wi)
+    }
 
     <span class="kw">pub fn </span>rank1(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
-        <span class="kw">let </span>large_acc = <span class="self">self</span>.large.get::&lt;<span class="bool-val">true</span>&gt;(i / <span class="self">self</span>.large_len);
-        <span class="kw">let </span>small_acc = <span class="self">self</span>.small.get::&lt;<span class="bool-val">true</span>&gt;(i / <span class="self">self</span>.small_len);
+        <span class="kw">let </span>large_acc = <span class="self">self</span>.large.get_usize(i / <span class="self">self</span>.large_len);
+        <span class="kw">let </span>small_acc = <span class="self">self</span>.small.get_usize(i / <span class="self">self</span>.small_len);
         <span class="kw">let </span>il = i / <span class="self">self</span>.small_len * <span class="self">self</span>.small_len;
         <span class="kw">let </span>ir = il + <span class="self">self</span>.small_len;
         <span class="kw">let </span>w = b.bits_range::&lt;<span class="bool-val">true</span>&gt;(il..ir);
         <span class="kw">let </span>small = <span class="self">self</span>.lookup(w, i % <span class="self">self</span>.small_len);
-        (large_acc + small_acc) <span class="kw">as </span>usize + small
+        large_acc + small_acc + small
     }
     <span class="kw">pub fn </span>rank0(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize { i - <span class="self">self</span>.rank1(i, b) }
     <span class="kw">pub fn </span>rank&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
@@ -822,10 +843,11 @@
             (((len <span class="kw">as </span>f64).log2().max(<span class="number">1.0</span>).log2().max(<span class="number">1.0</span>).powi(<span class="number">4</span>) / <span class="number">20.0</span>)
                 .ceil()) <span class="kw">as </span>usize;
         <span class="kw">let </span>large_dense_max = large_popcnt.pow(<span class="number">2</span>); <span class="comment">// log(n)^4
-        </span><span class="kw">let </span><span class="kw-2">mut </span>large_start = IntVec::new(bitlen(len) + <span class="number">1</span>);
+        </span><span class="kw">let </span><span class="kw-2">mut </span>large_start = IntVec::new(bitlen(len));
+        <span class="kw">let </span><span class="kw-2">mut </span>large_indir = IntVec::new(bitlen(len) + <span class="number">1</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>large_sparse = IntVec::new(bitlen(len));
-        <span class="kw">let </span><span class="kw-2">mut </span>large_offset = IntVec::new(bitlen(len));
-        <span class="kw">let </span><span class="kw-2">mut </span>small_start = IntVec::new(bitlen(large_dense_max) + <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>small_start = IntVec::new(bitlen(large_dense_max));
+        <span class="kw">let </span><span class="kw-2">mut </span>small_indir = IntVec::new(bitlen(large_dense_max) + <span class="number">1</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>small_sparse = IntVec::new(bitlen(large_dense_max));
 
         <span class="kw">let </span><span class="kw-2">mut </span>start = <span class="number">0</span>;
@@ -833,41 +855,54 @@
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..len {
             <span class="kw">if </span>buf[i] == X {
                 pos.push(i);
-                <span class="kw">if </span>!(pos.len() == large_popcnt || i == len - <span class="number">1</span>) {
-                    <span class="kw">continue</span>;
-                }
-                <span class="kw">let </span>cur_large_start = start;
-                large_offset.push(cur_large_start <span class="kw">as _</span>);
+            }
+            <span class="kw">if </span>!(pos.len() == large_popcnt || i == len - <span class="number">1</span>) {
+                <span class="kw">continue</span>;
+            }
 
-                <span class="kw">let </span>end = i;
-                <span class="kw">if </span>end + <span class="number">1 </span>- start &gt; large_dense_max {
-                    large_start.push((large_sparse.len() &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
-                    <span class="kw">for </span>j <span class="kw">in </span>pos.drain(..) {
-                        large_sparse.push(j <span class="kw">as _</span>);
-                    }
-                } <span class="kw">else </span>{
-                    large_start.push((small_start.len() &lt;&lt; <span class="number">1 </span>| <span class="number">1</span>) <span class="kw">as _</span>);
-                    <span class="kw">let </span><span class="kw-2">mut </span>cur_small_start = cur_large_start;
-                    <span class="kw">for </span>ch <span class="kw">in </span>pos.chunks(small_popcnt) {
-                        <span class="kw">let </span>start = ch[<span class="number">0</span>];
-                        <span class="kw">let </span>end = ch[ch.len() - <span class="number">1</span>];
-                        <span class="kw">if </span>end + <span class="number">1 </span>- start &gt; small_dense_max {
-                            small_start
-                                .push((small_sparse.len() &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
-                            <span class="kw">for </span>j <span class="kw">in </span>ch {
-                                small_sparse.push((j - cur_large_start) <span class="kw">as _</span>);
-                            }
-                        } <span class="kw">else </span>{
-                            small_start.push(
-                                ((start - cur_large_start) &lt;&lt; <span class="number">1 </span>| <span class="number">1</span>) <span class="kw">as _</span>,
-                            );
+            <span class="kw">let </span>cur_large_start = start;
+            <span class="kw">let </span>cur_large_end = i;
+            large_start.push(cur_large_start <span class="kw">as _</span>);
+
+            <span class="kw">if </span>cur_large_end + <span class="number">1 </span>- cur_large_start &gt; large_dense_max {
+                large_indir.push((large_sparse.len() &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
+                <span class="kw">for </span>p <span class="kw">in </span>pos.drain(..) {
+                    large_sparse.push(p <span class="kw">as _</span>);
+                }
+            } <span class="kw">else </span>{
+                large_indir.push((small_start.len() &lt;&lt; <span class="number">1 </span>| <span class="number">1</span>) <span class="kw">as _</span>);
+                <span class="kw">let </span>small_start_offset = small_start.len();
+                <span class="kw">let </span><span class="kw-2">mut </span>cur_small_start = cur_large_start;
+                <span class="macro">eprintln!</span>(<span class="string">"pos: {pos:?}"</span>);
+                <span class="kw">for </span>j <span class="kw">in </span>(<span class="number">0</span>..pos.len()).step_by(small_popcnt) {
+                    <span class="macro">eprintln!</span>(<span class="string">"i: {i}, j: {j}"</span>);
+                    <span class="kw">let </span>start = cur_small_start;
+                    <span class="kw">let </span>end = <span class="kw">if </span>j + small_popcnt &lt; pos.len() {
+                        <span class="macro">eprintln!</span>(<span class="string">"(A)"</span>);
+                        pos[j + small_popcnt] - <span class="number">1
+                    </span>} <span class="kw">else if </span>i == len - <span class="number">1 </span>{
+                        <span class="macro">eprintln!</span>(<span class="string">"(B)"</span>);
+                        i
+                    } <span class="kw">else </span>{
+                        <span class="macro">eprintln!</span>(<span class="string">"(C)"</span>);
+                        pos[pos.len() - <span class="number">1</span>]
+                    };
+                    small_start.push((start - cur_large_start) <span class="kw">as _</span>);
+                    <span class="macro">eprintln!</span>(<span class="string">"end: {end}, start: {start}"</span>);
+                    <span class="kw">if </span>end + <span class="number">1 </span>- start &gt; small_dense_max {
+                        <span class="kw">let </span>tmp = small_sparse.len() - small_start_offset; <span class="comment">// ?
+                        </span>small_indir.push((tmp &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
+                        <span class="kw">for </span><span class="kw-2">&amp;</span>p <span class="kw">in </span><span class="kw-2">&amp;</span>pos[j..pos.len().min(j + small_popcnt)] {
+                            <span class="kw">let </span>pos_offset = p - start;
+                            small_sparse.push(pos_offset <span class="kw">as _</span>);
                         }
-
-                        cur_small_start = end + <span class="number">1</span>;
+                    } <span class="kw">else </span>{
+                        small_indir.push(<span class="number">0 </span>&lt;&lt; <span class="number">1 </span>| <span class="number">1</span>);
                     }
-                    pos.clear();
+                    cur_small_start = end + <span class="number">1</span>;
                 }
 
+                pos.clear();
                 start = i + <span class="number">1</span>;
             }
         }
@@ -876,12 +911,13 @@
         <span class="self">Self </span>{
             small_popcnt,
             small_start,
+            small_indir,
             small_sparse,
             small_dense_max,
             large_popcnt,
             large_start,
+            large_indir,
             large_sparse,
-            large_offset,
             table,
         }
     }
@@ -906,32 +942,32 @@
 
     <span class="kw">fn </span>lookup(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; usize {
         <span class="kw">let </span>wi = w <span class="kw">as </span>usize * <span class="self">self</span>.small_dense_max + i;
-        <span class="self">self</span>.table.get::&lt;<span class="bool-val">true</span>&gt;(wi) <span class="kw">as _
-    </span>}
+        <span class="self">self</span>.table.get_usize(wi)
+    }
 
     <span class="kw">pub fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
-        <span class="kw">let </span>large =
-            <span class="self">self</span>.large_start.get::&lt;<span class="bool-val">true</span>&gt;(i / <span class="self">self</span>.large_popcnt) <span class="kw">as </span>usize;
+        <span class="kw">let </span>(il_div, il_mod) = (i / <span class="self">self</span>.large_popcnt, i % <span class="self">self</span>.large_popcnt);
+        <span class="kw">let </span>large = <span class="self">self</span>.large_indir.get_usize(il_div);
         <span class="kw">let </span>(large_i, large_ty) = (large &gt;&gt; <span class="number">1</span>, large &amp; <span class="number">1</span>);
         <span class="kw">if </span>large_ty == <span class="number">0 </span>{
-            <span class="self">self</span>.large_sparse.get::&lt;<span class="bool-val">true</span>&gt;(large_i + i % <span class="self">self</span>.large_popcnt) <span class="kw">as _
-        </span>} <span class="kw">else </span>{
-            <span class="kw">let </span>large_offset =
-                <span class="self">self</span>.large_offset.get::&lt;<span class="bool-val">true</span>&gt;(i / <span class="self">self</span>.large_popcnt) <span class="kw">as </span>usize;
+            <span class="self">self</span>.large_sparse.get_usize(large_i + il_mod)
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>large_start = <span class="self">self</span>.large_start.get_usize(il_div);
+            <span class="kw">let </span>is_div = i / <span class="self">self</span>.small_popcnt % <span class="self">self</span>.large_popcnt;
+            <span class="kw">let </span>is_mod = i % <span class="self">self</span>.small_popcnt;
 
-            <span class="kw">let </span>small = <span class="self">self</span>.small_start.get::&lt;<span class="bool-val">true</span>&gt;(large_i) <span class="kw">as </span>usize;
+            <span class="kw">let </span>small = <span class="self">self</span>.small_indir.get_usize(large_i + is_div);
             <span class="kw">let </span>(small_i, small_ty) = (small &gt;&gt; <span class="number">1</span>, small &amp; <span class="number">1</span>);
+            <span class="kw">let </span>small_start = <span class="self">self</span>.small_start.get_usize(small_i);
             <span class="kw">if </span>small_ty == <span class="number">0 </span>{
-                (<span class="self">self</span>.small_sparse.get::&lt;<span class="bool-val">true</span>&gt;(small_i + i % <span class="self">self</span>.small_popcnt))
-                    <span class="kw">as </span>usize
-                    + large_offset
+                <span class="kw">let </span>small_sparse = <span class="self">self</span>.small_sparse.get_usize(small_i);
+                large_start + small_start + small_sparse
             } <span class="kw">else </span>{
-                <span class="kw">let </span>il = large_offset + small_i; <span class="comment">// (?)
-                </span><span class="kw">let </span>ir = il + <span class="self">self</span>.small_dense_max;
-                <span class="self">self</span>.lookup(b.bits_range::&lt;X&gt;(il..ir), i % <span class="self">self</span>.small_popcnt)
-                    + large_offset
-                    + small_i <span class="comment">// (?)
-            </span>}
+                <span class="kw">let </span>offset = large_start + small_start;
+                <span class="kw">let </span>w =
+                    b.bits_range::&lt;X&gt;(offset..offset + <span class="self">self</span>.small_dense_max);
+                offset + <span class="self">self</span>.lookup(w, is_mod)
+            }
         }
     }
 }
