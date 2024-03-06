@@ -175,10 +175,11 @@ impl RankIndex {
     }
 
     #[cfg(test)]
-    pub fn size_info(&self) {
+    pub fn size_info(&self) -> usize {
         eprintln!("large: {} bits", self.large.bitlen());
         eprintln!("small: {} bits", self.small.bitlen());
         eprintln!("table: {} bits", self.table.bitlen());
+        self.large.bitlen() + self.small.bitlen() + self.table.bitlen()
     }
 }
 
@@ -198,11 +199,6 @@ impl SelectIndex {
         let mut small_indir = IntVec::new(bitlen(large_dense_max) + 1);
         let mut small_sparse = IntVec::new(bitlen(large_dense_max));
         let mut small_sparse_offset = IntVec::new(bitlen(len));
-
-        eprintln!("large_popcnt: {large_popcnt}");
-        eprintln!("small_popcnt: {small_popcnt}");
-        eprintln!("large_dense_max: {large_dense_max}");
-        eprintln!("small_dense_max: {small_dense_max}");
 
         let mut start = 0;
         let mut pos = vec![];
@@ -228,7 +224,6 @@ impl SelectIndex {
                 let small_start_offset = small_start.len();
                 let small_sparse_offset = small_sparse.len();
                 let mut cur_small_start = cur_large_start;
-                eprintln!("pos: {pos:?}");
                 for j in (0..pos.len()).step_by(small_popcnt) {
                     let start = cur_small_start;
                     let end = if j + small_popcnt < pos.len() {
@@ -239,7 +234,6 @@ impl SelectIndex {
                         pos[pos.len() - 1]
                     };
                     small_start.push((start - cur_large_start) as _);
-                    eprintln!("end: {end}, start: {start}");
                     if end + 1 - start > small_dense_max {
                         let tmp = (small_sparse.len() - small_sparse_offset)
                             / small_popcnt;
@@ -258,14 +252,6 @@ impl SelectIndex {
                 start = i + 1;
             }
         }
-
-        eprintln!("large_indir: {large_indir:?}");
-        eprintln!("large_start: {large_start:?}");
-        eprintln!("large_sparse: {large_sparse:?}");
-        eprintln!("small_indir: {small_indir:?}");
-        eprintln!("small_start: {small_start:?}");
-        eprintln!("small_sparse: {small_sparse:?}");
-        eprintln!("small_sparse_offset: {small_sparse_offset:?}");
 
         let table = Self::table(small_dense_max);
         Self {
@@ -318,35 +304,46 @@ impl SelectIndex {
             let is_div = i / self.small_popcnt % per;
             let is_mod = i % self.small_popcnt;
 
-            eprintln!(
-                "small_indir[(large_i = {large_i}) + (is_div = {is_div})]"
-            );
             let small = self.small_indir.get_usize(large_i + is_div);
             let (small_i, small_ty) = (small >> 1, small & 1);
-            eprintln!("small_i: {small_i}");
             let small_start = self.small_start.get_usize(large_i + is_div);
             if small_ty == 0 {
-                eprintln!("small_i: {small_i}, is_mod: {is_mod}");
-                eprintln!(
-                    "small_sparse[(small_i = {small_i}) + (is_mod = {is_mod})]"
-                );
                 let offset = self.small_sparse_offset.get_usize(il_div);
                 let small_sparse = self
                     .small_sparse
                     .get_usize(offset + small_i * self.small_popcnt + is_mod);
-                eprintln!(
-                    "large_start: {large_start}, small_start: {small_start}, small_sparse: {small_sparse}"
-                );
                 large_start + small_start + small_sparse
             } else {
                 let offset = large_start + small_start;
                 let w =
                     b.bits_range::<X>(offset..offset + self.small_dense_max);
-                eprintln!("offset: {offset}, w: {w:064b}, i: {is_mod}");
-                eprintln!("-> {}", offset + self.lookup(w, is_mod));
                 offset + self.lookup(w, is_mod)
             }
         }
+    }
+
+    #[cfg(test)]
+    pub fn size_info(&self) -> usize {
+        eprintln!("small_start: {} bits", self.small_start.bitlen());
+        eprintln!("small_indir: {} bits", self.small_indir.bitlen());
+        eprintln!("small_sparse: {} bits", self.small_sparse.bitlen());
+        eprintln!(
+            "small_sparse_offset: {} bits",
+            self.small_sparse_offset.bitlen()
+        );
+        eprintln!("large_start: {} bits", self.large_start.bitlen());
+        eprintln!("large_indir: {} bits", self.large_indir.bitlen());
+        eprintln!("large_sparse: {} bits", self.large_sparse.bitlen());
+        eprintln!("table: {} bits", self.table.bitlen());
+
+        self.small_start.bitlen()
+            + self.small_indir.bitlen()
+            + self.small_sparse.bitlen()
+            + self.small_sparse_offset.bitlen()
+            + self.large_start.bitlen()
+            + self.large_indir.bitlen()
+            + self.large_sparse.bitlen()
+            + self.table.bitlen()
     }
 }
 
@@ -384,8 +381,11 @@ impl Rs01DictRuntime {
 
     #[cfg(test)]
     pub fn size_info(&self) {
-        self.rank_index.size_info();
-        //
+        let mut sum = 0;
+        sum += self.rank_index.size_info();
+        sum += self.select_index.0.size_info();
+        sum += self.select_index.1.size_info();
+        eprintln!("total: {sum} bits");
     }
 }
 
