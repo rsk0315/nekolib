@@ -24,17 +24,17 @@ struct RankIndex {
     small_len: usize,
 }
 
-// struct SelectIndex {
-//     large: Vec<SelectIndexLarge>,
-//     table: IntVec,
-// }
-
-// enum SelectIndexLarge {
-//     Sparse(IntVec),
-//     Dense(IntVec, usize),
-// }
-
-struct SelectIndex;
+struct SelectIndex {
+    small_popcnt: usize,
+    small_start: IntVec,
+    small_sparse: IntVec,
+    small_dense_max: usize,
+    large_popcnt: usize,
+    large_start: IntVec,
+    large_sparse: IntVec,
+    large_offset: IntVec,
+    table: IntVec,
+}
 
 impl IntVec {
     pub fn new(unit: usize) -> Self { Self { unit, buf: vec![], len: 0 } }
@@ -92,14 +92,6 @@ fn bitlen(n: usize) -> usize {
 fn lg_half(n: usize) -> usize {
     // log(n)/2
     (1_usize..).find(|&i| 4_usize.saturating_pow(i as _) >= n).unwrap()
-}
-// fn lglg(n: usize) -> usize {
-//     // log(log(n))
-//     (1_usize..).find(|&i| (1_u128 << (1 << i)) >= n).unwrap()
-// }
-fn lglg2(n: usize) -> usize {
-    // log(log(n))^2
-    todo!()
 }
 
 impl RankIndex {
@@ -183,11 +175,13 @@ impl SelectIndex {
         let len = buf.len();
         let small_popcnt = lg_half(len);
         let large_popcnt = (2 * small_popcnt).pow(2); // log(n)^2
-        // ceil(lg(lg(len)))^2 だと大きすぎるので ceil(lg(lg(len))^2) とかにしたい
-        let small_dense_max = lglg2(len);
+        let small_dense_max =
+            (((len as f64).log2().max(1.0).log2().max(1.0).powi(4) / 20.0)
+                .ceil()) as usize;
         let large_dense_max = large_popcnt.pow(2); // log(n)^4
         let mut large_start = IntVec::new(bitlen(len) + 1);
         let mut large_sparse = IntVec::new(bitlen(len));
+        let mut large_offset = IntVec::new(bitlen(len));
         let mut small_start = IntVec::new(bitlen(large_dense_max) + 1);
         let mut small_sparse = IntVec::new(bitlen(large_dense_max));
 
@@ -196,45 +190,108 @@ impl SelectIndex {
         for i in 0..len {
             if buf[i] == X {
                 pos.push(i);
-                if pos.len() == large_popcnt || i == len - 1 {
-                    let end = i;
-                    if end + 1 - start > large_dense_max {
-                        large_start.push((large_sparse.len() << 1 | 0) as _);
-                        for j in pos.drain(..) {
-                            large_sparse.push(j as _);
-                        }
-                    } else {
-                        large_start.push((small_start.len() << 1 | 1) as _);
-                        // 必要な情報足りてる？ 簡潔になってる？
-                        for ch in pos.chunks(small_popcnt) {
-                            let start = ch[0];
-                            let end = ch[ch.len() - 1];
-                            if end + 1 - start > small_dense_max {
-                                small_start
-                                    .push((small_sparse.len() << 1 | 0) as _);
-                                for j in ch {
-                                    small_sparse.push((j - start) as _); // (?)
-                                }
-                            } else {
-                                small_start
-                                    .push(((start - pos[0]) << 1 | 1) as _);
-                            }
-                        }
-                        pos.clear();
-                    }
-
-                    start = i + 1;
+                if !(pos.len() == large_popcnt || i == len - 1) {
+                    continue;
                 }
+                let cur_large_start = start;
+                large_offset.push(cur_large_start as _);
+
+                let end = i;
+                if end + 1 - start > large_dense_max {
+                    large_start.push((large_sparse.len() << 1 | 0) as _);
+                    for j in pos.drain(..) {
+                        large_sparse.push(j as _);
+                    }
+                } else {
+                    large_start.push((small_start.len() << 1 | 1) as _);
+                    let mut cur_small_start = cur_large_start;
+                    for ch in pos.chunks(small_popcnt) {
+                        let start = ch[0];
+                        let end = ch[ch.len() - 1];
+                        if end + 1 - start > small_dense_max {
+                            small_start
+                                .push((small_sparse.len() << 1 | 0) as _);
+                            for j in ch {
+                                small_sparse.push((j - cur_large_start) as _);
+                            }
+                        } else {
+                            small_start.push(
+                                ((start - cur_large_start) << 1 | 1) as _,
+                            );
+                        }
+
+                        cur_small_start = end + 1;
+                    }
+                    pos.clear();
+                }
+
+                start = i + 1;
             }
         }
 
-        Self
+        let table = Self::table(small_dense_max);
+        Self {
+            small_popcnt,
+            small_start,
+            small_sparse,
+            small_dense_max,
+            large_popcnt,
+            large_start,
+            large_sparse,
+            large_offset,
+            table,
+        }
+    }
+
+    fn table(len: usize) -> IntVec {
+        let unit = bitlen(len);
+        let mut table = IntVec::new(unit);
+        for i in 0..1 << len {
+            let mut cur = 0;
+            for j in 0..len {
+                if i >> j & 1 != 0 {
+                    table.push(cur as _);
+                    cur += 1;
+                }
+            }
+            for _ in cur..len {
+                table.push(0);
+            }
+        }
+        table
+    }
+
+    fn lookup(&self, w: u64, i: usize) -> usize {
+        let wi = w as usize * self.small_dense_max + i;
+        self.table.get::<true>(wi) as _
+    }
+
+    pub fn select<const X: bool>(&self, i: usize, b: &IntVec) -> usize {
+        let large =
+            self.large_start.get::<true>(i / self.large_popcnt) as usize;
+        let (large_i, large_ty) = (large >> 1, large & 1);
+        if large_ty == 0 {
+            self.large_sparse.get::<true>(large_i + i % self.large_popcnt) as _
+        } else {
+            let large_offset =
+                self.large_offset.get::<true>(i / self.large_popcnt) as usize;
+
+            let small = self.small_start.get::<true>(large_i) as usize;
+            let (small_i, small_ty) = (small >> 1, small & 1);
+            if small_ty == 0 {
+                (self.small_sparse.get::<true>(small_i + i % self.small_popcnt))
+                    as usize
+                    + large_offset
+            } else {
+                let il = large_offset + small_i; // (?)
+                let ir = il + self.small_dense_max;
+                self.lookup(b.bits_range::<X>(il..ir), i % self.small_popcnt)
+                    + large_offset
+                    + small_i // (?)
+            }
+        }
     }
 }
-
-// impl SelectIndex {}
-
-// impl SelectIndexLarge {}
 
 impl Rs01DictRuntime {
     pub fn new(a: &[bool]) -> Self {
@@ -257,6 +314,16 @@ impl Rs01DictRuntime {
     }
     pub fn rank0(&self, i: usize) -> usize { self.rank::<false>(i) }
     pub fn rank1(&self, i: usize) -> usize { self.rank::<true>(i) }
+
+    pub fn select<const X: bool>(&self, i: usize) -> usize {
+        if X {
+            self.select_index.1.select::<X>(i, &self.buf)
+        } else {
+            self.select_index.0.select::<X>(i, &self.buf)
+        }
+    }
+    pub fn select0(&self, i: usize) -> usize { self.select::<false>(i) }
+    pub fn select1(&self, i: usize) -> usize { self.select::<true>(i) }
 
     #[cfg(test)]
     pub fn size_info(&self) {
@@ -293,7 +360,7 @@ mod tests {
             .scan(0, |acc, x| Some(std::mem::replace(acc, *acc + x)))
             .collect();
         let dict = Rs01DictRuntime::new(&a);
-        for i in 9999990..len {
+        for i in 0..len {
             assert_eq!(dict.rank1(i), naive[i], "i: {}", i);
             assert_eq!(dict.rank0(i), i - naive[i], "i: {}", i);
         }
@@ -304,11 +371,39 @@ mod tests {
         }
     }
 
+    fn test_select_internal(len: usize, p: f64) {
+        let mut rng = rng();
+        let dist = Bernoulli::new(p).unwrap();
+        let a: Vec<_> = (0..len).map(|_| dist.sample(&mut rng)).collect();
+        let naive: (Vec<_>, _) = (0..len).partition(|&i| !a[i]);
+        let dict = Rs01DictRuntime::new(&a);
+        for i in 0..naive.0.len() {
+            assert_eq!(dict.select0(i), naive.0[i], "i: {}", i);
+        }
+        for i in 0..naive.1.len() {
+            assert_eq!(dict.select1(i), naive.1[i], "i: {}", i);
+        }
+        if p == 1.0 {
+            eprintln!("---");
+            eprintln!("a.len(): {}", a.len());
+            dict.size_info();
+        }
+    }
+
     #[test]
     fn test_rank() {
-        for len in Some(0).into_iter().chain((0..=7).map(|e| 10_usize.pow(e))) {
+        for len in Some(0).into_iter().chain((0..=3).map(|e| 10_usize.pow(e))) {
             for &p in &[1.0, 0.999, 0.9, 0.5, 0.1, 1.0e-3, 0.0] {
                 test_rank_internal(len, p);
+            }
+        }
+    }
+
+    #[test]
+    fn test_select() {
+        for len in Some(0).into_iter().chain((0..=3).map(|e| 10_usize.pow(e))) {
+            for &p in &[1.0, 0.999, 0.9, 0.5, 0.1, 1.0e-3, 0.0] {
+                test_select_internal(len, p);
             }
         }
     }
