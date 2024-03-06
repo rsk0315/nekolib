@@ -878,10 +878,11 @@
     }
 
     <span class="attr">#[cfg(test)]
-    </span><span class="kw">pub fn </span>size_info(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+    </span><span class="kw">pub fn </span>size_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="macro">eprintln!</span>(<span class="string">"large: {} bits"</span>, <span class="self">self</span>.large.bitlen());
         <span class="macro">eprintln!</span>(<span class="string">"small: {} bits"</span>, <span class="self">self</span>.small.bitlen());
         <span class="macro">eprintln!</span>(<span class="string">"table: {} bits"</span>, <span class="self">self</span>.table.bitlen());
+        <span class="self">self</span>.large.bitlen() + <span class="self">self</span>.small.bitlen() + <span class="self">self</span>.table.bitlen()
     }
 }
 
@@ -901,11 +902,6 @@
         <span class="kw">let </span><span class="kw-2">mut </span>small_indir = IntVec::new(bitlen(large_dense_max) + <span class="number">1</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>small_sparse = IntVec::new(bitlen(large_dense_max));
         <span class="kw">let </span><span class="kw-2">mut </span>small_sparse_offset = IntVec::new(bitlen(len));
-
-        <span class="macro">eprintln!</span>(<span class="string">"large_popcnt: {large_popcnt}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"small_popcnt: {small_popcnt}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"large_dense_max: {large_dense_max}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"small_dense_max: {small_dense_max}"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>start = <span class="number">0</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>pos = <span class="macro">vec!</span>[];
@@ -931,7 +927,6 @@
                 <span class="kw">let </span>small_start_offset = small_start.len();
                 <span class="kw">let </span>small_sparse_offset = small_sparse.len();
                 <span class="kw">let </span><span class="kw-2">mut </span>cur_small_start = cur_large_start;
-                <span class="macro">eprintln!</span>(<span class="string">"pos: {pos:?}"</span>);
                 <span class="kw">for </span>j <span class="kw">in </span>(<span class="number">0</span>..pos.len()).step_by(small_popcnt) {
                     <span class="kw">let </span>start = cur_small_start;
                     <span class="kw">let </span>end = <span class="kw">if </span>j + small_popcnt &lt; pos.len() {
@@ -942,7 +937,6 @@
                         pos[pos.len() - <span class="number">1</span>]
                     };
                     small_start.push((start - cur_large_start) <span class="kw">as _</span>);
-                    <span class="macro">eprintln!</span>(<span class="string">"end: {end}, start: {start}"</span>);
                     <span class="kw">if </span>end + <span class="number">1 </span>- start &gt; small_dense_max {
                         <span class="kw">let </span>tmp = (small_sparse.len() - small_sparse_offset)
                             / small_popcnt;
@@ -961,14 +955,6 @@
                 start = i + <span class="number">1</span>;
             }
         }
-
-        <span class="macro">eprintln!</span>(<span class="string">"large_indir: {large_indir:?}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"large_start: {large_start:?}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"large_sparse: {large_sparse:?}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"small_indir: {small_indir:?}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"small_start: {small_start:?}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"small_sparse: {small_sparse:?}"</span>);
-        <span class="macro">eprintln!</span>(<span class="string">"small_sparse_offset: {small_sparse_offset:?}"</span>);
 
         <span class="kw">let </span>table = <span class="self">Self</span>::table(small_dense_max);
         <span class="self">Self </span>{
@@ -1021,35 +1007,46 @@
             <span class="kw">let </span>is_div = i / <span class="self">self</span>.small_popcnt % per;
             <span class="kw">let </span>is_mod = i % <span class="self">self</span>.small_popcnt;
 
-            <span class="macro">eprintln!</span>(
-                <span class="string">"small_indir[(large_i = {large_i}) + (is_div = {is_div})]"
-            </span>);
             <span class="kw">let </span>small = <span class="self">self</span>.small_indir.get_usize(large_i + is_div);
             <span class="kw">let </span>(small_i, small_ty) = (small &gt;&gt; <span class="number">1</span>, small &amp; <span class="number">1</span>);
-            <span class="macro">eprintln!</span>(<span class="string">"small_i: {small_i}"</span>);
             <span class="kw">let </span>small_start = <span class="self">self</span>.small_start.get_usize(large_i + is_div);
             <span class="kw">if </span>small_ty == <span class="number">0 </span>{
-                <span class="macro">eprintln!</span>(<span class="string">"small_i: {small_i}, is_mod: {is_mod}"</span>);
-                <span class="macro">eprintln!</span>(
-                    <span class="string">"small_sparse[(small_i = {small_i}) + (is_mod = {is_mod})]"
-                </span>);
                 <span class="kw">let </span>offset = <span class="self">self</span>.small_sparse_offset.get_usize(il_div);
                 <span class="kw">let </span>small_sparse = <span class="self">self
                     </span>.small_sparse
                     .get_usize(offset + small_i * <span class="self">self</span>.small_popcnt + is_mod);
-                <span class="macro">eprintln!</span>(
-                    <span class="string">"large_start: {large_start}, small_start: {small_start}, small_sparse: {small_sparse}"
-                </span>);
                 large_start + small_start + small_sparse
             } <span class="kw">else </span>{
                 <span class="kw">let </span>offset = large_start + small_start;
                 <span class="kw">let </span>w =
                     b.bits_range::&lt;X&gt;(offset..offset + <span class="self">self</span>.small_dense_max);
-                <span class="macro">eprintln!</span>(<span class="string">"offset: {offset}, w: {w:064b}, i: {is_mod}"</span>);
-                <span class="macro">eprintln!</span>(<span class="string">"-&gt; {}"</span>, offset + <span class="self">self</span>.lookup(w, is_mod));
                 offset + <span class="self">self</span>.lookup(w, is_mod)
             }
         }
+    }
+
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">pub fn </span>size_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="macro">eprintln!</span>(<span class="string">"small_start: {} bits"</span>, <span class="self">self</span>.small_start.bitlen());
+        <span class="macro">eprintln!</span>(<span class="string">"small_indir: {} bits"</span>, <span class="self">self</span>.small_indir.bitlen());
+        <span class="macro">eprintln!</span>(<span class="string">"small_sparse: {} bits"</span>, <span class="self">self</span>.small_sparse.bitlen());
+        <span class="macro">eprintln!</span>(
+            <span class="string">"small_sparse_offset: {} bits"</span>,
+            <span class="self">self</span>.small_sparse_offset.bitlen()
+        );
+        <span class="macro">eprintln!</span>(<span class="string">"large_start: {} bits"</span>, <span class="self">self</span>.large_start.bitlen());
+        <span class="macro">eprintln!</span>(<span class="string">"large_indir: {} bits"</span>, <span class="self">self</span>.large_indir.bitlen());
+        <span class="macro">eprintln!</span>(<span class="string">"large_sparse: {} bits"</span>, <span class="self">self</span>.large_sparse.bitlen());
+        <span class="macro">eprintln!</span>(<span class="string">"table: {} bits"</span>, <span class="self">self</span>.table.bitlen());
+
+        <span class="self">self</span>.small_start.bitlen()
+            + <span class="self">self</span>.small_indir.bitlen()
+            + <span class="self">self</span>.small_sparse.bitlen()
+            + <span class="self">self</span>.small_sparse_offset.bitlen()
+            + <span class="self">self</span>.large_start.bitlen()
+            + <span class="self">self</span>.large_indir.bitlen()
+            + <span class="self">self</span>.large_sparse.bitlen()
+            + <span class="self">self</span>.table.bitlen()
     }
 }
 
@@ -1087,9 +1084,12 @@
 
     <span class="attr">#[cfg(test)]
     </span><span class="kw">pub fn </span>size_info(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.rank_index.size_info();
-        <span class="comment">//
-    </span>}
+        <span class="kw">let </span><span class="kw-2">mut </span>sum = <span class="number">0</span>;
+        sum += <span class="self">self</span>.rank_index.size_info();
+        sum += <span class="self">self</span>.select_index.<span class="number">0</span>.size_info();
+        sum += <span class="self">self</span>.select_index.<span class="number">1</span>.size_info();
+        <span class="macro">eprintln!</span>(<span class="string">"total: {sum} bits"</span>);
+    }
 }
 
 <span class="attr">#[cfg(test)]
