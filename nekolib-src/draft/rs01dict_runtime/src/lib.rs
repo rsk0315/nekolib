@@ -88,6 +88,14 @@ impl IntVec {
     }
 }
 
+impl std::fmt::Debug for IntVec {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fmt.debug_list()
+            .entries((0..self.len).map(|i| self.get::<true>(i)))
+            .finish()
+    }
+}
+
 fn bitlen(n: usize) -> usize {
     // max {1, ceil(log2(|{0, 1, ..., n-1}|))}
     1.max((n + 1).next_power_of_two().trailing_zeros() as usize)
@@ -189,6 +197,11 @@ impl SelectIndex {
         let mut small_indir = IntVec::new(bitlen(large_dense_max) + 1);
         let mut small_sparse = IntVec::new(bitlen(large_dense_max));
 
+        eprintln!("large_popcnt: {large_popcnt}");
+        eprintln!("small_popcnt: {small_popcnt}");
+        eprintln!("large_dense_max: {large_dense_max}");
+        eprintln!("small_dense_max: {small_dense_max}");
+
         let mut start = 0;
         let mut pos = vec![];
         for i in 0..len {
@@ -214,21 +227,21 @@ impl SelectIndex {
                 let mut cur_small_start = cur_large_start;
                 eprintln!("pos: {pos:?}");
                 for j in (0..pos.len()).step_by(small_popcnt) {
-                    eprintln!("i: {i}, j: {j}");
                     let start = cur_small_start;
                     let end = if j + small_popcnt < pos.len() {
-                        eprintln!("(A)");
                         pos[j + small_popcnt] - 1
                     } else if i == len - 1 {
-                        eprintln!("(B)");
                         i
                     } else {
-                        eprintln!("(C)");
                         pos[pos.len() - 1]
                     };
                     small_start.push((start - cur_large_start) as _);
                     eprintln!("end: {end}, start: {start}");
                     if end + 1 - start > small_dense_max {
+                        eprintln!(
+                            "tmp = {} - {small_start_offset}",
+                            small_sparse.len()
+                        );
                         let tmp = small_sparse.len() - small_start_offset; // ?
                         small_indir.push((tmp << 1 | 0) as _);
                         for &p in &pos[j..pos.len().min(j + small_popcnt)] {
@@ -245,6 +258,13 @@ impl SelectIndex {
                 start = i + 1;
             }
         }
+
+        eprintln!("large_indir: {large_indir:?}");
+        eprintln!("large_start: {large_start:?}");
+        eprintln!("large_sparse: {large_sparse:?}");
+        eprintln!("small_indir: {small_indir:?}");
+        eprintln!("small_start: {small_start:?}");
+        eprintln!("small_sparse: {small_sparse:?}");
 
         let table = Self::table(small_dense_max);
         Self {
@@ -292,14 +312,27 @@ impl SelectIndex {
             self.large_sparse.get_usize(large_i + il_mod)
         } else {
             let large_start = self.large_start.get_usize(il_div);
-            let is_div = i / self.small_popcnt % self.large_popcnt;
+            let per = self.large_popcnt / self.small_popcnt;
+            let is_div = i / self.small_popcnt % per;
             let is_mod = i % self.small_popcnt;
 
+            eprintln!(
+                "small_indir[(large_i = {large_i}) + (is_div = {is_div})]"
+            );
             let small = self.small_indir.get_usize(large_i + is_div);
-            let (small_i, small_ty) = (small >> 1, small & 1);
-            let small_start = self.small_start.get_usize(small_i);
+            let (small_i, small_ty) = (large_i + (small >> 1), small & 1);
+            eprintln!("small_i: {small_i}");
+            let small_start = self.small_start.get_usize(large_i + is_div);
             if small_ty == 0 {
-                let small_sparse = self.small_sparse.get_usize(small_i);
+                eprintln!("small_i: {small_i}, is_mod: {is_mod}");
+                eprintln!(
+                    "small_sparse[(small_i = {small_i}) + (is_mod = {is_mod})]"
+                );
+                let small_sparse =
+                    self.small_sparse.get_usize(small_i + is_mod);
+                eprintln!(
+                    "large_start: {large_start}, small_start: {small_start}, small_sparse: {small_sparse}"
+                );
                 large_start + small_start + small_sparse
             } else {
                 let offset = large_start + small_start;
@@ -425,4 +458,7 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn sanity_check() { test_select_internal(100, 0.2); }
 }
