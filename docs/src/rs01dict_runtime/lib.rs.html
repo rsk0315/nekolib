@@ -695,6 +695,12 @@
 <a href="#462" id="462">462</a>
 <a href="#463" id="463">463</a>
 <a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(unused)]
 
 </span><span class="kw">use </span>std::ops::Range;
@@ -726,6 +732,7 @@
     small_start: IntVec,
     small_indir: IntVec,
     small_sparse: IntVec,
+    small_sparse_offset: IntVec,
     small_dense_max: usize,
     large_popcnt: usize,
     large_start: IntVec,
@@ -893,6 +900,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>small_start = IntVec::new(bitlen(large_dense_max));
         <span class="kw">let </span><span class="kw-2">mut </span>small_indir = IntVec::new(bitlen(large_dense_max) + <span class="number">1</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>small_sparse = IntVec::new(bitlen(large_dense_max));
+        <span class="kw">let </span><span class="kw-2">mut </span>small_sparse_offset = IntVec::new(bitlen(len));
 
         <span class="macro">eprintln!</span>(<span class="string">"large_popcnt: {large_popcnt}"</span>);
         <span class="macro">eprintln!</span>(<span class="string">"small_popcnt: {small_popcnt}"</span>);
@@ -912,7 +920,7 @@
             <span class="kw">let </span>cur_large_start = start;
             <span class="kw">let </span>cur_large_end = i;
             large_start.push(cur_large_start <span class="kw">as _</span>);
-
+            small_sparse_offset.push(small_sparse.len() <span class="kw">as _</span>);
             <span class="kw">if </span>cur_large_end + <span class="number">1 </span>- cur_large_start &gt; large_dense_max {
                 large_indir.push((large_sparse.len() &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
                 <span class="kw">for </span>p <span class="kw">in </span>pos.drain(..) {
@@ -921,6 +929,7 @@
             } <span class="kw">else </span>{
                 large_indir.push((small_start.len() &lt;&lt; <span class="number">1 </span>| <span class="number">1</span>) <span class="kw">as _</span>);
                 <span class="kw">let </span>small_start_offset = small_start.len();
+                <span class="kw">let </span>small_sparse_offset = small_sparse.len();
                 <span class="kw">let </span><span class="kw-2">mut </span>cur_small_start = cur_large_start;
                 <span class="macro">eprintln!</span>(<span class="string">"pos: {pos:?}"</span>);
                 <span class="kw">for </span>j <span class="kw">in </span>(<span class="number">0</span>..pos.len()).step_by(small_popcnt) {
@@ -935,12 +944,9 @@
                     small_start.push((start - cur_large_start) <span class="kw">as _</span>);
                     <span class="macro">eprintln!</span>(<span class="string">"end: {end}, start: {start}"</span>);
                     <span class="kw">if </span>end + <span class="number">1 </span>- start &gt; small_dense_max {
-                        <span class="macro">eprintln!</span>(
-                            <span class="string">"tmp = {} - {small_start_offset}"</span>,
-                            small_sparse.len()
-                        );
-                        <span class="kw">let </span>tmp = small_sparse.len() - small_start_offset; <span class="comment">// ?
-                        </span>small_indir.push((tmp &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
+                        <span class="kw">let </span>tmp = (small_sparse.len() - small_sparse_offset)
+                            / small_popcnt;
+                        small_indir.push((tmp &lt;&lt; <span class="number">1 </span>| <span class="number">0</span>) <span class="kw">as _</span>);
                         <span class="kw">for </span><span class="kw-2">&amp;</span>p <span class="kw">in </span><span class="kw-2">&amp;</span>pos[j..pos.len().min(j + small_popcnt)] {
                             <span class="kw">let </span>pos_offset = p - start;
                             small_sparse.push(pos_offset <span class="kw">as _</span>);
@@ -962,6 +968,7 @@
         <span class="macro">eprintln!</span>(<span class="string">"small_indir: {small_indir:?}"</span>);
         <span class="macro">eprintln!</span>(<span class="string">"small_start: {small_start:?}"</span>);
         <span class="macro">eprintln!</span>(<span class="string">"small_sparse: {small_sparse:?}"</span>);
+        <span class="macro">eprintln!</span>(<span class="string">"small_sparse_offset: {small_sparse_offset:?}"</span>);
 
         <span class="kw">let </span>table = <span class="self">Self</span>::table(small_dense_max);
         <span class="self">Self </span>{
@@ -969,6 +976,7 @@
             small_start,
             small_indir,
             small_sparse,
+            small_sparse_offset,
             small_dense_max,
             large_popcnt,
             large_start,
@@ -985,7 +993,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>cur = <span class="number">0</span>;
             <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..len {
                 <span class="kw">if </span>i &gt;&gt; j &amp; <span class="number">1 </span>!= <span class="number">0 </span>{
-                    table.push(cur <span class="kw">as _</span>);
+                    table.push(j <span class="kw">as _</span>);
                     cur += <span class="number">1</span>;
                 }
             }
@@ -1017,7 +1025,7 @@
                 <span class="string">"small_indir[(large_i = {large_i}) + (is_div = {is_div})]"
             </span>);
             <span class="kw">let </span>small = <span class="self">self</span>.small_indir.get_usize(large_i + is_div);
-            <span class="kw">let </span>(small_i, small_ty) = (large_i + (small &gt;&gt; <span class="number">1</span>), small &amp; <span class="number">1</span>);
+            <span class="kw">let </span>(small_i, small_ty) = (small &gt;&gt; <span class="number">1</span>, small &amp; <span class="number">1</span>);
             <span class="macro">eprintln!</span>(<span class="string">"small_i: {small_i}"</span>);
             <span class="kw">let </span>small_start = <span class="self">self</span>.small_start.get_usize(large_i + is_div);
             <span class="kw">if </span>small_ty == <span class="number">0 </span>{
@@ -1025,8 +1033,10 @@
                 <span class="macro">eprintln!</span>(
                     <span class="string">"small_sparse[(small_i = {small_i}) + (is_mod = {is_mod})]"
                 </span>);
-                <span class="kw">let </span>small_sparse =
-                    <span class="self">self</span>.small_sparse.get_usize(small_i + is_mod);
+                <span class="kw">let </span>offset = <span class="self">self</span>.small_sparse_offset.get_usize(il_div);
+                <span class="kw">let </span>small_sparse = <span class="self">self
+                    </span>.small_sparse
+                    .get_usize(offset + small_i * <span class="self">self</span>.small_popcnt + is_mod);
                 <span class="macro">eprintln!</span>(
                     <span class="string">"large_start: {large_start}, small_start: {small_start}, small_sparse: {small_sparse}"
                 </span>);
@@ -1035,6 +1045,8 @@
                 <span class="kw">let </span>offset = large_start + small_start;
                 <span class="kw">let </span>w =
                     b.bits_range::&lt;X&gt;(offset..offset + <span class="self">self</span>.small_dense_max);
+                <span class="macro">eprintln!</span>(<span class="string">"offset: {offset}, w: {w:064b}, i: {is_mod}"</span>);
+                <span class="macro">eprintln!</span>(<span class="string">"-&gt; {}"</span>, offset + <span class="self">self</span>.lookup(w, is_mod));
                 offset + <span class="self">self</span>.lookup(w, is_mod)
             }
         }
@@ -1140,7 +1152,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_rank() {
-        <span class="kw">for </span>len <span class="kw">in </span><span class="prelude-val">Some</span>(<span class="number">0</span>).into_iter().chain((<span class="number">0</span>..=<span class="number">3</span>).map(|e| <span class="number">10_usize</span>.pow(e))) {
+        <span class="kw">for </span>len <span class="kw">in </span><span class="prelude-val">Some</span>(<span class="number">0</span>).into_iter().chain((<span class="number">0</span>..=<span class="number">7</span>).map(|e| <span class="number">10_usize</span>.pow(e))) {
             <span class="kw">for </span><span class="kw-2">&amp;</span>p <span class="kw">in </span><span class="kw-2">&amp;</span>[<span class="number">1.0</span>, <span class="number">0.999</span>, <span class="number">0.9</span>, <span class="number">0.5</span>, <span class="number">0.1</span>, <span class="number">1.0e-3</span>, <span class="number">0.0</span>] {
                 test_rank_internal(len, p);
             }
@@ -1149,7 +1161,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_select() {
-        <span class="kw">for </span>len <span class="kw">in </span><span class="prelude-val">Some</span>(<span class="number">0</span>).into_iter().chain((<span class="number">0</span>..=<span class="number">3</span>).map(|e| <span class="number">10_usize</span>.pow(e))) {
+        <span class="kw">for </span>len <span class="kw">in </span><span class="prelude-val">Some</span>(<span class="number">0</span>).into_iter().chain((<span class="number">0</span>..=<span class="number">7</span>).map(|e| <span class="number">10_usize</span>.pow(e))) {
             <span class="kw">for </span><span class="kw-2">&amp;</span>p <span class="kw">in </span><span class="kw-2">&amp;</span>[<span class="number">1.0</span>, <span class="number">0.999</span>, <span class="number">0.9</span>, <span class="number">0.5</span>, <span class="number">0.1</span>, <span class="number">1.0e-3</span>, <span class="number">0.0</span>] {
                 test_select_internal(len, p);
             }
