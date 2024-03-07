@@ -701,6 +701,8 @@
 <a href="#468" id="468">468</a>
 <a href="#469" id="469">469</a>
 <a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(unused)]
 
 </span><span class="kw">use </span>std::ops::Range;
@@ -879,10 +881,11 @@
 
     <span class="attr">#[cfg(test)]
     </span><span class="kw">pub fn </span>size_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="macro">eprintln!</span>(<span class="string">"large: {} bits"</span>, <span class="self">self</span>.large.bitlen());
-        <span class="macro">eprintln!</span>(<span class="string">"small: {} bits"</span>, <span class="self">self</span>.small.bitlen());
-        <span class="macro">eprintln!</span>(<span class="string">"table: {} bits"</span>, <span class="self">self</span>.table.bitlen());
-        <span class="self">self</span>.large.bitlen() + <span class="self">self</span>.small.bitlen() + <span class="self">self</span>.table.bitlen()
+        <span class="comment">// eprintln!("large: {} bits", self.large.bitlen());
+        // eprintln!("small: {} bits", self.small.bitlen());
+        // eprintln!("table: {} bits", self.table.bitlen());
+
+        </span><span class="self">self</span>.large.bitlen() + <span class="self">self</span>.small.bitlen() + <span class="self">self</span>.table.bitlen()
     }
 }
 
@@ -892,7 +895,7 @@
         <span class="kw">let </span>small_popcnt = lg_half(len);
         <span class="kw">let </span>large_popcnt = (<span class="number">2 </span>* small_popcnt).pow(<span class="number">2</span>); <span class="comment">// log(n)^2
         </span><span class="kw">let </span>small_dense_max =
-            (((len <span class="kw">as </span>f64).log2().max(<span class="number">1.0</span>).log2().max(<span class="number">1.0</span>).powi(<span class="number">4</span>) / <span class="number">20.0</span>)
+            (((len <span class="kw">as </span>f64).log2().max(<span class="number">1.0</span>).log2().max(<span class="number">1.0</span>).powi(<span class="number">4</span>) / <span class="number">24.0</span>)
                 .ceil()) <span class="kw">as </span>usize;
         <span class="kw">let </span>large_dense_max = large_popcnt.pow(<span class="number">2</span>); <span class="comment">// log(n)^4
         </span><span class="kw">let </span><span class="kw-2">mut </span>large_start = IntVec::new(bitlen(len));
@@ -1088,7 +1091,8 @@
         sum += <span class="self">self</span>.rank_index.size_info();
         sum += <span class="self">self</span>.select_index.<span class="number">0</span>.size_info();
         sum += <span class="self">self</span>.select_index.<span class="number">1</span>.size_info();
-        <span class="macro">eprintln!</span>(<span class="string">"total: {sum} bits"</span>);
+        <span class="kw">let </span>ratio = sum <span class="kw">as </span>f64 / <span class="self">self</span>.buf.len() <span class="kw">as </span>f64;
+        <span class="macro">eprintln!</span>(<span class="string">"total: {sum} bits (x{ratio:.03})"</span>);
     }
 }
 
