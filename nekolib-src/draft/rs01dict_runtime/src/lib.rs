@@ -176,9 +176,10 @@ impl RankIndex {
 
     #[cfg(test)]
     pub fn size_info(&self) -> usize {
-        eprintln!("large: {} bits", self.large.bitlen());
-        eprintln!("small: {} bits", self.small.bitlen());
-        eprintln!("table: {} bits", self.table.bitlen());
+        // eprintln!("large: {} bits", self.large.bitlen());
+        // eprintln!("small: {} bits", self.small.bitlen());
+        // eprintln!("table: {} bits", self.table.bitlen());
+
         self.large.bitlen() + self.small.bitlen() + self.table.bitlen()
     }
 }
@@ -189,7 +190,7 @@ impl SelectIndex {
         let small_popcnt = lg_half(len);
         let large_popcnt = (2 * small_popcnt).pow(2); // log(n)^2
         let small_dense_max =
-            (((len as f64).log2().max(1.0).log2().max(1.0).powi(4) / 20.0)
+            (((len as f64).log2().max(1.0).log2().max(1.0).powi(4) / 24.0)
                 .ceil()) as usize;
         let large_dense_max = large_popcnt.pow(2); // log(n)^4
         let mut large_start = IntVec::new(bitlen(len));
@@ -385,7 +386,8 @@ impl Rs01DictRuntime {
         sum += self.rank_index.size_info();
         sum += self.select_index.0.size_info();
         sum += self.select_index.1.size_info();
-        eprintln!("total: {sum} bits");
+        let ratio = sum as f64 / self.buf.len() as f64;
+        eprintln!("total: {sum} bits (x{ratio:.03})");
     }
 }
 
