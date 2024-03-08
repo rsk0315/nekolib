@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 rs01dict_runtime = { path = "rs01dict_runtime" }
+rs01dict_tree = { path = "rs01dict_tree" }
