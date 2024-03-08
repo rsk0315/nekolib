@@ -250,8 +250,8 @@ impl SelectIndex {
                 }
 
                 pos.clear();
-                start = i + 1;
             }
+            start = i + 1;
         }
 
         let table = Self::table(small_dense_max);
