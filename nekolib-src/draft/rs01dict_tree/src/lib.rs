@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use std::ops::Range;
 
 const W: usize = u64::BITS as usize;
@@ -31,7 +29,6 @@ struct SelectIndex {
     table_tree: IntVec,
     table_word: IntVec,
     large_popcnt: usize,
-    dense_max: usize,
     branch: usize,
     small_len: usize,
 }
@@ -83,7 +80,13 @@ impl IntVec {
             self.buf[start / W] >> (start % W)
                 | self.buf[end / W] << (W - start % W)
         };
-        (if X { res } else { !res }) & mask
+
+        // let mask = !(!0_u128 << (end - start));
+        // let mut res = self.buf[start / W] as u128;
+        // res |= (*self.buf.get(start / W + 1).unwrap_or(&0) as u128) << W;
+        // res >>= start % W;
+
+        ((if X { res } else { !res }) & mask) as _
     }
 }
 
@@ -98,10 +101,6 @@ impl std::fmt::Debug for IntVec {
 fn bitlen(n: usize) -> usize {
     // max {1, ceil(log2(|{0, 1, ..., n-1}|))}
     1.max((n + 1).next_power_of_two().trailing_zeros() as usize)
-}
-fn lg_half(n: usize) -> usize {
-    // log(n)/2
-    (1_usize..).find(|&i| 4_usize.saturating_pow(i as _) >= n).unwrap()
 }
 
 impl RankIndex {
@@ -217,7 +216,7 @@ impl SelectIndex {
                 indir.push((sparse.len() << 1 | 0) as _);
                 indir.push(0);
                 indir.push(0);
-                for p in pos.drain(..) {
+                for &p in &pos {
                     sparse.push(p as _);
                 }
             } else {
@@ -259,16 +258,13 @@ impl SelectIndex {
             table_tree,
             table_word,
             large_popcnt,
-            dense_max,
             branch,
             small_len,
         }
     }
 
     fn lookup_tree(&self, w: u64, i: usize) -> (usize, usize) {
-        let len = bitlen(self.large_popcnt);
         let bitlen_branch = bitlen(self.branch);
-        let unit = len + bitlen_branch;
         let wi = w as usize * self.large_popcnt + i;
         let res = self.table_tree.get_usize(wi);
         (res >> bitlen_branch, res & !(!0 << bitlen_branch))
@@ -283,8 +279,8 @@ impl SelectIndex {
     fn table_tree(popcnt: usize, branch: usize) -> IntVec {
         let len = bitlen(popcnt);
         let unit = len + bitlen(branch);
-        let bits = (unit * len * branch) << (len * branch);
-        let words = (bits + 63) / 64;
+        // let bits = (unit * len * branch) << (len * branch);
+        // let words = (bits + 63) / 64;
 
         // [4, 3, 2] in a natrual order.
         // [2, 3, 4] in a reversed order.

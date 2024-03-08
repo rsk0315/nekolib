@@ -10,6 +10,7 @@ usize_bounds = { path = "../../ops/usize_bounds" }
 criterion = "0.5.1"
 bit-vector = { path = "../../naive/bit-vector" }
 rs01dict_runtime = { path = "../../draft/rs01dict_runtime" }
+rs01dict_tree = { path = "../../draft/rs01dict_tree" }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 
