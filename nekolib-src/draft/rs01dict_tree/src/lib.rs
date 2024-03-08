@@ -192,11 +192,6 @@ impl SelectIndex {
         let small_len = (len_lg / 4.0).ceil().max(2.0) as usize;
         let branch = len_lg.cbrt().ceil() as usize;
 
-        // eprintln!("large_popcnt: {large_popcnt}");
-        // eprintln!("dense_max: {dense_max}");
-        // eprintln!("small_len: {small_len}");
-        // eprintln!("branch: {branch}");
-
         let mut indir = IntVec::new(bitlen(len) + 2);
         let mut sparse = IntVec::new(bitlen(len));
         let mut dense = IntVec::new(bitlen(large_popcnt));
@@ -272,7 +267,6 @@ impl SelectIndex {
 
     fn lookup_word(&self, w: u64, i: usize) -> usize {
         let wi = w as usize * self.small_len + i;
-        // eprintln!("lookup_word({w:064b}, {i})");
         self.table_word.get_usize(wi)
     }
 
@@ -330,9 +324,7 @@ impl SelectIndex {
     }
 
     pub fn select<const X: bool>(&self, i: usize, b: &IntVec) -> usize {
-        // eprintln!("---");
         let (il_div, il_mod) = (i / self.large_popcnt, i % self.large_popcnt);
-        // eprintln!("il: {:?}", (il_div, il_mod));
         let large = self.indir.get_usize(3 * il_div);
         let (large_i, large_ty) = (large >> 1, large & 1);
         if large_ty == 0 {
@@ -341,7 +333,6 @@ impl SelectIndex {
             let start = large_i;
             let end = self.indir.get_usize(3 * il_div + 1);
             let b_start = self.indir.get_usize(3 * il_div + 2);
-            // eprintln!("range: {:?}", start..end);
             let unit = bitlen(self.large_popcnt);
             let branch = self.branch;
             let mut cur = 0;
@@ -350,23 +341,13 @@ impl SelectIndex {
             loop {
                 let il = (end - (cur + branch)) * unit;
                 let ir = (end - cur) * unit;
-                // eprintln!("get: {:?}", il..ir);
                 let w = self.dense.bits_range::<true>(il..ir);
-                // eprintln!("lookup_tree({w:064b}, {i})");
                 let (acc, br) = self.lookup_tree(w, i);
-                // eprintln!("  = {:?}", (acc, br));
                 let tmp = cur + br + 1;
                 if end - start <= tmp * branch {
                     let il = b_start + (b_i * branch + br) * self.small_len;
                     let ir = il + self.small_len;
-                    // eprintln!(
-                    //     "il = {b_start} + ({b_i} * {branch} + {br}) * {}",
-                    //     self.small_len
-                    // );
                     let w = b.bits_range::<X>(il..ir);
-                    // eprintln!("b<{X}>[{:?}] = {w:064b}", il..ir);
-                    // eprintln!("i: {i}, acc: {acc}, br: {br}");
-                    // eprintln!("lookup_word({w:064b}, {})", i - acc);
                     break il + self.lookup_word(w, i - acc);
                 }
                 b_i = b_i * branch + br;
@@ -490,20 +471,8 @@ mod tests {
         let mut rng = rng();
         let dist = Bernoulli::new(p).unwrap();
         let a: Vec<_> = (0..len).map(|_| dist.sample(&mut rng)).collect();
-        // eprintln!("a: {a:?}");
         let naive: (Vec<_>, _) = (0..len).partition(|&i| !a[i]);
         let dict = Rs01DictTree::new(&a);
-
-        // for i in 0..naive.0.len() {
-        //     let e = naive.0[i];
-        //     let a = dict.select0(i);
-        //     eprintln!("select0({i}) -> expected: {e}, actual: {a}");
-        // }
-        // for i in 0..naive.1.len() {
-        //     let e = naive.1[i];
-        //     let a = dict.select1(i);
-        //     eprintln!("select1({i}) -> expected: {e}, actual: {a}");
-        // }
 
         for i in 0..naive.0.len() {
             assert_eq!(dict.select0(i), naive.0[i], "i: {}", i);
@@ -511,11 +480,11 @@ mod tests {
         for i in 0..naive.1.len() {
             assert_eq!(dict.select1(i), naive.1[i], "i: {}", i);
         }
-        // if p == 1.0 {
-        //     eprintln!("---");
-        //     eprintln!("a.len(): {}", a.len());
-        //     dict.size_info();
-        // }
+        if p == 1.0 {
+            eprintln!("---");
+            eprintln!("a.len(): {}", a.len());
+            dict.size_info();
+        }
     }
 
     #[test]
