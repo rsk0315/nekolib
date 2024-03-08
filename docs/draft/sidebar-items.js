@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["rs01dict_runtime"],"struct":["Rs01DictRuntime"]};
+window.SIDEBAR_ITEMS = {"mod":["rs01dict_runtime","rs01dict_tree"],"struct":["Rs01DictRuntime","Rs01DictTree"]};

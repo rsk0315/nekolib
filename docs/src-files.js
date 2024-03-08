@@ -57,6 +57,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["readable",["",[],["lib.rs"]]],\
 ["rs01_dict",["",[],["lib.rs"]]],\
 ["rs01dict_runtime",["",[],["lib.rs"]]],\
+["rs01dict_tree",["",[],["lib.rs"]]],\
 ["scc",["",[],["lib.rs"]]],\
 ["seq",["",[],["lib.rs"]]],\
 ["snippet",["",[],["lib.rs"]]],\
