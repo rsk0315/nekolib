@@ -10,7 +10,7 @@ struct IntVec {
     len: usize,
 }
 
-pub struct Rs01DictRuntime {
+pub struct Rs01DictTree {
     buf: IntVec,
     rank_index: RankIndex,
     select_index: (SelectIndex, SelectIndex),
@@ -43,12 +43,7 @@ impl IntVec {
 
     pub fn push(&mut self, w: u64) {
         let unit = self.unit;
-        assert!(
-            unit == W || w & (!0 << unit) == 0,
-            "unit: {}, w: {:064b}",
-            unit,
-            w
-        );
+        debug_assert!(unit == W || w & (!0 << unit) == 0);
 
         let bitlen = self.bitlen();
         if unit == 0 {
@@ -178,12 +173,13 @@ impl RankIndex {
     }
 
     #[cfg(test)]
-    pub fn size_info(&self) -> usize {
+    pub fn size_info(&self) -> (usize, usize) {
         // eprintln!("large: {} bits", self.large.bitlen());
         // eprintln!("small: {} bits", self.small.bitlen());
         // eprintln!("table: {} bits", self.table.bitlen());
 
-        self.large.bitlen() + self.small.bitlen() + self.table.bitlen()
+        let rt = self.large.bitlen() + self.small.bitlen();
+        (rt, rt + self.table.bitlen())
     }
 }
 
@@ -193,12 +189,13 @@ impl SelectIndex {
         let len_lg = (len as f64).log2().max(1.0);
 
         let dense_max = (len_lg.powi(4) / 128.0).ceil() as usize;
-        let large_popcnt = (len_lg.powi(2) / 16.0).ceil() as usize;
+        let large_popcnt = (len_lg.powi(2) / 20.0).ceil() as usize;
         let small_len = (len_lg / 4.0).ceil().max(2.0) as usize;
         let branch = len_lg.cbrt().ceil() as usize;
 
-        // eprintln!("small_len: {small_len}");
         // eprintln!("large_popcnt: {large_popcnt}");
+        // eprintln!("dense_max: {dense_max}");
+        // eprintln!("small_len: {small_len}");
         // eprintln!("branch: {branch}");
 
         let mut indir = IntVec::new(bitlen(len) + 2);
@@ -384,20 +381,19 @@ impl SelectIndex {
     }
 
     #[cfg(test)]
-    pub fn size_info(&self) -> usize {
+    pub fn size_info(&self) -> (usize, usize) {
         // eprintln!("indir:  {} bits", self.indir.bitlen());
         // eprintln!("sparse: {} bits", self.sparse.bitlen());
         // eprintln!("dense:  {} bits", self.dense.bitlen());
 
-        self.indir.bitlen()
-            + self.sparse.bitlen()
-            + self.dense.bitlen()
-            + self.table_tree.bitlen()
-            + self.table_word.bitlen()
+        let rt =
+            self.indir.bitlen() + self.sparse.bitlen() + self.dense.bitlen();
+
+        (rt, rt + self.table_tree.bitlen() + self.table_word.bitlen())
     }
 }
 
-impl Rs01DictRuntime {
+impl Rs01DictTree {
     pub fn new(a: &[bool]) -> Self {
         let rank_index = RankIndex::new(&a);
         let mut buf = IntVec::new(1);
@@ -432,15 +428,25 @@ impl Rs01DictRuntime {
     #[cfg(test)]
     pub fn size_info(&self) {
         let len = self.buf.bitlen();
-        let naive = len * bitlen(len);
-        eprintln!("naive: {naive} bits");
+        let naive = 3 * len * bitlen(len);
+        eprintln!("* naive: {naive:>10} bits, {:>10} words", naive / 64);
 
-        let mut sum = 0;
-        sum += self.rank_index.size_info();
-        sum += self.select_index.0.size_info();
-        sum += self.select_index.1.size_info();
+        let (r, r_table) = self.rank_index.size_info();
+        let (s0, s0_table) = self.select_index.0.size_info();
+        let (s1, s1_table) = self.select_index.1.size_info();
+        let sum = r + s0 + s1;
+        let sum_table = r_table + s0_table + s1_table;
+
         let ratio = sum as f64 / naive as f64;
-        eprintln!("total: {sum} bits (x{ratio:.03})");
+        eprintln!(
+            "- table: {sum:>10} bits, {:>10} words (x{ratio:.03})",
+            sum / 64
+        );
+        let ratio = sum_table as f64 / naive as f64;
+        eprintln!(
+            "+ table: {sum_table:>10} bits, {:>10} words (x{ratio:.03})",
+            sum_table / 64
+        );
     }
 }
 
@@ -471,7 +477,7 @@ mod tests {
             .map(|&x| x as usize)
             .scan(0, |acc, x| Some(std::mem::replace(acc, *acc + x)))
             .collect();
-        let dict = Rs01DictRuntime::new(&a);
+        let dict = Rs01DictTree::new(&a);
         for i in 0..len {
             assert_eq!(dict.rank1(i), naive[i], "i: {}", i);
             assert_eq!(dict.rank0(i), i - naive[i], "i: {}", i);
@@ -490,7 +496,7 @@ mod tests {
         let a: Vec<_> = (0..len).map(|_| dist.sample(&mut rng)).collect();
         // eprintln!("a: {a:?}");
         let naive: (Vec<_>, _) = (0..len).partition(|&i| !a[i]);
-        let dict = Rs01DictRuntime::new(&a);
+        let dict = Rs01DictTree::new(&a);
 
         // for i in 0..naive.0.len() {
         //     let e = naive.0[i];
@@ -586,8 +592,9 @@ fn simple() {
     // [0, 0, 2, 2, 1, 2, 1, 1, 3, 2, 5, 5]
     // ok
 
-    let a = vec![false; 10_usize.pow(7)];
-    // let s = SelectIndex::new::<true>(&a);
-    let dict = Rs01DictRuntime::new(&a);
-    dict.size_info();
+    for i in 0..=7 {
+        let a = vec![false; 10_usize.pow(i)];
+        let dict = Rs01DictTree::new(&a);
+        dict.size_info();
+    }
 }
