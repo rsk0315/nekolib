@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/draft/rs01dict_tree/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rs01dict_tree" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (9c3ad802d 2024-03-07)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/draft/rs01dict_tree/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rs01dict_tree" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (2d24fe591 2024-03-09)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -169,6 +169,9 @@
     "uslice": [
       "bucket_sort",
       "permutation"
+    ],
+    "word": [
+      "small_rank_select"
     ]
   };
 
@@ -797,6 +800,47 @@
 <a href="#563" id="563">563</a>
 <a href="#564" id="564">564</a>
 <a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Range;
 
 <span class="kw">const </span>W: usize = u64::BITS <span class="kw">as </span>usize;
@@ -816,7 +860,6 @@
 <span class="kw">struct </span>RankIndex {
     large: IntVec,
     small: IntVec,
-    table: IntVec,
     large_len: usize,
     small_len: usize,
 }
@@ -825,11 +868,51 @@
     indir: IntVec,
     sparse: IntVec,
     dense: IntVec,
-    table_tree: IntVec,
-    table_word: IntVec,
-    large_popcnt: usize,
+    table_tree: Vec&lt;u8&gt;,
+    <span class="comment">// table_tree: IntVec,
+    </span>large_popcnt: usize,
     branch: usize,
     small_len: usize,
+}
+
+<span class="kw">const </span>RANK_TABLE: [[u8; <span class="number">12</span>]; <span class="number">4096</span>] = rank_table::&lt;<span class="number">12</span>, <span class="number">4096</span>&gt;();
+<span class="kw">const </span>SELECT_TABLE: [[u8; <span class="number">12</span>]; <span class="number">4096</span>] = select_table::&lt;<span class="number">12</span>, <span class="number">4096</span>&gt;();
+
+<span class="kw">const fn </span>rank_table&lt;<span class="kw">const </span>LEN: usize, <span class="kw">const </span>PAT: usize&gt;() -&gt; [[u8; LEN]; PAT] {
+    <span class="kw">let </span><span class="kw-2">mut </span>res = [[<span class="number">0</span>; LEN]; PAT];
+    <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+    <span class="kw">while </span>i &lt; PAT {
+        <span class="kw">let </span><span class="kw-2">mut </span>cur = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>j = <span class="number">0</span>;
+        <span class="kw">while </span>j &lt; LEN {
+            res[i][j] = cur;
+            <span class="kw">if </span>i &gt;&gt; j &amp; <span class="number">1 </span>!= <span class="number">0 </span>{
+                cur += <span class="number">1</span>;
+            }
+            j += <span class="number">1</span>;
+        }
+        i += <span class="number">1</span>;
+    }
+    res
+}
+
+<span class="kw">const fn </span>select_table&lt;<span class="kw">const </span>LEN: usize, <span class="kw">const </span>PAT: usize&gt;() -&gt; [[u8; LEN]; PAT]
+{
+    <span class="kw">let </span><span class="kw-2">mut </span>res = [[<span class="number">0</span>; LEN]; PAT];
+    <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+    <span class="kw">while </span>i &lt; PAT {
+        <span class="kw">let </span><span class="kw-2">mut </span>cur = <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>j = <span class="number">0</span>;
+        <span class="kw">while </span>j &lt; LEN {
+            <span class="kw">if </span>i &gt;&gt; j &amp; <span class="number">1 </span>!= <span class="number">0 </span>{
+                res[i][cur] = j <span class="kw">as _</span>;
+                cur += <span class="number">1</span>;
+            }
+            j += <span class="number">1</span>;
+        }
+        i += <span class="number">1</span>;
+    }
+    res
 }
 
 <span class="kw">impl </span>IntVec {
@@ -855,37 +938,30 @@
         <span class="self">self</span>.len += <span class="number">1</span>;
     }
 
-    <span class="kw">pub fn </span>get_usize(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; usize { <span class="self">self</span>.get::&lt;<span class="bool-val">true</span>&gt;(i) <span class="kw">as _ </span>}
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>get_usize(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; usize { <span class="self">self</span>.get::&lt;<span class="bool-val">true</span>&gt;(i) <span class="kw">as _ </span>}
 
-    <span class="kw">pub fn </span>get&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; u64 {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>get&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; u64 {
         <span class="kw">let </span>start = i * <span class="self">self</span>.unit;
         <span class="kw">let </span>end = start + <span class="self">self</span>.unit;
         <span class="self">self</span>.bits_range::&lt;X&gt;(start..end)
     }
 
-    <span class="kw">pub fn </span>bits_range&lt;<span class="kw">const </span>X: bool&gt;(
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>bits_range&lt;<span class="kw">const </span>X: bool&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         Range { start, end }: Range&lt;usize&gt;,
     ) -&gt; u64 {
         <span class="kw">let </span>end = end.min(<span class="self">self</span>.bitlen()); <span class="comment">// (!)
-        </span><span class="kw">let </span>mask = <span class="kw">if </span>end - start == W { !<span class="number">0 </span>} <span class="kw">else </span>{ !(!<span class="number">0 </span>&lt;&lt; (end - start)) };
-        <span class="kw">let </span>res = <span class="kw">if </span>start == end {
-            <span class="number">0
-        </span>} <span class="kw">else if </span>start % W == <span class="number">0 </span>{
-            <span class="self">self</span>.buf[start / W]
-        } <span class="kw">else if </span>end &lt;= (start / W + <span class="number">1</span>) * W {
-            <span class="self">self</span>.buf[start / W] &gt;&gt; (start % W)
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.buf[start / W] &gt;&gt; (start % W)
-                | <span class="self">self</span>.buf[end / W] &lt;&lt; (W - start % W)
-        };
+        </span><span class="kw">let </span>mask = !(!<span class="number">0 </span>&lt;&lt; (end - start));
 
-        <span class="comment">// let mask = !(!0_u128 &lt;&lt; (end - start));
-        // let mut res = self.buf[start / W] as u128;
-        // res |= (*self.buf.get(start / W + 1).unwrap_or(&amp;0) as u128) &lt;&lt; W;
-        // res &gt;&gt;= start % W;
+        <span class="kw">let </span><span class="kw-2">mut </span>res = <span class="self">self</span>.buf[start / W] &gt;&gt; (start % W);
+        <span class="kw">if </span>end &gt; (start / W + <span class="number">1</span>) * W {
+            res |= <span class="self">self</span>.buf[end / W] &lt;&lt; (W - start % W);
+        }
 
-        </span>((<span class="kw">if </span>X { res } <span class="kw">else </span>{ !res }) &amp; mask) <span class="kw">as _
+        ((<span class="kw">if </span>X { res } <span class="kw">else </span>{ !res }) &amp; mask) <span class="kw">as _
     </span>}
 }
 
@@ -932,8 +1008,8 @@
             large_acc += c <span class="kw">as </span>u64;
         }
 
-        <span class="kw">let </span>table = <span class="self">Self</span>::table(small_len);
-        <span class="self">Self </span>{ large, small, table, large_len, small_len }
+        <span class="comment">// let table = Self::table(small_len);
+        </span><span class="self">Self </span>{ large, small, large_len, small_len }
     }
 
     <span class="kw">fn </span>table(len: usize) -&gt; IntVec {
@@ -951,12 +1027,13 @@
         table
     }
 
-    <span class="kw">fn </span>lookup(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; usize {
-        <span class="kw">let </span>wi = w <span class="kw">as </span>usize * <span class="self">self</span>.small_len + i;
-        <span class="self">self</span>.table.get_usize(wi)
-    }
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>lookup(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; usize {
+        RANK_TABLE[w <span class="kw">as </span>usize][i] <span class="kw">as _
+    </span>}
 
-    <span class="kw">pub fn </span>rank1(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>rank1(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
         <span class="kw">let </span>large_acc = <span class="self">self</span>.large.get_usize(i / <span class="self">self</span>.large_len);
         <span class="kw">let </span>small_acc = <span class="self">self</span>.small.get_usize(i / <span class="self">self</span>.small_len);
         <span class="kw">let </span>il = i / <span class="self">self</span>.small_len * <span class="self">self</span>.small_len;
@@ -977,7 +1054,8 @@
         // eprintln!("table: {} bits", self.table.bitlen());
 
         </span><span class="kw">let </span>rt = <span class="self">self</span>.large.bitlen() + <span class="self">self</span>.small.bitlen();
-        (rt, rt + <span class="self">self</span>.table.bitlen())
+        <span class="comment">// (rt, rt + self.table.bitlen())
+        </span>(rt, rt + <span class="number">8 </span>* RANK_TABLE.len() * RANK_TABLE[<span class="number">0</span>].len())
     }
 }
 
@@ -987,8 +1065,8 @@
         <span class="kw">let </span>len_lg = (len <span class="kw">as </span>f64).log2().max(<span class="number">1.0</span>);
 
         <span class="kw">let </span>dense_max = (len_lg.powi(<span class="number">4</span>) / <span class="number">128.0</span>).ceil() <span class="kw">as </span>usize;
-        <span class="kw">let </span>large_popcnt = (len_lg.powi(<span class="number">2</span>) / <span class="number">20.0</span>).ceil() <span class="kw">as </span>usize;
-        <span class="kw">let </span>small_len = (len_lg / <span class="number">4.0</span>).ceil().max(<span class="number">2.0</span>) <span class="kw">as </span>usize;
+        <span class="kw">let </span>large_popcnt = (len_lg.powi(<span class="number">2</span>) / <span class="number">16.0</span>).ceil() <span class="kw">as </span>usize;
+        <span class="kw">let </span>small_len = (len_lg / <span class="number">2.0</span>).ceil().max(<span class="number">2.0</span>) <span class="kw">as </span>usize;
         <span class="kw">let </span>branch = len_lg.cbrt().ceil() <span class="kw">as </span>usize;
 
         <span class="kw">let </span><span class="kw-2">mut </span>indir = IntVec::new(bitlen(len) + <span class="number">2</span>);
@@ -1043,48 +1121,41 @@
         }
 
         <span class="kw">let </span>table_tree = <span class="self">Self</span>::table_tree(large_popcnt, branch);
-        <span class="kw">let </span>table_word = <span class="self">Self</span>::table_word(small_len);
 
         <span class="self">Self </span>{
             indir,
             sparse,
             dense,
             table_tree,
-            table_word,
             large_popcnt,
             branch,
             small_len,
         }
     }
 
-    <span class="kw">fn </span>lookup_tree(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; (usize, usize) {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>lookup_tree(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; (usize, usize) {
         <span class="kw">let </span>bitlen_branch = bitlen(<span class="self">self</span>.branch);
         <span class="kw">let </span>wi = w <span class="kw">as </span>usize * <span class="self">self</span>.large_popcnt + i;
-        <span class="kw">let </span>res = <span class="self">self</span>.table_tree.get_usize(wi);
-        (res &gt;&gt; bitlen_branch, res &amp; !(!<span class="number">0 </span>&lt;&lt; bitlen_branch))
+        <span class="kw">let </span>res = <span class="self">self</span>.table_tree[wi] <span class="kw">as </span>usize;
+        <span class="comment">// let res = self.table_tree.get_usize(wi);
+        </span>(res &gt;&gt; bitlen_branch, res &amp; !(!<span class="number">0 </span>&lt;&lt; bitlen_branch))
     }
 
-    <span class="kw">fn </span>lookup_word(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; usize {
-        <span class="kw">let </span>wi = w <span class="kw">as </span>usize * <span class="self">self</span>.small_len + i;
-        <span class="self">self</span>.table_word.get_usize(wi)
-    }
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>lookup_word(<span class="kw-2">&amp;</span><span class="self">self</span>, w: u64, i: usize) -&gt; usize {
+        SELECT_TABLE[w <span class="kw">as </span>usize][i] <span class="kw">as _
+    </span>}
 
-    <span class="kw">fn </span>table_tree(popcnt: usize, branch: usize) -&gt; IntVec {
+    <span class="comment">// fn table_tree(popcnt: usize, branch: usize) -&gt; IntVec {
+    </span><span class="kw">fn </span>table_tree(popcnt: usize, branch: usize) -&gt; Vec&lt;u8&gt; {
         <span class="kw">let </span>len = bitlen(popcnt);
-        <span class="kw">let </span>unit = len + bitlen(branch);
-        <span class="comment">// let bits = (unit * len * branch) &lt;&lt; (len * branch);
-        // let words = (bits + 63) / 64;
-
-        // [4, 3, 2] in a natrual order.
-        // [2, 3, 4] in a reversed order.
-        // 100_011_010 in a word.
-        // 0..4 -&gt; (0, 0)
-        // 4..7 -&gt; (4, 1)
-        // 7..9 -&gt; (7, 2)
+        <span class="comment">// let unit = len + bitlen(branch);
 
         </span><span class="kw">let </span>enc = |i, j| i &lt;&lt; bitlen(branch) | j;
-        <span class="kw">let </span><span class="kw-2">mut </span>table = IntVec::new(unit);
-        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">1 </span>&lt;&lt; (len * branch) {
+        <span class="kw">let </span><span class="kw-2">mut </span>table = <span class="macro">vec!</span>[];
+        <span class="comment">// let mut table = IntVec::new(unit);
+        </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">1 </span>&lt;&lt; (len * branch) {
             <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
             <span class="kw">for </span>b <span class="kw">in </span><span class="number">0</span>..branch {
                 <span class="kw">let </span>sh = (branch - <span class="number">1 </span>- b) * len;
@@ -1122,7 +1193,8 @@
         table
     }
 
-    <span class="kw">pub fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>select&lt;<span class="kw">const </span>X: bool&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, b: <span class="kw-2">&amp;</span>IntVec) -&gt; usize {
         <span class="kw">let </span>(il_div, il_mod) = (i / <span class="self">self</span>.large_popcnt, i % <span class="self">self</span>.large_popcnt);
         <span class="kw">let </span>large = <span class="self">self</span>.indir.get_usize(<span class="number">3 </span>* il_div);
         <span class="kw">let </span>(large_i, large_ty) = (large &gt;&gt; <span class="number">1</span>, large &amp; <span class="number">1</span>);
@@ -1138,19 +1210,20 @@
             <span class="kw">let </span><span class="kw-2">mut </span>i = il_mod;
             <span class="kw">let </span><span class="kw-2">mut </span>b_i = <span class="number">0</span>;
             <span class="kw">loop </span>{
-                <span class="kw">let </span>il = (end - (cur + branch)) * unit;
-                <span class="kw">let </span>ir = (end - cur) * unit;
+                <span class="comment">// let il = (end - (cur + branch)) * unit;
+                </span><span class="kw">let </span>ir = (end - cur) * unit;
+                <span class="kw">let </span>il = ir - branch * unit;
                 <span class="kw">let </span>w = <span class="self">self</span>.dense.bits_range::&lt;<span class="bool-val">true</span>&gt;(il..ir);
                 <span class="kw">let </span>(acc, br) = <span class="self">self</span>.lookup_tree(w, i);
-                <span class="kw">let </span>tmp = cur + br + <span class="number">1</span>;
-                <span class="kw">if </span>end - start &lt;= tmp * branch {
+                <span class="kw">let </span>tmp = (cur + br + <span class="number">1</span>) * branch;
+                <span class="kw">if </span>end - start &lt;= tmp {
                     <span class="kw">let </span>il = b_start + (b_i * branch + br) * <span class="self">self</span>.small_len;
                     <span class="kw">let </span>ir = il + <span class="self">self</span>.small_len;
                     <span class="kw">let </span>w = b.bits_range::&lt;X&gt;(il..ir);
                     <span class="kw">break </span>il + <span class="self">self</span>.lookup_word(w, i - acc);
                 }
                 b_i = b_i * branch + br;
-                cur = tmp * branch;
+                cur = tmp;
                 i -= acc;
             }
         }
@@ -1165,7 +1238,12 @@
         </span><span class="kw">let </span>rt =
             <span class="self">self</span>.indir.bitlen() + <span class="self">self</span>.sparse.bitlen() + <span class="self">self</span>.dense.bitlen();
 
-        (rt, rt + <span class="self">self</span>.table_tree.bitlen() + <span class="self">self</span>.table_word.bitlen())
+        <span class="comment">// (rt, rt + self.table_tree.bitlen() + self.table_word.bitlen())
+        </span>(
+            rt,
+            rt + <span class="number">8 </span>* <span class="self">self</span>.table_tree.len()
+                + <span class="number">8 </span>* SELECT_TABLE.len() * SELECT_TABLE[<span class="number">0</span>].len(),
+        )
     }
 }
 
@@ -1361,5 +1439,12 @@
         <span class="kw">let </span>dict = Rs01DictTree::new(<span class="kw-2">&amp;</span>a);
         dict.size_info();
     }
+}
+
+<span class="attr">#[test]
+</span><span class="kw">fn </span>table() {
+    <span class="kw">let </span>w = <span class="number">0b_1101_1010_1001</span>;
+    <span class="macro">assert_eq!</span>(RANK_TABLE[w], [<span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">6</span>]);
+    <span class="macro">assert_eq!</span>(SELECT_TABLE[w], [<span class="number">0</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>]);
 }
 </code></pre></div></section></main></body></html>

@@ -60,6 +60,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["rs01dict_tree",["",[],["lib.rs"]]],\
 ["scc",["",[],["lib.rs"]]],\
 ["seq",["",[],["lib.rs"]]],\
+["small_rank_select",["",[],["lib.rs"]]],\
 ["snippet",["",[],["lib.rs"]]],\
 ["str_sep",["",[],["lib.rs"]]],\
 ["suffix_array",["",[],["lib.rs"]]],\
@@ -70,6 +71,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["uslice",["",[],["lib.rs"]]],\
 ["vec_segtree",["",[],["lib.rs"]]],\
 ["wavelet_matrix",["",[],["lib.rs"]]],\
+["word",["",[],["lib.rs"]]],\
 ["yes_no",["",[],["lib.rs"]]]\
 ]'));
 createSrcSidebar();
