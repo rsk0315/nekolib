@@ -18,4 +18,5 @@ pub use {
     seq,
     snippet,
     uslice,
+    word,
 };

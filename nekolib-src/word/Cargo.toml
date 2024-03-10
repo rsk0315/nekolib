@@ -1,0 +1,8 @@
+[package]
+name = "word"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+inner = { path = "../inner" }
+small_rank_select = { path = "small_rank_select" }

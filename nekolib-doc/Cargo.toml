@@ -24,3 +24,4 @@ snippet = { path = "../nekolib-src/snippet" }
 discussion = { path = "../nekolib-src/discussion" }
 graph = { path = "../nekolib-src/graph" }
 draft = { path = "../nekolib-src/draft" }
+word = { path = "../nekolib-src/word" }
