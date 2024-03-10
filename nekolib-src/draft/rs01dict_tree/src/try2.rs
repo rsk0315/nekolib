@@ -17,6 +17,7 @@ pub struct Rs01DictTree {
 struct RankIndex {
     large: IntVec,
     small: IntVec,
+    table: IntVec,
     large_len: usize,
     small_len: usize,
 }
@@ -25,51 +26,11 @@ struct SelectIndex {
     indir: IntVec,
     sparse: IntVec,
     dense: IntVec,
-    table_tree: Vec<u8>,
-    // table_tree: IntVec,
+    table_tree: IntVec,
+    table_word: IntVec,
     large_popcnt: usize,
     branch: usize,
     small_len: usize,
-}
-
-const RANK_TABLE: [[u8; 12]; 4096] = rank_table::<12, 4096>();
-const SELECT_TABLE: [[u8; 12]; 4096] = select_table::<12, 4096>();
-
-const fn rank_table<const LEN: usize, const PAT: usize>() -> [[u8; LEN]; PAT] {
-    let mut res = [[0; LEN]; PAT];
-    let mut i = 0;
-    while i < PAT {
-        let mut cur = 0;
-        let mut j = 0;
-        while j < LEN {
-            res[i][j] = cur;
-            if i >> j & 1 != 0 {
-                cur += 1;
-            }
-            j += 1;
-        }
-        i += 1;
-    }
-    res
-}
-
-const fn select_table<const LEN: usize, const PAT: usize>() -> [[u8; LEN]; PAT]
-{
-    let mut res = [[0; LEN]; PAT];
-    let mut i = 0;
-    while i < PAT {
-        let mut cur = 0;
-        let mut j = 0;
-        while j < LEN {
-            if i >> j & 1 != 0 {
-                res[i][cur] = j as _;
-                cur += 1;
-            }
-            j += 1;
-        }
-        i += 1;
-    }
-    res
 }
 
 impl IntVec {
@@ -111,12 +72,31 @@ impl IntVec {
         Range { start, end }: Range<usize>,
     ) -> u64 {
         let end = end.min(self.bitlen()); // (!)
+        // let mask = if end - start == W { !0 } else { !(!0 << (end - start)) };
         let mask = !(!0 << (end - start));
+        // let res = if start % W == 0 {
+        //     self.buf[start / W]
+        //     // unsafe { *self.buf.get_unchecked(start / W) }
+        // } else if end <= (start / W + 1) * W {
+        //     self.buf[start / W] >> (start % W)
+        //     // (unsafe { *self.buf.get_unchecked(start / W) }) >> (start % W)
+        // } else {
+        //     self.buf[start / W] >> (start % W)
+        //         | self.buf[end / W] << (W - start % W)
+        //     // (unsafe { *self.buf.get_unchecked(start / W) }) >> (start % W)
+        //     //     | (unsafe { *self.buf.get_unchecked(end / W) })
+        //     //         << (W - start % W)
+        // };
 
         let mut res = self.buf[start / W] >> (start % W);
         if end > (start / W + 1) * W {
             res |= self.buf[end / W] << (W - start % W);
         }
+
+        // let mask = !(!0_u128 << (end - start));
+        // let mut res = self.buf[start / W] as u128;
+        // res |= (*self.buf.get(start / W + 1).unwrap_or(&0) as u128) << W;
+        // res >>= start % W;
 
         ((if X { res } else { !res }) & mask) as _
     }
@@ -165,8 +145,8 @@ impl RankIndex {
             large_acc += c as u64;
         }
 
-        // let table = Self::table(small_len);
-        Self { large, small, large_len, small_len }
+        let table = Self::table(small_len);
+        Self { large, small, table, large_len, small_len }
     }
 
     fn table(len: usize) -> IntVec {
@@ -186,10 +166,10 @@ impl RankIndex {
 
     #[inline(always)]
     fn lookup(&self, w: u64, i: usize) -> usize {
-        RANK_TABLE[w as usize][i] as _
+        let wi = w as usize * self.small_len + i;
+        self.table.get_usize(wi)
     }
 
-    #[inline(always)]
     pub fn rank1(&self, i: usize, b: &IntVec) -> usize {
         let large_acc = self.large.get_usize(i / self.large_len);
         let small_acc = self.small.get_usize(i / self.small_len);
@@ -211,8 +191,7 @@ impl RankIndex {
         // eprintln!("table: {} bits", self.table.bitlen());
 
         let rt = self.large.bitlen() + self.small.bitlen();
-        // (rt, rt + self.table.bitlen())
-        (rt, rt + 8 * RANK_TABLE.len() * RANK_TABLE[0].len())
+        (rt, rt + self.table.bitlen())
     }
 }
 
@@ -221,10 +200,14 @@ impl SelectIndex {
         let len = buf.len();
         let len_lg = (len as f64).log2().max(1.0);
 
+        // eprintln!("len_lg: {len_lg}");
+
         let dense_max = (len_lg.powi(4) / 128.0).ceil() as usize;
         let large_popcnt = (len_lg.powi(2) / 16.0).ceil() as usize;
         let small_len = (len_lg / 2.0).ceil().max(2.0) as usize;
         let branch = len_lg.cbrt().ceil() as usize;
+
+        // eprintln!("large_popcnt: {large_popcnt}");
 
         let mut indir = IntVec::new(bitlen(len) + 2);
         let mut sparse = IntVec::new(bitlen(len));
@@ -278,12 +261,14 @@ impl SelectIndex {
         }
 
         let table_tree = Self::table_tree(large_popcnt, branch);
+        let table_word = Self::table_word(small_len);
 
         Self {
             indir,
             sparse,
             dense,
             table_tree,
+            table_word,
             large_popcnt,
             branch,
             small_len,
@@ -294,24 +279,33 @@ impl SelectIndex {
     fn lookup_tree(&self, w: u64, i: usize) -> (usize, usize) {
         let bitlen_branch = bitlen(self.branch);
         let wi = w as usize * self.large_popcnt + i;
-        let res = self.table_tree[wi] as usize;
-        // let res = self.table_tree.get_usize(wi);
+        // let res = self.table_tree[wi] as usize;
+        let res = self.table_tree.get_usize(wi);
         (res >> bitlen_branch, res & !(!0 << bitlen_branch))
     }
 
     #[inline(always)]
     fn lookup_word(&self, w: u64, i: usize) -> usize {
-        SELECT_TABLE[w as usize][i] as _
+        let wi = w as usize * self.small_len + i;
+        self.table_word.get_usize(wi)
     }
 
-    // fn table_tree(popcnt: usize, branch: usize) -> IntVec {
-    fn table_tree(popcnt: usize, branch: usize) -> Vec<u8> {
+    fn table_tree(popcnt: usize, branch: usize) -> IntVec {
         let len = bitlen(popcnt);
-        // let unit = len + bitlen(branch);
+        let unit = len + bitlen(branch);
+        // let bits = (unit * len * branch) << (len * branch);
+        // let words = (bits + 63) / 64;
+
+        // [4, 3, 2] in a natrual order.
+        // [2, 3, 4] in a reversed order.
+        // 100_011_010 in a word.
+        // 0..4 -> (0, 0)
+        // 4..7 -> (4, 1)
+        // 7..9 -> (7, 2)
 
         let enc = |i, j| i << bitlen(branch) | j;
-        let mut table = vec![];
-        // let mut table = IntVec::new(unit);
+        // let mut table = vec![];
+        let mut table = IntVec::new(unit);
         for i in 0..1 << (len * branch) {
             let mut count = 0;
             for b in 0..branch {
@@ -347,10 +341,14 @@ impl SelectIndex {
                 table.push(0);
             }
         }
+        // eprintln!(
+        //     "table size: {} bits, {} words",
+        //     table.bitlen(),
+        //     table.bitlen() / 64
+        // );
         table
     }
 
-    #[inline(always)]
     pub fn select<const X: bool>(&self, i: usize, b: &IntVec) -> usize {
         let (il_div, il_mod) = (i / self.large_popcnt, i % self.large_popcnt);
         let large = self.indir.get_usize(3 * il_div);
@@ -367,9 +365,8 @@ impl SelectIndex {
             let mut i = il_mod;
             let mut b_i = 0;
             loop {
-                // let il = (end - (cur + branch)) * unit;
+                let il = (end - (cur + branch)) * unit;
                 let ir = (end - cur) * unit;
-                let il = ir - branch * unit;
                 let w = self.dense.bits_range::<true>(il..ir);
                 let (acc, br) = self.lookup_tree(w, i);
                 let tmp = (cur + br + 1) * branch;
@@ -395,12 +392,7 @@ impl SelectIndex {
         let rt =
             self.indir.bitlen() + self.sparse.bitlen() + self.dense.bitlen();
 
-        // (rt, rt + self.table_tree.bitlen() + self.table_word.bitlen())
-        (
-            rt,
-            rt + 8 * self.table_tree.len()
-                + 8 * SELECT_TABLE.len() * SELECT_TABLE[0].len(),
-        )
+        (rt, rt + self.table_tree.bitlen() + self.table_word.bitlen())
     }
 }
 
@@ -596,11 +588,4 @@ fn simple() {
         let dict = Rs01DictTree::new(&a);
         dict.size_info();
     }
-}
-
-#[test]
-fn table() {
-    let w = 0b_1101_1010_1001;
-    assert_eq!(RANK_TABLE[w], [0, 1, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6]);
-    assert_eq!(SELECT_TABLE[w], [0, 3, 5, 7, 8, 10, 11, 0, 0, 0, 0, 0]);
 }

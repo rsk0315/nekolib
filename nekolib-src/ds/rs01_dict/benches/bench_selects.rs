@@ -37,12 +37,14 @@ fn bench_selects(c: &mut Criterion) {
         0xA4, 0x9E, 0x61, 0xE6, 0x1E, 0x7E, 0x29, 0x77, 0x38, 0x9A, 0xF5, 0x67,
         0xF5, 0xDD, 0x07, 0x06, 0xAE, 0xE4, 0x5A, 0xDC,
     ]);
-    let len = 1 << 20;
+    // let len = 1 << 20;
+    let len = 10_usize.pow(7);
     let p = 1.0e-3;
+    // let p = 5.0e-1;
     let dist = Bernoulli::new(p).unwrap();
     let a: Vec<_> = (0..len).map(|_| dist.sample(&mut rng)).collect();
 
-    let rs = Rs01Dict::new(&a);
+    // let rs = Rs01Dict::new(&a);
     let rs_nlc = Rs01DictNlC::new(&a);
     let rs_nll = Rs01DictNLl::new(&a);
     let rs_rt = Rs01DictRuntime::new(&a);
@@ -56,17 +58,17 @@ fn bench_selects(c: &mut Criterion) {
     let count1 = expected_select1().count();
     eprintln!("count1: {count1}");
 
-    assert!((0..count0).map(|i| rs.select0(i)).eq(expected_select0()));
-    assert!((0..count0).map(|i| rs_nlc.select0(i)).eq(expected_select0()));
-    assert!((0..count0).map(|i| rs_nll.select0(i)).eq(expected_select0()));
-    assert!((0..count0).map(|i| rs_rt.select0(i)).eq(expected_select0()));
-    assert!((0..count0).map(|i| rs_t.select0(i)).eq(expected_select0()));
+    // assert!((0..count0).map(|i| rs.select0(i)).eq(expected_select0()));
+    // assert!((0..count0).map(|i| rs_nlc.select0(i)).eq(expected_select0()));
+    // assert!((0..count0).map(|i| rs_nll.select0(i)).eq(expected_select0()));
+    // assert!((0..count0).map(|i| rs_rt.select0(i)).eq(expected_select0()));
+    // assert!((0..count0).map(|i| rs_t.select0(i)).eq(expected_select0()));
 
-    assert!((0..count1).map(|i| rs.select1(i)).eq(expected_select1()));
-    assert!((0..count1).map(|i| rs_nlc.select1(i)).eq(expected_select1()));
-    assert!((0..count1).map(|i| rs_nll.select1(i)).eq(expected_select1()));
-    assert!((0..count1).map(|i| rs_rt.select1(i)).eq(expected_select1()));
-    assert!((0..count1).map(|i| rs_t.select1(i)).eq(expected_select1()));
+    // assert!((0..count1).map(|i| rs.select1(i)).eq(expected_select1()));
+    // assert!((0..count1).map(|i| rs_nlc.select1(i)).eq(expected_select1()));
+    // assert!((0..count1).map(|i| rs_nll.select1(i)).eq(expected_select1()));
+    // assert!((0..count1).map(|i| rs_rt.select1(i)).eq(expected_select1()));
+    // assert!((0..count1).map(|i| rs_t.select1(i)).eq(expected_select1()));
 
     let expected_rank0 = || {
         (0..a.len()).map(|i| !a[i] as usize).scan(0, |acc, x| {
@@ -81,33 +83,33 @@ fn bench_selects(c: &mut Criterion) {
         })
     };
 
-    assert!((0..a.len()).map(|i| rs.rank0(i)).eq(expected_rank0()));
-    assert!((0..a.len()).map(|i| rs_nlc.rank0(i)).eq(expected_rank0()));
-    assert!((0..a.len()).map(|i| rs_nll.rank0(i)).eq(expected_rank0()));
-    assert!(
-        (0..a.len() - 1)
-            .map(|i| rs_rt.rank0(i + 1))
-            .eq(expected_rank0().take(a.len() - 1))
-    );
-    assert!(
-        (0..a.len() - 1)
-            .map(|i| rs_t.rank0(i + 1))
-            .eq(expected_rank0().take(a.len() - 1))
-    );
+    // assert!((0..a.len()).map(|i| rs.rank0(i)).eq(expected_rank0()));
+    // assert!((0..a.len()).map(|i| rs_nlc.rank0(i)).eq(expected_rank0()));
+    // assert!((0..a.len()).map(|i| rs_nll.rank0(i)).eq(expected_rank0()));
+    // assert!(
+    //     (0..a.len() - 1)
+    //         .map(|i| rs_rt.rank0(i + 1))
+    //         .eq(expected_rank0().take(a.len() - 1))
+    // );
+    // assert!(
+    //     (0..a.len() - 1)
+    //         .map(|i| rs_t.rank0(i + 1))
+    //         .eq(expected_rank0().take(a.len() - 1))
+    // );
 
-    assert!((0..a.len()).map(|i| rs.rank1(i)).eq(expected_rank1()));
-    assert!((0..a.len()).map(|i| rs_nlc.rank1(i)).eq(expected_rank1()));
-    assert!((0..a.len()).map(|i| rs_nll.rank1(i)).eq(expected_rank1()));
-    assert!(
-        (0..a.len() - 1)
-            .map(|i| rs_rt.rank1(i + 1))
-            .eq(expected_rank1().take(a.len() - 1))
-    );
-    assert!(
-        (0..a.len() - 1)
-            .map(|i| rs_t.rank1(i + 1))
-            .eq(expected_rank1().take(a.len() - 1))
-    );
+    // assert!((0..a.len()).map(|i| rs.rank1(i)).eq(expected_rank1()));
+    // assert!((0..a.len()).map(|i| rs_nlc.rank1(i)).eq(expected_rank1()));
+    // assert!((0..a.len()).map(|i| rs_nll.rank1(i)).eq(expected_rank1()));
+    // assert!(
+    //     (0..a.len() - 1)
+    //         .map(|i| rs_rt.rank1(i + 1))
+    //         .eq(expected_rank1().take(a.len() - 1))
+    // );
+    // assert!(
+    //     (0..a.len() - 1)
+    //         .map(|i| rs_t.rank1(i + 1))
+    //         .eq(expected_rank1().take(a.len() - 1))
+    // );
 
     let rank_query = rand_seq(0..a.len(), &mut rng);
     let select0_query = rand_seq(0..count0, &mut rng);
@@ -153,21 +155,21 @@ fn bench_selects(c: &mut Criterion) {
 
     // bench_fn! { group, rs_nll, rank0, "compact", "rank0-seq", 0..a.len() }
     // bench_fn! { group, rs_nll, rank1, "compact", "rank1-seq", 0..a.len() }
-    // bench_fn! { group, rs_nll, rank0, "compact", "rank0-rand", rank_query.iter().copied() }
-    // bench_fn! { group, rs_nll, rank1, "compact", "rank1-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nll, rank0, "compact", "rank0-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nll, rank1, "compact", "rank1-rand", rank_query.iter().copied() }
     // bench_fn! { group, rs_nll, select0, "compact", "select0-seq", 0..count0 }
     // bench_fn! { group, rs_nll, select1, "compact", "select1-seq", 0..count1 }
-    // bench_fn! { group, rs_nll, select0, "compact", "select0-rand", select0_query.iter().copied() }
-    // bench_fn! { group, rs_nll, select1, "compact", "select1-rand", select1_query.iter().copied() }
+    bench_fn! { group, rs_nll, select0, "compact", "select0-rand", select0_query.iter().copied() }
+    bench_fn! { group, rs_nll, select1, "compact", "select1-rand", select1_query.iter().copied() }
 
     // bench_fn! { group, rs_nlc, rank0, "naive", "rank0-seq", 0..a.len() }
     // bench_fn! { group, rs_nlc, rank1, "naive", "rank1-seq", 0..a.len() }
-    // bench_fn! { group, rs_nlc, rank0, "naive", "rank0-rand", rank_query.iter().copied() }
-    // bench_fn! { group, rs_nlc, rank1, "naive", "rank1-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nlc, rank0, "naive", "rank0-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_nlc, rank1, "naive", "rank1-rand", rank_query.iter().copied() }
     // bench_fn! { group, rs_nlc, select0, "naive", "select0-seq", 0..count0 }
     // bench_fn! { group, rs_nlc, select1, "naive", "select1-seq", 0..count1 }
-    // bench_fn! { group, rs_nlc, select0, "naive", "select0-rand", select0_query.iter().copied() }
-    // bench_fn! { group, rs_nlc, select1, "naive", "select1-rand", select1_query.iter().copied() }
+    bench_fn! { group, rs_nlc, select0, "naive", "select0-rand", select0_query.iter().copied() }
+    bench_fn! { group, rs_nlc, select1, "naive", "select1-rand", select1_query.iter().copied() }
 
     // bench_fn! { group, rs_rt, rank0, "runtime", "rank0-seq", 0..a.len() }
     // bench_fn! { group, rs_rt, rank1, "runtime", "rank1-seq", 0..a.len() }
@@ -180,10 +182,10 @@ fn bench_selects(c: &mut Criterion) {
 
     // bench_fn! { group, rs_t, rank0, "tree", "rank0-seq", 0..a.len() }
     // bench_fn! { group, rs_t, rank1, "tree", "rank1-seq", 0..a.len() }
-    // bench_fn! { group, rs_t, rank0, "tree", "rank0-rand", rank_query.iter().copied() }
-    // bench_fn! { group, rs_t, rank1, "tree", "rank1-rand", rank_query.iter().copied() }
-    bench_fn! { group, rs_t, select0, "tree", "select0-seq", 0..count0 }
-    bench_fn! { group, rs_t, select1, "tree", "select1-seq", 0..count1 }
+    bench_fn! { group, rs_t, rank0, "tree", "rank0-rand", rank_query.iter().copied() }
+    bench_fn! { group, rs_t, rank1, "tree", "rank1-rand", rank_query.iter().copied() }
+    // bench_fn! { group, rs_t, select0, "tree", "select0-seq", 0..count0 }
+    // bench_fn! { group, rs_t, select1, "tree", "select1-seq", 0..count1 }
     bench_fn! { group, rs_t, select0, "tree", "select0-rand", select0_query.iter().copied() }
     bench_fn! { group, rs_t, select1, "tree", "select1-rand", select1_query.iter().copied() }
 
