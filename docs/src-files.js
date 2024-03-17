@@ -10,6 +10,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["cfg_if",["",[],["lib.rs"]]],\
 ["concat_monoid",["",[],["lib.rs"]]],\
 ["corro",["",[],["lib.rs"]]],\
+["decomposable",["",[],["lib.rs"]]],\
 ["dijkstra",["",[],["lib.rs"]]],\
 ["discussion",["",[],["lib.rs"]]],\
 ["disjoint_set",["",[],["lib.rs"]]],\
