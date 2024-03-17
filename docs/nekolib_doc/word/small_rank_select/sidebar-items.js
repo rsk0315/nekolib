@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["rank","select"]};
+window.SIDEBAR_ITEMS = {"fn":["const_rank_table","const_select_table","rank","select"],"struct":["IntVec","RankTable","SelectTable"]};
