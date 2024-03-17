@@ -1,4 +1,4 @@
-workspace = { members = [ "dp","plane-sweep"] }
+workspace = { members = [ "decomposable", "dp","plane-sweep"] }
 [package]
 name = "discussion"
 version = "0.1.0"
@@ -10,3 +10,4 @@ edition = "2021"
 inner = { path = "../inner" }
 plane-sweep = { path = "plane-sweep" }
 dp = { path = "dp" }
+decomposable = { path = "decomposable" }
