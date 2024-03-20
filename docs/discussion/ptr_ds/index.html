@@ -1,0 +1,374 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="ポインタ系データ構造。"><title>discussion::ptr_ds - Rust</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (a7e4de13c 2024-03-19)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../crates.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+
+<!-- The loading of KaTeX is deferred to speed up page rendering -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+
+<style>
+  code.code-math {
+      background-color: transparent;
+  }
+</style>
+
+<script>
+  'use strict';
+
+  const macros = {
+    // '\\foo': '42',
+    // '\\bar': '\\operatorname{bar}^{#1}',
+    '\\halfopen': '[#1, #2)',
+    '\\floor': '\\lfloor #1\\rfloor',
+    '\\ceil': '\\lceil #1\\rceil',
+    '\\rounded': '\\lfloor #1\\rceil',
+    '\\Floor': '\\left\\lfloor #1\\right\\rfloor',
+    '\\Ceil': '\\left\\lceil #1\\right\\rceil',
+    '\\Rounded': '\\left\\lfloor #1\\right\\rceil',
+    '\\angled': '\\langle #1\\rangle',
+    '\\Angled': '\\left\\langle #1\\right\\rangle',
+    '\\lcm': '\\operatorname*{lcm}',
+    '\\gcd': '\\operatorname*{gcd}',
+    '\\poly': '\\operatorname{poly}',
+    '\\polylog': '\\operatorname{polylog}',
+    '\\concat': '\\mathrel{+\\!\\!+}',
+    '\\mex': '\\operatorname*{mex}',
+    '\\qed': '\\square',
+    '\\Q': '\\mathbb{Q}',
+    '\\dd': '\\mathrm{d}',
+    '\\ForallL': '{}^{\\forall}#1.\\:#2',
+    '\\Forall': '{}^{\\forall}#1.\\,\\left[#2\\right]',
+    '\\ExistsL': '{}^{\\exists}#1.\\:#2',
+    '\\Exists': '{}^{\\exists}#1.\\,\\left[#2\\right]',
+    '\\roundp': '(\\kern-.2em[#1]\\kern-.2em)',
+    '\\bigroundp': '\\big(\\kern-.25em\\big[#1\\big]\\kern-.25em\\big)',
+    '\\Bigroundp': '\\Big(\\kern-.3em\\Big[#1\\Big]\\kern-.3em\\Big)',
+    '\\biggroundp': '\\bigg(\\kern-.3em\\bigg[#1\\bigg]\\kern-.3em\\bigg)',
+    '\\Biggroundp': '\\Bigg(\\kern-.35em\\Bigg[#1\\Bigg]\\kern-.35em\\Bigg)',
+    '\\hfloor': '\\lfloor\\hspace{-.25em}\\lfloor#1\\rfloor\\hspace{-.25em}\\rfloor',
+    '\\xgets': '\\xleftarrow{#1}',
+    '\\eod': '\\blacksquare', // end of \<details\>
+    '\\lldot': '\\mathop{.\\,.}',
+    '\\dp': '\\mathrm{dp}',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
+    }
+
+    const codes = Array.from(document.getElementsByTagName('code'));
+    for (const elt of codes) {
+      if (elt.classList.contains('language-math')) continue;
+      if (elt.classList.contains('language-inline-math')) {
+        katex.render(elt.innerText, elt, { macros });
+        continue;
+      }
+
+      const parent = elt.parentNode;
+      if (parent.nodeName.toLowerCase() === 'pre') {
+        continue;
+      }
+
+      parent.style.overflowX = 'unset';
+      const content = parent.outerHTML.replaceAll(
+        /\$<code>([^<]*?)<\/code>\$/g,
+        ((match, inner) => {
+          return `<code class="code-math">${katex.renderToString(inner, { macros })}</code>`;
+        }),
+      );
+
+      try {
+        parent.outerHTML = content;
+      } catch (DOMException) {
+        continue;
+      }
+    }
+  });
+</script>
+
+<script>
+  'use strict';
+
+  const cratesLs = {
+    "algo": [
+      "bisect",
+      "tortoise_hare",
+      "twosat"
+    ],
+    "corro": [
+      "borrow"
+    ],
+    "discussion": [
+      "decomposable",
+      "dp",
+      "plane-sweep",
+      "ptr-ds"
+    ],
+    "draft": [
+      "rs01dict_runtime",
+      "rs01dict_tree"
+    ],
+    "ds": [
+      "foldable_deque",
+      "foldable_queue",
+      "rs01_dict",
+      "union-find",
+      "vec_segtree",
+      "wavelet_matrix"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "graph": [
+      "bfs01",
+      "dijkstra",
+      "lowlink",
+      "scc"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "pdep_pext"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "divisors",
+      "factors",
+      "gcd",
+      "linear_sieve",
+      "modint"
+    ],
+    "naive": [
+      "assoc-list",
+      "bit-vector",
+      "concat-monoid",
+      "disjoint-set"
+    ],
+    "ops": [
+      "monoid",
+      "op_add",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support"
+    ],
+    "random": [
+      "randgen"
+    ],
+    "seq": [
+      "inversion",
+      "lis",
+      "majority_vote",
+      "suffix_array"
+    ],
+    "snippet": [
+      "proconio"
+    ],
+    "uslice": [
+      "bucket_sort",
+      "permutation"
+    ],
+    "word": [
+      "small_rank_select"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const crates = [...document.getElementsByClassName('block crate')][0];
+
+    const links = new Map([...crates.querySelectorAll('a')].map((e) => [
+      e.innerText,
+      {
+        name: e.innerText,
+        href: e.href,
+        current: e.parentNode.classList.contains('current'),
+      },
+    ]));
+
+    const tree = new Map();
+    for (const mod of Object.keys(cratesLs)) {
+      for (const crate of cratesLs[mod]) {
+        const crate_ = crate.replaceAll('-', '_');
+        if (!links.has(crate_)) continue;
+
+        if (!tree.has(mod)) {
+          tree.set(mod, []);
+        }
+
+        tree.get(mod).push(links.get(crate_));
+      }
+    }
+
+    const cratesElt = document.createElement('ul');
+    cratesElt.classList.add('block');
+    cratesElt.classList.add('crate');
+    for (const [modName, mod] of tree) {
+      {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        const link = links.get(modName);
+        a.href = link.href;
+        if (link.current) li.classList.add('current');
+        a.innerText = link.name;
+        li.appendChild(a);
+        cratesElt.appendChild(li);
+      }
+
+      const ul = document.createElement('ul');
+      for (const crate of mod) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = crate.href;
+        if (crate.current) li.classList.add('current');
+        a.innerText = crate.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      cratesElt.appendChild(ul);
+    }
+
+    crates.outerHTML = cratesElt.outerHTML;
+  });
+</script>
+
+</head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block">
+            <li><a id="all-types" href="all.html">All Items</a></li></ul></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../discussion/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a href="../index.html">discussion</a>::<wbr><a class="mod" href="#">ptr_ds</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/ptr_ds/lib.rs.html#1-187">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>ポインタ系データ構造。</p>
+<h3 id="preliminaries"><a class="doc-anchor" href="#preliminaries">§</a>Preliminaries</h3><h4 id="参照とポインタの作成"><a class="doc-anchor" href="#参照とポインタの作成">§</a>参照とポインタの作成</h4>
+<p>Safe Rust においては、下記のようなコードはコンパイルエラーとなる。</p>
+
+<div class="example-wrap compile_fail"><a href="#" class="tooltip" title="This example deliberately fails to compile">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>a = <span class="number">1</span>;
+<span class="kw">let </span>mut_ref_1 = <span class="kw-2">&amp;mut </span>a;
+<span class="kw">let </span>mut_ref_2 = <span class="kw-2">&amp;mut *</span>mut_ref_1;
+<span class="kw-2">*</span>mut_ref_2 = <span class="number">2</span>;
+<span class="kw-2">*</span>mut_ref_1 = <span class="number">3</span>;
+<span class="kw">let </span>_invalid = <span class="kw-2">*</span>mut_ref_2; <span class="comment">// (!)</span></code></pre></div>
+<p>Unsafe Rust において、生ポインタを使うことで、コンパイルを通すことはできる。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>a = <span class="number">1_u32</span>;
+<span class="kw">let </span>mut_ref_1 = <span class="kw-2">&amp;mut </span>a;
+<span class="kw">let </span>mut_ref_2 = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(mut_ref_1 <span class="kw">as </span><span class="kw-2">*mut </span>u32) };
+<span class="kw-2">*</span>mut_ref_2 = <span class="number">2</span>;
+<span class="kw-2">*</span>mut_ref_1 = <span class="number">3</span>;
+<span class="kw">let </span>_invalid = <span class="kw-2">*</span>mut_ref_2; <span class="comment">// (?)</span></code></pre></div>
+<p>ただし、（たとえば C++ がそうであるように）コンパイルが通り、プログラムが正常終了したというのは、
+コードに問題がないということの証明にはならない。実際、Miri でテストすることで未定義動作が検出され、
+次のような出力が得られるであろう。</p>
+<div class="example-wrap"><pre class="language-zsh"><code>% cargo miri test
+</code></pre></div><div class="example-wrap"><pre class="language-txt"><code>error: Undefined Behavior: attempting a read access using &lt;90194&gt; at alloc23256[0x0], but that tag does not exist in the borrow stack for this location
+ --&gt; src/lib.rs:8:20
+  |
+8 |     let _invalid = *mut_ref_2; // (?)
+  |                    ^^^^^^^^^^
+  |                    |
+  |                    attempting a read access using &lt;90194&gt; at alloc23256[0x0], but that tag does not exist in the borrow stack for this location
+  |                    this error occurs as part of an access at alloc23256[0x0..0x4]
+</code></pre></div>
+<p>こうした検出は Stacked Borrows と呼ばれる機構によって行われている。
+Miri では Stacked Borrows のサポートは experimental とのことであるが、一旦はこれを信用することにする。</p>
+<p>さて、safe なスマートポインタとして <a href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box"><code>Box</code></a> があるので、それを使ってみよう。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">struct </span>Foo(u32);
+<span class="kw">impl </span>Foo {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{ Foo(<span class="number">0</span>) }
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>foo = Box::new(Foo::new());
+<span class="macro">assert_eq!</span>(foo.<span class="number">0</span>, <span class="number">0</span>);
+foo.<span class="number">0 </span>= <span class="number">10</span>;
+<span class="macro">assert_eq!</span>(foo.<span class="number">0</span>, <span class="number">10</span>);</code></pre></div>
+<p><a href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html#method.leak" title="associated function alloc::boxed::Box::leak"><code>Box::leak</code></a> を用いることで <a href="https://doc.rust-lang.org/nightly/std/primitive.reference.html" title="primitive reference"><code>&amp;'a mut T</code></a> を取り出すことができる。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>foo = Box::new(Foo::new());
+<span class="kw">let </span>foo_mut_ref = Box::leak(foo);
+<span class="macro">assert_eq!</span>(foo_mut_ref.<span class="number">0</span>, <span class="number">0</span>);
+foo_mut_ref.<span class="number">0 </span>= <span class="number">10</span>;
+<span class="macro">assert_eq!</span>(foo_mut_ref.<span class="number">0</span>, <span class="number">10</span>);
+<span class="comment">// (?)</span></code></pre></div>
+<p><a href="https://doc.rust-lang.org/nightly/std/primitive.reference.html" title="primitive reference"><code>&amp;'a mut T</code></a> は、生ポインタ (raw pointer) <a href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html" title="primitive pointer"><code>*mut T</code></a> にキャストすることもできる。
+参照外し (dereference) は <code>unsafe</code> となる。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>foo = Box::new(Foo::new());
+<span class="kw">let </span>foo_mut_ptr: <span class="kw-2">*mut </span><span class="kw">_ </span>= Box::leak(foo);
+<span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>foo_mut_ptr).<span class="number">0 </span>}, <span class="number">0</span>);
+<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>foo_mut_ptr).<span class="number">0 </span>= <span class="number">10 </span>};
+<span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>foo_mut_ptr).<span class="number">0 </span>}, <span class="number">10</span>);
+<span class="comment">// (?)</span></code></pre></div>
+<p>ところで、スマートポインタから生ポインタを取り出したままだと、メモリリークしてしまう。
+これも Miri によって検出でき、次のような出力が得られるであろう。</p>
+<div class="example-wrap"><pre class="language-txt"><code>error: memory leaked: alloc23417 (Rust heap, size: 4, align: 4), allocated here:
+  --&gt; .../lib/rustlib/src/rust/library/alloc/src/alloc.rs:98:9
+   |
+98 |         __rust_alloc(layout.size(), layout.align())
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+</code></pre></div>
+<p><a href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html#method.into_raw" title="associated function alloc::boxed::Box::into_raw"><code>Box::into_raw</code></a> にある例に従い、次のようにすることで、<code>Box</code> 側に destructor を呼ばせることができる。
+逆に、勝手に destructor を呼ばれると困るような状況においては、<code>Box</code> を使うと厄介なことになる。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>foo_mut_ptr: <span class="kw-2">*mut </span><span class="kw">_ </span>= Box::leak(Box::new(Foo::new()));
+<span class="kw">unsafe </span>{ drop(Box::from_raw(foo_mut_ptr)) };</code></pre></div>
+<p><a href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html" title="primitive pointer"><code>*mut T</code></a> の代わりに <a href="https://doc.rust-lang.org/nightly/core/ptr/non_null/struct.NonNull.html" title="struct core::ptr::non_null::NonNull"><code>std::ptr::NonNull</code></a> を用いることもできる。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::ptr::NonNull;
+
+<span class="kw">let </span>foo_mut_ref = Box::leak(Box::new(Foo::new()));
+<span class="kw">let </span>foo_nonnull = NonNull::from(foo_mut_ref);
+<span class="kw">unsafe </span>{ drop(Box::from_raw(foo_nonnull.as_ptr())) };</code></pre></div>
+<h4 id="生ポインタの使用"><a class="doc-anchor" href="#生ポインタの使用">§</a>生ポインタの使用</h4>
+<p>構造体 <code>Bar</code> と、それを参照する構造体 <code>BarRef</code> を考える。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{marker::PhantomData, ptr::NonNull};
+
+<span class="kw">struct </span>Bar {
+    val_1: u32,
+    val_2: u32,
+}
+<span class="kw">struct </span>BarRef&lt;<span class="lifetime">'a</span>&gt; {
+    bar: NonNull&lt;Bar&gt;,
+    _marker: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>()&gt;,
+}
+
+<span class="kw">impl </span>Copy <span class="kw">for </span>BarRef&lt;<span class="lifetime">'_</span>&gt; {}
+<span class="kw">impl </span>Clone <span class="kw">for </span>BarRef&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{ <span class="kw-2">*</span><span class="self">self </span>}
+}
+
+<span class="kw">impl </span>Bar {
+    <span class="kw">pub fn </span>new() -&gt; Box&lt;<span class="self">Self</span>&gt; { Box::new(<span class="self">Self </span>{ val_1: <span class="number">0</span>, val_2: <span class="number">0 </span>}) }
+}
+<span class="kw">impl </span>BarRef&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">pub fn </span>new_bar() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ bar: NonNull::from(Box::leak(Bar::new())), _marker: PhantomData }
+    }
+}</code></pre></div>
+<p><code>todo!()</code></p>
+<ul>
+<li><code>val_1</code> と <code>val_2</code> を別々の mutable reference で持ちたい。互いに invalidate しないようにしたい。</li>
+<li>メモリリークを防ぎたい。どこで drop？
+<ul>
+<li>そのための <code>BorrowType</code>？</li>
+</ul>
+</li>
+<li><code>DormantMutRef</code>？</li>
+</ul>
+<h4 id="簡単な例"><a class="doc-anchor" href="#簡単な例">§</a>簡単な例</h4>
+<p><code>todo!()</code></p>
+<h4 id="それ以外"><a class="doc-anchor" href="#それ以外">§</a>それ以外</h4>
+<p><code>todo!()</code></p>
+<ul>
+<li>variance</li>
+<li><a href="https://doc.rust-lang.org/nightly/core/ptr/fn.read.html" title="fn core::ptr::read"><code>std::ptr::read</code></a> での invalidation</li>
+</ul>
+<h3 id="references"><a class="doc-anchor" href="#references">§</a>References</h3>
+<ul>
+<li><a href="https://doc.rust-lang.org/nomicon/">The Rustonomicon</a></li>
+<li><a href="https://rust-unofficial.github.io/too-many-lists/">Learn Rust With Entirely Too Many Linked Lists</a></li>
+<li><a href="https://doc.rust-lang.org/src/alloc/collections/btree/node.rs.html"><code>alloc::collections::btree::node</code></a></li>
+<li><a href="https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md">rust-lang / <strong>unsafe-code-guidelines</strong> :: /wip/<strong>stacked-borrows.md</strong></a></li>
+<li><a href="https://github.com/rust-lang/miri">rust-lang / <strong>miri</strong></a></li>
+</ul>
+</div></details></section></div></main></body></html>
