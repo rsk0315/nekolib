@@ -132,11 +132,52 @@
 //!
 //! ### 生ポインタの使用
 //!
+//! 構造体 `Bar` と、それを参照する構造体 `BarRef` を考える。
+//!
+//! ```
+//! use std::{marker::PhantomData, ptr::NonNull};
+//!
+//! struct Bar {
+//!     val_1: u32,
+//!     val_2: u32,
+//! }
+//! struct BarRef<'a> {
+//!     bar: NonNull<Bar>,
+//!     _marker: PhantomData<&'a mut ()>,
+//! }
+//!
+//! impl Copy for BarRef<'_> {}
+//! impl Clone for BarRef<'_> {
+//!     fn clone(&self) -> Self { *self }
+//! }
+//!
+//! impl Bar {
+//!     pub fn new() -> Box<Self> { Box::new(Self { val_1: 0, val_2: 0 }) }
+//! }
+//! impl BarRef<'_> {
+//!     pub fn new_bar() -> Self {
+//!         Self { bar: NonNull::from(Box::leak(Bar::new())), _marker: PhantomData }
+//!     }
+//! }
+//! ```
+//!
 //! `todo!()`
+//!
+//! - `val_1` と `val_2` を別々の mutable reference で持ちたい。互いに invalidate しないようにしたい。
+//! - メモリリークを防ぎたい。どこで drop？
+//!     - そのための `BorrowType`？
+//! - `DormantMutRef`？
 //!
 //! ### 簡単な例
 //!
 //! `todo!()`
+//!
+//! ### それ以外
+//!
+//! `todo!()`
+//!
+//! - variance
+//! - [`std::ptr::read`] での invalidation
 //!
 //! ## References
 //! - [The Rustonomicon](https://doc.rust-lang.org/nomicon/)
