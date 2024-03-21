@@ -235,6 +235,8 @@
 //!
 //! TODO: variance を気にするべき例を書く。
 //!
+//! TODO: Stacked Borrows のルールを陽に書いた方がいい？
+//!
 //! ## References
 //! - [The Rustonomicon](https://doc.rust-lang.org/nomicon/)
 //! - [Learn Rust With Entirely Too Many Linked Lists](https://rust-unofficial.github.io/too-many-lists/)
