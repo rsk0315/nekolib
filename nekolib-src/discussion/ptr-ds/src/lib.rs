@@ -185,3 +185,145 @@
 //! - [`alloc::collections::btree::node`](https://doc.rust-lang.org/src/alloc/collections/btree/node.rs.html)
 //! - [rust-lang / **unsafe-code-guidelines** :: /wip/**stacked-borrows.md**](https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md)
 //! - [rust-lang / **miri**](https://github.com/rust-lang/miri)
+
+use std::{
+    marker::PhantomData,
+    ptr::{self, NonNull},
+};
+
+pub struct Foo {
+    key: u32,
+    val: u32,
+}
+pub struct FooRef<BorrowType> {
+    foo: NonNull<Foo>,
+    _marker: PhantomData<BorrowType>,
+}
+
+pub mod marker {
+    use std::marker::PhantomData;
+
+    pub enum Owned {}
+    pub enum Dying {}
+    pub enum DormantMut {}
+    pub struct Immut<'a>(PhantomData<&'a ()>);
+    pub struct Mut<'a>(PhantomData<&'a ()>);
+    pub struct ValMut<'a>(PhantomData<&'a ()>);
+}
+
+impl Foo {
+    pub fn new() -> Box<Self> { Box::new(Self { key: 0, val: 0 }) }
+}
+
+impl FooRef<marker::Owned> {
+    pub fn new_foo() -> Self {
+        Self {
+            foo: NonNull::from(Box::leak(Foo::new())),
+            _marker: PhantomData,
+        }
+    }
+    pub fn borrow_mut(&mut self) -> FooRef<marker::Mut<'_>> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+    pub fn borrow_valmut(&mut self) -> FooRef<marker::ValMut<'_>> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+    pub fn into_dying(self) -> FooRef<marker::Dying> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+}
+
+impl<BorrowType> FooRef<BorrowType> {
+    pub fn reborrow(&self) -> FooRef<marker::Immut<'_>> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+    fn as_ptr(this: &Self) -> *mut Foo { this.foo.as_ptr() }
+}
+
+impl Copy for FooRef<marker::Immut<'_>> {}
+impl Clone for FooRef<marker::Immut<'_>> {
+    fn clone(&self) -> Self { *self }
+}
+
+impl<'a> FooRef<marker::Mut<'a>> {
+    pub unsafe fn reborrow_mut(&mut self) -> FooRef<marker::Mut<'_>> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+    pub fn dormant(&self) -> FooRef<marker::DormantMut> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+    fn as_mut(&mut self) -> &mut Foo {
+        let ptr = Self::as_ptr(self);
+        unsafe { &mut *ptr }
+    }
+    pub fn key_mut(&mut self) -> &mut u32 { &mut self.as_mut().key }
+    pub fn val_mut(&mut self) -> &mut u32 { &mut self.as_mut().val }
+}
+
+impl<'a> FooRef<marker::ValMut<'a>> {
+    pub fn into_key_valmut(mut self) -> (&'a u32, &'a mut u32) {
+        let ptr = Self::as_ptr(&mut self);
+        let key = unsafe { &*ptr::addr_of!((*ptr).key) };
+        let val = unsafe { &mut *ptr::addr_of_mut!((*ptr).val) };
+        (key, val)
+    }
+}
+
+impl FooRef<marker::DormantMut> {
+    pub unsafe fn awaken<'a>(self) -> FooRef<marker::Mut<'a>> {
+        FooRef { foo: self.foo, _marker: PhantomData }
+    }
+}
+
+impl FooRef<marker::Dying> {
+    pub fn drop(self) { unsafe { drop(Box::from_raw(Self::as_ptr(&self))) } }
+}
+
+#[test]
+fn test_foo_ref() {
+    let mut foo_ref = FooRef::new_foo();
+
+    let mut foo_ref_mut_1 = foo_ref.borrow_mut();
+    let key_mut = foo_ref_mut_1.key_mut();
+    assert_eq!(*key_mut, 0);
+    *key_mut += 10;
+    assert_eq!(*key_mut, 10);
+    let val_mut = foo_ref_mut_1.val_mut();
+    assert_eq!(*val_mut, 0);
+    *val_mut += 100;
+    assert_eq!(*val_mut, 100);
+
+    let mut foo_ref_mut_2 = unsafe { foo_ref_mut_1.reborrow_mut() };
+    let key_mut = foo_ref_mut_2.key_mut();
+    assert_eq!(*key_mut, 10);
+    *key_mut += 10;
+    assert_eq!(*key_mut, 20);
+    let val_mut = foo_ref_mut_2.val_mut();
+    assert_eq!(*val_mut, 100);
+    *val_mut += 100;
+    assert_eq!(*val_mut, 200);
+
+    let foo_dormant = foo_ref_mut_2.dormant();
+
+    let foo_ref_kvm = foo_ref.borrow_valmut();
+    let (key, val) = foo_ref_kvm.into_key_valmut();
+    assert_eq!(*key, 20);
+    assert_eq!(*val, 200);
+    *val += 1;
+    assert_eq!(*key, 20);
+    assert_eq!(*val, 201);
+
+    let mut foo_ref_mut_3 = unsafe { foo_dormant.awaken() };
+    let key_mut = foo_ref_mut_3.key_mut();
+    assert_eq!(*key_mut, 20);
+    *key_mut += 10;
+    assert_eq!(*key_mut, 30);
+    let val_mut = foo_ref_mut_3.val_mut();
+    assert_eq!(*val_mut, 201);
+    *val_mut += 100;
+    assert_eq!(*val_mut, 301);
+
+    // *val += 1; // UB
+
+    foo_ref.into_dying().drop();
+}
