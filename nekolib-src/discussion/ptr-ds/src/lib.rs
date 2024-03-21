@@ -93,7 +93,8 @@
 //! // (?)
 //! ```
 //!
-//! ところで、スマートポインタから生ポインタを取り出したままだと、メモリリークしてしまう。
+//! ところで、スマートポインタから生ポインタを取り出したままだと、drop
+//! されないのでメモリリークしてしまう。
 //! これも Miri によって検出でき、次のような出力が得られるであろう。
 //!
 //! ```txt
@@ -130,54 +131,109 @@
 //! unsafe { drop(Box::from_raw(foo_nonnull.as_ptr())) };
 //! ```
 //!
+//! [`NonNull`][`std::ptr::NonNull`] は、null でないことの他に variance
+//! にも気をつける必要があるが、後述とする。
+//!
 //! ### 生ポインタの使用
 //!
-//! 構造体 `Bar` と、それを参照する構造体 `BarRef` を考える。
+//! 構造体 `Foo` と、それを参照する構造体 `FooRef<BorrowType>` を考える。
+//! `BorrowType` は今後追加していくが、一旦 `Boxed<Foo>` のように振る舞う `marker::Owned`
+//! と、`&'a Foo` のように振る舞う `marker::Immut<'a>` を考える。
 //!
 //! ```
 //! use std::{marker::PhantomData, ptr::NonNull};
 //!
-//! struct Bar {
-//!     val_1: u32,
-//!     val_2: u32,
-//! }
-//! struct BarRef<'a> {
-//!     bar: NonNull<Bar>,
-//!     _marker: PhantomData<&'a mut ()>,
+//! struct Foo(u32);
+//! struct FooRef<BorrowType> {
+//!     foo: NonNull<Foo>,
+//!     _marker: PhantomData<BorrowType>,
 //! }
 //!
-//! impl Copy for BarRef<'_> {}
-//! impl Clone for BarRef<'_> {
-//!     fn clone(&self) -> Self { *self }
+//! mod marker {
+//!     use std::marker::PhantomData;
+//!
+//!     pub enum Owned {}
+//!     pub struct Immut<'a>(PhantomData<&'a ()>);
 //! }
 //!
-//! impl Bar {
-//!     pub fn new() -> Box<Self> { Box::new(Self { val_1: 0, val_2: 0 }) }
+//! impl Foo {
+//!     pub fn new() -> Box<Self> { Box::new(Self(0)) }
 //! }
-//! impl BarRef<'_> {
-//!     pub fn new_bar() -> Self {
-//!         Self { bar: NonNull::from(Box::leak(Bar::new())), _marker: PhantomData }
+//! impl FooRef<marker::Owned> {
+//!     pub fn new_ref() -> Self {
+//!         Self { foo: NonNull::from(Box::leak(Foo::new())), _marker: PhantomData }
 //!     }
 //! }
+//! impl<BorrowType> FooRef<BorrowType> {
+//!     pub fn borrow(&self) -> FooRef<marker::Immut<'_>> {
+//!         FooRef { foo: self.foo, _marker: PhantomData }
+//!     }
+//!     pub fn get(&self) -> &u32 { unsafe { &(*self.foo.as_ptr()).0 } }
+//! }
+//!
+//! let foo_ref = FooRef::new_ref();
+//! assert_eq!(*foo_ref.get(), 0);
+//!
+//! let foo_ref_immut = foo_ref.borrow();
+//! assert_eq!(*foo_ref_immut.get(), 0);
+//!
+//! assert_eq!(*foo_ref.get(), 0);
+//! assert_eq!(*foo_ref_immut.get(), 0);
+//!
+//! unsafe { drop(Box::from_raw(foo_ref.foo.as_ptr())) };
 //! ```
 //!
-//! `todo!()`
+//! 当然、`Immut<'a>` だけでなく `Mut<'a>` も欲しい。
+//! `drop` に関しては、`Boxed<Foo>` のように振る舞うところの `FooRef<marker::Owned>`
+//! でのみ実装したいが、そういうことはできない ([E0366])。
+//! ここでは、手動で呼び出すための `.drop()` を提供しつつ `Boxed<Foo>` のように振る舞う
+//! `FooRef<marker::Dying>` を別途作ることにする。
 //!
-//! - `val_1` と `val_2` を別々の mutable reference で持ちたい。互いに invalidate しないようにしたい。
-//! - メモリリークを防ぎたい。どこで drop？
-//!     - そのための `BorrowType`？
-//! - `DormantMutRef`？
+//! また、連想配列を実装することを見据えると、一部のメンバ変数についてのみ可変参照を公開したいこともある。
+//! ここでは `struct Foo(u32, u32);` の `foo: Foo` に対して、`&foo.0` と `&mut foo.1`
+//! を公開する `FooRef<marker::SndMut<'a>>` を作ることにする。
+//! このとき、`&foo.0` にアクセスしても `&mut foo.1` が invalidate
+//! されないように気をつける必要がある（逆も然り）。
+//!
+//! [E0366]: https://doc.rust-lang.org/error_codes/E0366.html
+//!
+//! 加えて、`marker::Mut<'a>` の lifetime を消して、一時的に静的解析の対象外にできる
+//! `marker::DormantMut` も作っておく[^dormant]。もちろん、冒頭の例で触れたように
+//! Stacked Borrows のルールには従う必要がある。
+//!
+//! [^dormant]: dormant や (re-)awaken という表現がしばしば使われている印象がある。
+//!
+//! 別の marker を返すようなメソッドにおいては、`FooRef { foo: self.foo, _marker: PhantomData }`
+//! の boilerplate を都度書く必要があってややうれしくない。`PhantomData`
+//! の型パラメータを陽に書く必要がないので、見かけ上は全く同じものになっている。
+//! また、どの marker からどの marker への遷移をできるかを意識しておくとよいかもしれない。
+//!
+//! 他にも、`FooRef<marker::Immut<'a>>` は `Copy`/`Clone`
+//! であるとか、諸々の変換などの実装が欲しくなるであろう。
+//!
+//! ```ignore
+//! use std::{marker::PhantomData, ptr::NonNull};
+//!
+//! struct Foo(u32, u32);
+//! struct FooRef<BorrowType> {
+//!     foo: NonNull<Foo>,
+//!     _marker: PhantomData<BorrowType>,
+//! }
+//!
+//! todo!();
+//! ```
+//!
+//! TODO: 使い方の例として、テストめいたものを書く。
+//!
+//! TODO: [`std::ptr::read`] を不適切に使うなど、うまくいかない実装の例を書く。
 //!
 //! ### 簡単な例
 //!
-//! `todo!()`
+//! TODO: 簡単な doubly-linked list めいたものを書く。
 //!
 //! ### それ以外
 //!
-//! `todo!()`
-//!
-//! - variance
-//! - [`std::ptr::read`] での invalidation
+//! TODO: variance を気にするべき例を書く。
 //!
 //! ## References
 //! - [The Rustonomicon](https://doc.rust-lang.org/nomicon/)
