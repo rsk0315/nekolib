@@ -237,7 +237,7 @@
 
 </head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block">
             <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li></ul></section></div></nav><div class="sidebar-resizer"></div>
-    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../discussion/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a href="../index.html">discussion</a>::<wbr><a class="mod" href="#">ptr_ds</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/ptr_ds/lib.rs.html#1-329">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>ポインタ系データ構造。</p>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../discussion/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a href="../index.html">discussion</a>::<wbr><a class="mod" href="#">ptr_ds</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/ptr_ds/lib.rs.html#1-385">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>ポインタ系データ構造。</p>
 <h3 id="preliminaries"><a class="doc-anchor" href="#preliminaries">§</a>Preliminaries</h3><h4 id="参照とポインタの作成"><a class="doc-anchor" href="#参照とポインタの作成">§</a>参照とポインタの作成</h4>
 <p>Safe Rust においては、下記のようなコードはコンパイルエラーとなる。</p>
 
@@ -298,7 +298,8 @@ foo_mut_ref.<span class="number">0 </span>= <span class="number">10</span>;
 <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>foo_mut_ptr).<span class="number">0 </span>= <span class="number">10 </span>};
 <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>foo_mut_ptr).<span class="number">0 </span>}, <span class="number">10</span>);
 <span class="comment">// (?)</span></code></pre></div>
-<p>ところで、スマートポインタから生ポインタを取り出したままだと、メモリリークしてしまう。
+<p>ところで、スマートポインタから生ポインタを取り出したままだと、drop
+されないのでメモリリークしてしまう。
 これも Miri によって検出でき、次のような出力が得られるであろう。</p>
 <div class="example-wrap"><pre class="language-txt"><code>error: memory leaked: alloc23417 (Rust heap, size: 4, align: 4), allocated here:
   --&gt; .../lib/rustlib/src/rust/library/alloc/src/alloc.rs:98:9
@@ -318,51 +319,88 @@ foo_mut_ref.<span class="number">0 </span>= <span class="number">10</span>;
 <span class="kw">let </span>foo_mut_ref = Box::leak(Box::new(Foo::new()));
 <span class="kw">let </span>foo_nonnull = NonNull::from(foo_mut_ref);
 <span class="kw">unsafe </span>{ drop(Box::from_raw(foo_nonnull.as_ptr())) };</code></pre></div>
+<p><a href="https://doc.rust-lang.org/nightly/core/ptr/non_null/struct.NonNull.html" title="struct core::ptr::non_null::NonNull"><code>NonNull</code></a> は、null でないことの他に variance
+にも気をつける必要があるが、後述とする。</p>
 <h4 id="生ポインタの使用"><a class="doc-anchor" href="#生ポインタの使用">§</a>生ポインタの使用</h4>
-<p>構造体 <code>Bar</code> と、それを参照する構造体 <code>BarRef</code> を考える。</p>
+<p>構造体 <code>Foo</code> と、それを参照する構造体 <code>FooRef&lt;BorrowType&gt;</code> を考える。
+<code>BorrowType</code> は今後追加していくが、一旦 <code>Boxed&lt;Foo&gt;</code> のように振る舞う <code>marker::Owned</code>
+と、<code>&amp;'a Foo</code> のように振る舞う <code>marker::Immut&lt;'a&gt;</code> を考える。</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{marker::PhantomData, ptr::NonNull};
 
-<span class="kw">struct </span>Bar {
-    val_1: u32,
-    val_2: u32,
-}
-<span class="kw">struct </span>BarRef&lt;<span class="lifetime">'a</span>&gt; {
-    bar: NonNull&lt;Bar&gt;,
-    _marker: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>()&gt;,
+<span class="kw">struct </span>Foo(u32);
+<span class="kw">struct </span>FooRef&lt;BorrowType&gt; {
+    foo: NonNull&lt;Foo&gt;,
+    _marker: PhantomData&lt;BorrowType&gt;,
 }
 
-<span class="kw">impl </span>Copy <span class="kw">for </span>BarRef&lt;<span class="lifetime">'_</span>&gt; {}
-<span class="kw">impl </span>Clone <span class="kw">for </span>BarRef&lt;<span class="lifetime">'_</span>&gt; {
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{ <span class="kw-2">*</span><span class="self">self </span>}
+<span class="kw">mod </span>marker {
+    <span class="kw">use </span>std::marker::PhantomData;
+
+    <span class="kw">pub enum </span>Owned {}
+    <span class="kw">pub struct </span>Immut&lt;<span class="lifetime">'a</span>&gt;(PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>()&gt;);
 }
 
-<span class="kw">impl </span>Bar {
-    <span class="kw">pub fn </span>new() -&gt; Box&lt;<span class="self">Self</span>&gt; { Box::new(<span class="self">Self </span>{ val_1: <span class="number">0</span>, val_2: <span class="number">0 </span>}) }
+<span class="kw">impl </span>Foo {
+    <span class="kw">pub fn </span>new() -&gt; Box&lt;<span class="self">Self</span>&gt; { Box::new(<span class="self">Self</span>(<span class="number">0</span>)) }
 }
-<span class="kw">impl </span>BarRef&lt;<span class="lifetime">'_</span>&gt; {
-    <span class="kw">pub fn </span>new_bar() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ bar: NonNull::from(Box::leak(Bar::new())), _marker: PhantomData }
+<span class="kw">impl </span>FooRef&lt;marker::Owned&gt; {
+    <span class="kw">pub fn </span>new_ref() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ foo: NonNull::from(Box::leak(Foo::new())), _marker: PhantomData }
     }
-}</code></pre></div>
-<p><code>todo!()</code></p>
-<ul>
-<li><code>val_1</code> と <code>val_2</code> を別々の mutable reference で持ちたい。互いに invalidate しないようにしたい。</li>
-<li>メモリリークを防ぎたい。どこで drop？
-<ul>
-<li>そのための <code>BorrowType</code>？</li>
-</ul>
-</li>
-<li><code>DormantMutRef</code>？</li>
-</ul>
+}
+<span class="kw">impl</span>&lt;BorrowType&gt; FooRef&lt;BorrowType&gt; {
+    <span class="kw">pub fn </span>borrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; FooRef&lt;marker::Immut&lt;<span class="lifetime">'_</span>&gt;&gt; {
+        FooRef { foo: <span class="self">self</span>.foo, _marker: PhantomData }
+    }
+    <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>u32 { <span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span>(<span class="kw-2">*</span><span class="self">self</span>.foo.as_ptr()).<span class="number">0 </span>} }
+}
+
+<span class="kw">let </span>foo_ref = FooRef::new_ref();
+<span class="macro">assert_eq!</span>(<span class="kw-2">*</span>foo_ref.get(), <span class="number">0</span>);
+
+<span class="kw">let </span>foo_ref_immut = foo_ref.borrow();
+<span class="macro">assert_eq!</span>(<span class="kw-2">*</span>foo_ref_immut.get(), <span class="number">0</span>);
+
+<span class="macro">assert_eq!</span>(<span class="kw-2">*</span>foo_ref.get(), <span class="number">0</span>);
+<span class="macro">assert_eq!</span>(<span class="kw-2">*</span>foo_ref_immut.get(), <span class="number">0</span>);
+
+<span class="kw">unsafe </span>{ drop(Box::from_raw(foo_ref.foo.as_ptr())) };</code></pre></div>
+<p>当然、<code>Immut&lt;'a&gt;</code> だけでなく <code>Mut&lt;'a&gt;</code> も欲しい。
+<code>drop</code> に関しては、<code>Boxed&lt;Foo&gt;</code> のように振る舞うところの <code>FooRef&lt;marker::Owned&gt;</code>
+でのみ実装したいが、そういうことはできない (<a href="https://doc.rust-lang.org/error_codes/E0366.html">E0366</a>)。
+ここでは、手動で呼び出すための <code>.drop()</code> を提供しつつ <code>Boxed&lt;Foo&gt;</code> のように振る舞う
+<code>FooRef&lt;marker::Dying&gt;</code> を別途作ることにする。</p>
+<p>また、連想配列を実装することを見据えると、一部のメンバ変数についてのみ可変参照を公開したいこともある。
+ここでは <code>struct Foo(u32, u32);</code> の <code>foo: Foo</code> に対して、<code>&amp;foo.0</code> と <code>&amp;mut foo.1</code>
+を公開する <code>FooRef&lt;marker::SndMut&lt;'a&gt;&gt;</code> を作ることにする。
+このとき、<code>&amp;foo.0</code> にアクセスしても <code>&amp;mut foo.1</code> が invalidate
+されないように気をつける必要がある（逆も然り）。</p>
+<p>加えて、<code>marker::Mut&lt;'a&gt;</code> の lifetime を消して、一時的に静的解析の対象外にできる
+<code>marker::DormantMut</code> も作っておく<sup id="fnref1"><a href="#fn1">1</a></sup>。もちろん、冒頭の例で触れたように
+Stacked Borrows のルールには従う必要がある。</p>
+<p>別の marker を返すようなメソッドにおいては、<code>FooRef { foo: self.foo, _marker: PhantomData }</code>
+の boilerplate を都度書く必要があってややうれしくない。<code>PhantomData</code>
+の型パラメータを陽に書く必要がないので、見かけ上は全く同じものになっている。
+また、どの marker からどの marker への遷移をできるかを意識しておくとよいかもしれない。</p>
+<p>他にも、<code>FooRef&lt;marker::Immut&lt;'a&gt;&gt;</code> は <code>Copy</code>/<code>Clone</code>
+であるとか、諸々の変換などの実装が欲しくなるであろう。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{marker::PhantomData, ptr::NonNull};
+
+<span class="kw">struct </span>Foo(u32, u32);
+<span class="kw">struct </span>FooRef&lt;BorrowType&gt; {
+    foo: NonNull&lt;Foo&gt;,
+    _marker: PhantomData&lt;BorrowType&gt;,
+}
+
+<span class="macro">todo!</span>();</code></pre></div>
+<p>TODO: 使い方の例として、テストめいたものを書く。</p>
+<p>TODO: <a href="https://doc.rust-lang.org/nightly/core/ptr/fn.read.html" title="fn core::ptr::read"><code>std::ptr::read</code></a> を不適切に使うなど、うまくいかない実装の例を書く。</p>
 <h4 id="簡単な例"><a class="doc-anchor" href="#簡単な例">§</a>簡単な例</h4>
-<p><code>todo!()</code></p>
+<p>TODO: 簡単な doubly-linked list めいたものを書く。</p>
 <h4 id="それ以外"><a class="doc-anchor" href="#それ以外">§</a>それ以外</h4>
-<p><code>todo!()</code></p>
-<ul>
-<li>variance</li>
-<li><a href="https://doc.rust-lang.org/nightly/core/ptr/fn.read.html" title="fn core::ptr::read"><code>std::ptr::read</code></a> での invalidation</li>
-</ul>
+<p>TODO: variance を気にするべき例を書く。</p>
 <h3 id="references"><a class="doc-anchor" href="#references">§</a>References</h3>
 <ul>
 <li><a href="https://doc.rust-lang.org/nomicon/">The Rustonomicon</a></li>
@@ -371,4 +409,4 @@ foo_mut_ref.<span class="number">0 </span>= <span class="number">10</span>;
 <li><a href="https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md">rust-lang / <strong>unsafe-code-guidelines</strong> :: /wip/<strong>stacked-borrows.md</strong></a></li>
 <li><a href="https://github.com/rust-lang/miri">rust-lang / <strong>miri</strong></a></li>
 </ul>
-</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="marker/index.html" title="mod discussion::ptr_ds::marker">marker</a></div></li></ul><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Foo.html" title="struct discussion::ptr_ds::Foo">Foo</a></div></li><li><div class="item-name"><a class="struct" href="struct.FooRef.html" title="struct discussion::ptr_ds::FooRef">FooRef</a></div></li></ul></section></div></main></body></html>
+<div class="footnotes"><hr><ol><li id="fn1"><p>dormant や (re-)awaken という表現がしばしば使われている印象がある。&nbsp;<a href="#fnref1">↩</a></p></li></ol></div></div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="marker/index.html" title="mod discussion::ptr_ds::marker">marker</a></div></li></ul><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Foo.html" title="struct discussion::ptr_ds::Foo">Foo</a></div></li><li><div class="item-name"><a class="struct" href="struct.FooRef.html" title="struct discussion::ptr_ds::FooRef">FooRef</a></div></li></ul></section></div></main></body></html>

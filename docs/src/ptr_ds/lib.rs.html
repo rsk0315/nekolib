@@ -566,6 +566,62 @@
 <a href="#327" id="327">327</a>
 <a href="#328" id="328">328</a>
 <a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! ポインタ系データ構造。
 //!
 //! ## Preliminaries
@@ -661,7 +717,8 @@
 //! // (?)
 //! ```
 //!
-//! ところで、スマートポインタから生ポインタを取り出したままだと、メモリリークしてしまう。
+//! ところで、スマートポインタから生ポインタを取り出したままだと、drop
+//! されないのでメモリリークしてしまう。
 //! これも Miri によって検出でき、次のような出力が得られるであろう。
 //!
 //! ```txt
@@ -698,54 +755,109 @@
 //! unsafe { drop(Box::from_raw(foo_nonnull.as_ptr())) };
 //! ```
 //!
+//! [`NonNull`][`std::ptr::NonNull`] は、null でないことの他に variance
+//! にも気をつける必要があるが、後述とする。
+//!
 //! ### 生ポインタの使用
 //!
-//! 構造体 `Bar` と、それを参照する構造体 `BarRef` を考える。
+//! 構造体 `Foo` と、それを参照する構造体 `FooRef&lt;BorrowType&gt;` を考える。
+//! `BorrowType` は今後追加していくが、一旦 `Boxed&lt;Foo&gt;` のように振る舞う `marker::Owned`
+//! と、`&amp;'a Foo` のように振る舞う `marker::Immut&lt;'a&gt;` を考える。
 //!
 //! ```
 //! use std::{marker::PhantomData, ptr::NonNull};
 //!
-//! struct Bar {
-//!     val_1: u32,
-//!     val_2: u32,
-//! }
-//! struct BarRef&lt;'a&gt; {
-//!     bar: NonNull&lt;Bar&gt;,
-//!     _marker: PhantomData&lt;&amp;'a mut ()&gt;,
+//! struct Foo(u32);
+//! struct FooRef&lt;BorrowType&gt; {
+//!     foo: NonNull&lt;Foo&gt;,
+//!     _marker: PhantomData&lt;BorrowType&gt;,
 //! }
 //!
-//! impl Copy for BarRef&lt;'_&gt; {}
-//! impl Clone for BarRef&lt;'_&gt; {
-//!     fn clone(&amp;self) -&gt; Self { *self }
+//! mod marker {
+//!     use std::marker::PhantomData;
+//!
+//!     pub enum Owned {}
+//!     pub struct Immut&lt;'a&gt;(PhantomData&lt;&amp;'a ()&gt;);
 //! }
 //!
-//! impl Bar {
-//!     pub fn new() -&gt; Box&lt;Self&gt; { Box::new(Self { val_1: 0, val_2: 0 }) }
+//! impl Foo {
+//!     pub fn new() -&gt; Box&lt;Self&gt; { Box::new(Self(0)) }
 //! }
-//! impl BarRef&lt;'_&gt; {
-//!     pub fn new_bar() -&gt; Self {
-//!         Self { bar: NonNull::from(Box::leak(Bar::new())), _marker: PhantomData }
+//! impl FooRef&lt;marker::Owned&gt; {
+//!     pub fn new_ref() -&gt; Self {
+//!         Self { foo: NonNull::from(Box::leak(Foo::new())), _marker: PhantomData }
 //!     }
 //! }
+//! impl&lt;BorrowType&gt; FooRef&lt;BorrowType&gt; {
+//!     pub fn borrow(&amp;self) -&gt; FooRef&lt;marker::Immut&lt;'_&gt;&gt; {
+//!         FooRef { foo: self.foo, _marker: PhantomData }
+//!     }
+//!     pub fn get(&amp;self) -&gt; &amp;u32 { unsafe { &amp;(*self.foo.as_ptr()).0 } }
+//! }
+//!
+//! let foo_ref = FooRef::new_ref();
+//! assert_eq!(*foo_ref.get(), 0);
+//!
+//! let foo_ref_immut = foo_ref.borrow();
+//! assert_eq!(*foo_ref_immut.get(), 0);
+//!
+//! assert_eq!(*foo_ref.get(), 0);
+//! assert_eq!(*foo_ref_immut.get(), 0);
+//!
+//! unsafe { drop(Box::from_raw(foo_ref.foo.as_ptr())) };
 //! ```
 //!
-//! `todo!()`
+//! 当然、`Immut&lt;'a&gt;` だけでなく `Mut&lt;'a&gt;` も欲しい。
+//! `drop` に関しては、`Boxed&lt;Foo&gt;` のように振る舞うところの `FooRef&lt;marker::Owned&gt;`
+//! でのみ実装したいが、そういうことはできない ([E0366])。
+//! ここでは、手動で呼び出すための `.drop()` を提供しつつ `Boxed&lt;Foo&gt;` のように振る舞う
+//! `FooRef&lt;marker::Dying&gt;` を別途作ることにする。
 //!
-//! - `val_1` と `val_2` を別々の mutable reference で持ちたい。互いに invalidate しないようにしたい。
-//! - メモリリークを防ぎたい。どこで drop？
-//!     - そのための `BorrowType`？
-//! - `DormantMutRef`？
+//! また、連想配列を実装することを見据えると、一部のメンバ変数についてのみ可変参照を公開したいこともある。
+//! ここでは `struct Foo(u32, u32);` の `foo: Foo` に対して、`&amp;foo.0` と `&amp;mut foo.1`
+//! を公開する `FooRef&lt;marker::SndMut&lt;'a&gt;&gt;` を作ることにする。
+//! このとき、`&amp;foo.0` にアクセスしても `&amp;mut foo.1` が invalidate
+//! されないように気をつける必要がある（逆も然り）。
+//!
+//! [E0366]: https://doc.rust-lang.org/error_codes/E0366.html
+//!
+//! 加えて、`marker::Mut&lt;'a&gt;` の lifetime を消して、一時的に静的解析の対象外にできる
+//! `marker::DormantMut` も作っておく[^dormant]。もちろん、冒頭の例で触れたように
+//! Stacked Borrows のルールには従う必要がある。
+//!
+//! [^dormant]: dormant や (re-)awaken という表現がしばしば使われている印象がある。
+//!
+//! 別の marker を返すようなメソッドにおいては、`FooRef { foo: self.foo, _marker: PhantomData }`
+//! の boilerplate を都度書く必要があってややうれしくない。`PhantomData`
+//! の型パラメータを陽に書く必要がないので、見かけ上は全く同じものになっている。
+//! また、どの marker からどの marker への遷移をできるかを意識しておくとよいかもしれない。
+//!
+//! 他にも、`FooRef&lt;marker::Immut&lt;'a&gt;&gt;` は `Copy`/`Clone`
+//! であるとか、諸々の変換などの実装が欲しくなるであろう。
+//!
+//! ```ignore
+//! use std::{marker::PhantomData, ptr::NonNull};
+//!
+//! struct Foo(u32, u32);
+//! struct FooRef&lt;BorrowType&gt; {
+//!     foo: NonNull&lt;Foo&gt;,
+//!     _marker: PhantomData&lt;BorrowType&gt;,
+//! }
+//!
+//! todo!();
+//! ```
+//!
+//! TODO: 使い方の例として、テストめいたものを書く。
+//!
+//! TODO: [`std::ptr::read`] を不適切に使うなど、うまくいかない実装の例を書く。
 //!
 //! ### 簡単な例
 //!
-//! `todo!()`
+//! TODO: 簡単な doubly-linked list めいたものを書く。
 //!
 //! ### それ以外
 //!
-//! `todo!()`
-//!
-//! - variance
-//! - [`std::ptr::read`] での invalidation
+//! TODO: variance を気にするべき例を書く。
 //!
 //! ## References
 //! - [The Rustonomicon](https://doc.rust-lang.org/nomicon/)
