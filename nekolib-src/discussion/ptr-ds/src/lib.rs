@@ -211,6 +211,171 @@
 //! 他にも、`FooRef<marker::Immut<'a>>` は `Copy`/`Clone`
 //! であるとか、諸々の変換などの実装が欲しくなるであろう。
 //!
+//! ### 参照の無効化
+//!
+//! さて、`marker::Mut<'a>` で `.get_mut()` のようなメソッドを公開するにあたり、
+//! 無効な参照を返さないように気をつける必要がある。
+//! 最初の例のように、下記のコードは未定義動作となる。
+//!
+//! ```
+//! struct Foo(u32);
+//! let mut foo = Foo(0);
+//! ```
+//!
+//! ```ignore
+//! # struct Foo(u32);
+//! # let mut foo = Foo(0);
+//! let foo_ptr_1: *mut _ = &mut foo;
+//! let foo_ptr_2: *mut _ = &mut foo;
+//! unsafe { (*foo_ptr_1).0 }; // UB
+//! ```
+//!
+//! [`std::ptr`] には「`&mut foo` を `*mut _` にキャストするときは他の参照があってはいけない」とあり、
+//! `foo_ptr_1` が生きている状態で `&mut foo` しているのが悪いように読める。Stacked Borrows
+//! のルール的には、二つ目の `&mut foo` をした時点で `foo_ptr_1` が無効化されるので、
+//! その後の参照が未定義動作になるという説明になると思われる。
+//! 同じ可変参照から作ったポインタであれば問題ないようである。
+//!
+//! ```
+//! # struct Foo(u32);
+//! # let mut foo = Foo(0);
+//! let mut foo_mut = &mut foo;
+//! let foo_ptr_1: *mut _ = foo_mut;
+//! let foo_ptr_2: *mut _ = foo_mut;
+//! unsafe { (*foo_ptr_1).0 = 10 };
+//! unsafe { (*foo_ptr_2).0 = 20 };
+//! assert_eq!(foo.0, 20);
+//! ```
+//!
+//! [`NonNull`][`std::ptr::NonNull`] を介して生ポインタを作っても、[`.as_mut()`][`std::ptr::NonNull::as_mut`]
+//! を使って可変参照を作ってしまうとうまくいかない。
+//!
+//! ```ignore
+//! use std::ptr::NonNull;
+//!
+//! # struct Foo(u32);
+//! # let mut foo = Foo(0);
+//! let mut foo_nonnull = NonNull::from(&mut foo);
+//! let foo0_mut_1 = unsafe { &mut foo_nonnull.as_mut().0 };
+//! let foo0_mut_2 = unsafe { &mut foo_nonnull.as_mut().0 };
+//! *foo0_mut_1 = 10; // UB
+//! ```
+//!
+//! ```ignore
+//! use std::ptr::NonNull;
+//!
+//! # struct Foo(u32);
+//! # let mut foo = Foo(0);
+//! let mut foo_nonnull = NonNull::from(&mut foo);
+//! let foo_mut_1 = unsafe { foo_nonnull.as_mut() };
+//! let foo_mut_2 = unsafe { foo_nonnull.as_mut() };
+//! foo_mut_1.0 = 10; // UB
+//! ```
+//!
+//! 下記も同様。
+//!
+//! ```ignore
+//! use std::ptr::NonNull;
+//!
+//! # struct Foo(u32);
+//! # let mut foo = Foo(0);
+//! let mut foo_nonnull = NonNull::from(&mut foo);
+//! let foo0_mut_1 = unsafe { &mut (*foo_nonnull.as_ptr()).0 };
+//! let foo0_mut_2 = unsafe { &mut (*foo_nonnull.as_ptr()).0 };
+//! *foo0_mut_1 = 10; // UB
+//! ```
+//!
+//! 今度は、メンバを複数持つような場合を考える。
+//!
+//! ```
+//! struct Foo(u32, u32);
+//! let mut foo = Foo(0, 0);
+//! ```
+//!
+//! ```
+//! # struct Foo(u32, u32);
+//! # let mut foo = Foo(0, 0);
+//! let foo0_mut = &mut foo.0;
+//! let foo1_mut = &mut foo.1;
+//! *foo0_mut = 10;
+//! *foo1_mut = 20;
+//! assert_eq!((foo.0, foo.1), (10, 20)); // ok
+//! ```
+//!
+//! Safe Rust では上記のように書けるが、事情があって生ポインタを使う必要がある状況とする。
+//!
+//! ```
+//! use std::ptr::NonNull;
+//!
+//! # struct Foo(u32, u32);
+//! # let mut foo = Foo(0, 0);
+//! let foo_nonnull = NonNull::from(&mut foo);
+//! let foo0_mut = unsafe { &mut (*foo_nonnull.as_ptr()).0 };
+//! let foo1_mut = unsafe { &mut (*foo_nonnull.as_ptr()).1 };
+//! *foo0_mut = 10;
+//! *foo1_mut = 20;
+//! assert_eq!((foo.0, foo.1), (10, 20)); // ok
+//! ```
+//!
+//! 下記のように [`std::ptr::NonNull::as_mut`] を使うと、アクセスしていない部分も無効化されるように見える。
+//!
+//! ```ignore
+//! use std::ptr::NonNull;
+//!
+//! # struct Foo(u32, u32);
+//! # let mut foo = Foo(0, 0);
+//! let mut foo_nonnull = NonNull::from(&mut foo);
+//! let foo0_mut = unsafe { &mut foo_nonnull.as_mut().0 };
+//! let foo1_mut = unsafe { &mut foo_nonnull.as_mut().1 };
+//! *foo0_mut = 10; // UB
+//! ```
+//!
+//! [`std::ptr::NonNull::as_ptr`] を使うと無効化されない模様。
+//!
+//! ```
+//! use std::ptr::{addr_of_mut, NonNull};
+//!
+//! # struct Foo(u32, u32);
+//! # let mut foo = Foo(0, 0);
+//! let mut foo_nonnull = NonNull::from(&mut foo);
+//! let foo0_mut = unsafe { &mut *addr_of_mut!((*foo_nonnull.as_ptr()).0) };
+//! let foo1_mut = unsafe { &mut *addr_of_mut!((*foo_nonnull.as_ptr()).1) };
+//! *foo0_mut = 10;
+//! *foo1_mut = 20;
+//! assert_eq!((foo.0, foo.1), (10, 20)); // ok
+//! ```
+//!
+//! [`std::ptr::addr_of_mut`] を使わなくても問題ない模様 (cf. [`&`/`&mut`](https://doc.rust-lang.org/reference/expressions/operator-expr.html#borrow-operators), [`*`](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-dereference-operator), [place expressions](https://doc.rust-lang.org/reference/expressions.html#place-expressions-and-value-expressions))。`addr_of_mut` は dereferenceability
+//! を無視したいときに使うもので、無効化を防ぎたいときに使うものではない？
+//!
+//! ```
+//! use std::ptr::{addr_of_mut, NonNull};
+//!
+//! # struct Foo(u32, u32);
+//! # let mut foo = Foo(0, 0);
+//! let mut foo_nonnull = NonNull::from(&mut foo);
+//! let foo0_mut = unsafe { &mut (*foo_nonnull.as_ptr()).0 };
+//! let foo1_mut = unsafe { &mut (*foo_nonnull.as_ptr()).1 };
+//! *foo0_mut = 10;
+//! *foo1_mut = 20;
+//! assert_eq!((foo.0, foo.1), (10, 20)); // ok
+//! ```
+//!
+//! ### 可変な参照を返す例
+//!
+//! 上記を踏まえ、`marker::Mut<'a>` などを含めた `FooRef<BorrowType>` を考える。
+//!
+//! | `BorrowType` | like ... |
+//! |---|---|
+//! | `marker::Owned` | `Boxed<Foo>` |
+//! | `marker::Dying` | `Boxed<Foo>` (\*1) |
+//! | `marker::Immut<'a>` | `&'a Foo` |
+//! | `marker::Mut<'a>` | `&'a mut Foo` |
+//! | `marker::SndMut<'a>` | `&'a mut Foo` (\*2) |
+//!
+//! (\*1): `drop` 相当のメソッドを提供する。
+//! (\*2): `foo.0` (fst) に関しては不変参照、`foo.1` (snd) に関しては可変参照を公開する。
+//!
 //! ```ignore
 //! use std::{marker::PhantomData, ptr::NonNull};
 //!
@@ -224,8 +389,6 @@
 //! ```
 //!
 //! TODO: 使い方の例として、テストめいたものを書く。
-//!
-//! TODO: [`std::ptr::read`] を不適切に使うなど、うまくいかない実装の例を書く。
 //!
 //! ### 簡単な例
 //!
@@ -384,4 +547,51 @@ fn test_foo_ref() {
     // *val += 1; // UB
 
     foo_ref.into_dying().drop();
+}
+
+#[test]
+fn ptr_read() {
+    struct Foo(u32, u32);
+
+    let mut foo = Foo(0, 0);
+
+    // {
+    //     let foo_ptr_fst: *mut _ = &mut foo;
+    //     let foo_ptr_snd: *mut _ = &mut foo;
+    //     // unsafe { (*foo_ptr_fst).0 = 10 }; // UB
+    // }
+
+    // {
+    //     let mut foo_nonnull = NonNull::from(&mut foo);
+    //     let foo_mut_fst = unsafe { &mut foo_nonnull.as_mut().0 };
+    //     let foo_mut_snd = unsafe { &mut foo_nonnull.as_mut().1 };
+    //     *foo_mut_fst = 10; // UB
+    // }
+
+    {
+        let foo_nonnull = NonNull::from(&mut foo);
+        let foo_ptr_1 = foo_nonnull.as_ptr();
+        let foo_ptr_2 = foo_nonnull.as_ptr();
+        unsafe { (*foo_ptr_1).0 += 1 };
+        unsafe { (*foo_ptr_1).1 += 2 };
+        unsafe { (*foo_ptr_2).0 += 10 };
+        unsafe { (*foo_ptr_2).1 += 20 };
+        unsafe { (*foo_ptr_1).0 += 10 };
+        unsafe { (*foo_ptr_1).1 += 10 };
+        unsafe { (*foo_ptr_2).0 -= 10 };
+        unsafe { (*foo_ptr_2).1 -= 10 };
+        assert_eq!((foo.0, foo.1), (11, 22)); // ok
+
+        unsafe { (*foo_ptr_1).0 }; // ok
+        foo.0 += 100; // invalidates `foo_ptr_1` and `foo_nonnull`
+        // unsafe { (*foo_ptr_1).0 }; // UB
+    }
+
+    {
+        let foo_nonnull = NonNull::from(&mut foo);
+        let foo_ptr_1 = foo_nonnull.as_ptr();
+        unsafe { foo_ptr_1.read().0 };
+        let _ptr = NonNull::from(&mut foo); // invalidates them
+        // unsafe { foo_ptr_1.read().0 }; // UB
+    }
 }
