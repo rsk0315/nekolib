@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["decomposable","dp","draft","plane_sweep","ptr_ds","rawptr","sb","variance"]};
+window.SIDEBAR_ITEMS = {"mod":["decomposable","dp","draft","plane_sweep","ptr_ds","rawptr","sample_handle","sample_noderef","sb","variance"]};

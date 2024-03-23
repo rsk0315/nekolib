@@ -345,7 +345,7 @@ $<code>\lifetime{long}</code>$ は、$<code>\lifetime{short}</code>$ が満た�
 <p><code>fn(T)</code> は、制約の言い方でいえば「<code>T</code> を受け取ることができる関数である」となることに注意せよ。
 一方、<code>fn() -&gt; T</code> は「返す値が <code>T</code> である関数である」であり、<code>fn() -&gt; S</code> は <code>fn() -&gt; T</code>
 の制約も満たしているため、<code>fn() -&gt; S &lt;: fn() -&gt; T</code> となる。</p>
-<h3 id="discussions"><a class="doc-anchor" href="#discussions">§</a>Discussions</h3>
+<h3 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h3>
 <p>さて、Unsafe Rust の文脈で variance がどのように重要になるのかを整理する必要がある。</p>
 <p>生ポインタを介すことで lifetime erasure ができてしまうので、自分で気をつける必要があるということ？</p>
 

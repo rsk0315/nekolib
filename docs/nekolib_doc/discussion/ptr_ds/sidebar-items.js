@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["draft","rawptr","sb","variance"]};
+window.SIDEBAR_ITEMS = {"mod":["draft","rawptr","sample_handle","sample_noderef","sb","variance"]};
