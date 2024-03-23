@@ -407,6 +407,8 @@
 //! - [rust-lang / **unsafe-code-guidelines** :: /wip/**stacked-borrows.md**](https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md)
 //! - [rust-lang / **miri**](https://github.com/rust-lang/miri)
 
+pub mod variance;
+
 use std::{
     marker::PhantomData,
     ptr::{self, NonNull},
