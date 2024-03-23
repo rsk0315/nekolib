@@ -1,0 +1,401 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="variance。"><title>nekolib_doc::discussion::ptr_ds::variance - Rust</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="nekolib_doc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (85e449a32 2024-03-22)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+
+<!-- The loading of KaTeX is deferred to speed up page rendering -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+
+<style>
+  code.code-math {
+      background-color: transparent;
+  }
+</style>
+
+<script>
+  'use strict';
+
+  const macros = {
+    // '\\foo': '42',
+    // '\\bar': '\\operatorname{bar}^{#1}',
+    '\\halfopen': '[#1, #2)',
+    '\\floor': '\\lfloor #1\\rfloor',
+    '\\ceil': '\\lceil #1\\rceil',
+    '\\rounded': '\\lfloor #1\\rceil',
+    '\\Floor': '\\left\\lfloor #1\\right\\rfloor',
+    '\\Ceil': '\\left\\lceil #1\\right\\rceil',
+    '\\Rounded': '\\left\\lfloor #1\\right\\rceil',
+    '\\angled': '\\langle #1\\rangle',
+    '\\Angled': '\\left\\langle #1\\right\\rangle',
+    '\\lcm': '\\operatorname*{lcm}',
+    '\\gcd': '\\operatorname*{gcd}',
+    '\\poly': '\\operatorname{poly}',
+    '\\polylog': '\\operatorname{polylog}',
+    '\\concat': '\\mathrel{+\\!\\!+}',
+    '\\mex': '\\operatorname*{mex}',
+    '\\qed': '\\square',
+    '\\Q': '\\mathbb{Q}',
+    '\\dd': '\\mathrm{d}',
+    '\\ForallL': '{}^{\\forall}#1.\\:#2',
+    '\\Forall': '{}^{\\forall}#1.\\,\\left[#2\\right]',
+    '\\ExistsL': '{}^{\\exists}#1.\\:#2',
+    '\\Exists': '{}^{\\exists}#1.\\,\\left[#2\\right]',
+    '\\roundp': '(\\kern-.2em[#1]\\kern-.2em)',
+    '\\bigroundp': '\\big(\\kern-.25em\\big[#1\\big]\\kern-.25em\\big)',
+    '\\Bigroundp': '\\Big(\\kern-.3em\\Big[#1\\Big]\\kern-.3em\\Big)',
+    '\\biggroundp': '\\bigg(\\kern-.3em\\bigg[#1\\bigg]\\kern-.3em\\bigg)',
+    '\\Biggroundp': '\\Bigg(\\kern-.35em\\Bigg[#1\\Bigg]\\kern-.35em\\Bigg)',
+    '\\hfloor': '\\lfloor\\hspace{-.25em}\\lfloor#1\\rfloor\\hspace{-.25em}\\rfloor',
+    '\\xgets': '\\xleftarrow{#1}',
+    '\\eod': '\\blacksquare', // end of \<details\>
+    '\\lldot': '\\mathop{.\\,.}',
+    '\\dp': '\\mathrm{dp}',
+    '\\subtype': '\\mathrel{\\lt:}',
+    '\\lifetime': '{}^{\\triangledown}\\text{\\texttt{#1}}',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
+    }
+
+    const codes = Array.from(document.getElementsByTagName('code'));
+    for (const elt of codes) {
+      if (elt.classList.contains('language-math')) continue;
+      if (elt.classList.contains('language-inline-math')) {
+        katex.render(elt.innerText, elt, { macros });
+        continue;
+      }
+
+      const parent = elt.parentNode;
+      if (parent.nodeName.toLowerCase() === 'pre') {
+        continue;
+      }
+
+      parent.style.overflowX = 'unset';
+      const content = parent.outerHTML.replaceAll(
+        /\$<code>([^<]*?)<\/code>\$/g,
+        ((match, inner) => {
+          return `<code class="code-math">${katex.renderToString(inner, { macros })}</code>`;
+        }),
+      );
+
+      try {
+        parent.outerHTML = content;
+      } catch (DOMException) {
+        continue;
+      }
+    }
+  });
+</script>
+
+<script>
+  'use strict';
+
+  const cratesLs = {
+    "algo": [
+      "bisect",
+      "tortoise_hare",
+      "twosat"
+    ],
+    "corro": [
+      "borrow"
+    ],
+    "discussion": [
+      "decomposable",
+      "dp",
+      "plane-sweep",
+      "ptr-ds"
+    ],
+    "draft": [
+      "rs01dict_runtime",
+      "rs01dict_tree"
+    ],
+    "ds": [
+      "foldable_deque",
+      "foldable_queue",
+      "rs01_dict",
+      "union-find",
+      "vec_segtree",
+      "wavelet_matrix"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "graph": [
+      "bfs01",
+      "dijkstra",
+      "lowlink",
+      "scc"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "pdep_pext"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "divisors",
+      "factors",
+      "gcd",
+      "linear_sieve",
+      "modint"
+    ],
+    "naive": [
+      "assoc-list",
+      "bit-vector",
+      "concat-monoid",
+      "disjoint-set"
+    ],
+    "ops": [
+      "monoid",
+      "op_add",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support"
+    ],
+    "random": [
+      "randgen"
+    ],
+    "seq": [
+      "inversion",
+      "lis",
+      "majority_vote",
+      "suffix_array"
+    ],
+    "snippet": [
+      "proconio"
+    ],
+    "uslice": [
+      "bucket_sort",
+      "permutation"
+    ],
+    "word": [
+      "small_rank_select"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const crates = [...document.getElementsByClassName('block crate')][0];
+
+    const links = new Map([...crates.querySelectorAll('a')].map((e) => [
+      e.innerText,
+      {
+        name: e.innerText,
+        href: e.href,
+        current: e.parentNode.classList.contains('current'),
+      },
+    ]));
+
+    const tree = new Map();
+    for (const mod of Object.keys(cratesLs)) {
+      for (const crate of cratesLs[mod]) {
+        const crate_ = crate.replaceAll('-', '_');
+        if (!links.has(crate_)) continue;
+
+        if (!tree.has(mod)) {
+          tree.set(mod, []);
+        }
+
+        tree.get(mod).push(links.get(crate_));
+      }
+    }
+
+    const cratesElt = document.createElement('ul');
+    cratesElt.classList.add('block');
+    cratesElt.classList.add('crate');
+    for (const [modName, mod] of tree) {
+      {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        const link = links.get(modName);
+        a.href = link.href;
+        if (link.current) li.classList.add('current');
+        a.innerText = link.name;
+        li.appendChild(a);
+        cratesElt.appendChild(li);
+      }
+
+      const ul = document.createElement('ul');
+      for (const crate of mod) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = crate.href;
+        if (crate.current) li.classList.add('current');
+        a.innerText = crate.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      cratesElt.appendChild(ul);
+    }
+
+    crates.outerHTML = cratesElt.outerHTML;
+  });
+</script>
+
+</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../nekolib_doc/index.html">nekolib_doc</a><span class="version">0.1.0</span></h2></div><h2 class="location"><a href="#">Module variance</a></h2><div class="sidebar-elems"><h2><a href="../index.html">In nekolib_doc::discussion::ptr_ds</a></h2></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../nekolib_doc/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../../../index.html">nekolib_doc</a>::<wbr><a href="../../index.html">discussion</a>::<wbr><a href="../index.html">ptr_ds</a>::<wbr><a class="mod" href="#">variance</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../../../src/ptr_ds/lib.rs.html#5">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>variance。</p>
+<h3 id="preliminaries"><a class="doc-anchor" href="#preliminaries">§</a>Preliminaries</h3>
+<p>型 $<code>S</code>$, $<code>T</code>$ に対して、$<code>S</code>$ が $<code>T</code>$ の <strong>部分型</strong> (<em>subtype</em>) であることを
+$<code>S \subtype T</code>$ と書く。Rust においては、部分型は lifetime の文脈でのみ話題になる<sup id="fnref1"><a href="#fn1">1</a></sup>。
+$<code>S</code>$ が $<code>T</code>$ の満たすべき制約を全て満たしている（必要に応じて追加の制約があってもよい）ことに相当する。</p>
+<h4 id="簡単な-lifetime-に関する例"><a class="doc-anchor" href="#簡単な-lifetime-に関する例">§</a>簡単な lifetime に関する例</h4>
+<p>有名な例として、Safe Rust では次のようなコードはコンパイル時にエラーになってくれる。</p>
+
+<div class="example-wrap compile_fail"><a href="#" class="tooltip" title="This example deliberately fails to compile">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>long = <span class="string">"long"</span>.to_owned();
+<span class="kw">let </span><span class="kw-2">mut </span>dang = <span class="kw-2">&amp;</span>long;
+{
+    <span class="kw">let </span>short = <span class="string">"short"</span>.to_owned();
+    dang = <span class="kw-2">&amp;</span>short;
+}
+<span class="kw">let </span>_invalid = dang; <span class="comment">// CE</span></code></pre></div>
+<p>生ポインタを介すことでコンパイルエラーを回避できるが、当然これは未定義動作となる。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>long = <span class="string">"long"</span>.to_owned();
+<span class="kw">let </span><span class="kw-2">mut </span>dang = <span class="kw-2">&amp;</span>long <span class="kw">as </span><span class="kw-2">*const </span>String;
+{
+    <span class="kw">let </span>short = <span class="string">"short"</span>.to_owned();
+    dang = <span class="kw-2">&amp;</span>short <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_</span>;
+}
+<span class="kw">let </span>_invalid = <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>dang).clone() }; <span class="comment">// UB</span></code></pre></div>
+<p>Miri によって検出され、次のような出力が得られるであろう。</p>
+<div class="example-wrap"><pre class="language-text"><code>error: Undefined Behavior: out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling
+  --&gt; src/lib.rs:9:25
+   |
+9  | let _invalid = unsafe { (*dang).clone() }; // UB
+   |                         ^^^^^^^ out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling
+</code></pre></div><h4 id="variance"><a class="doc-anchor" href="#variance">§</a>Variance</h4>
+<p>さて、<code>long</code>, <code>short</code> の lifetime をそれぞれ $<code>\lifetime{long}</code>$ (<code>'long</code>),
+$<code>\lifetime{short}</code>$ (<code>'short</code>) とする。
+$<code>\lifetime{long}</code>$ は、$<code>\lifetime{short}</code>$ が満たすべき制約（該当の期間を生き延びる）を満たし、
+さらなる制約（より長い期間を生き延びる）も満たすため、$<code>\lifetime{long} \subtype \lifetime{short}</code>$
+となる<sup id="fnref2"><a href="#fn2">2</a></sup>。</p>
+<p>ここで次のようなコードを考える。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>foo&lt;<span class="lifetime">'a</span>&gt;(lhs: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>String, rhs: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>String) {
+    <span class="macro">println!</span>(<span class="string">"{lhs} {rhs}"</span>);
+}
+
+<span class="kw">let </span>long = <span class="string">"long"</span>.to_owned();
+<span class="kw">let </span>long_ref = <span class="kw-2">&amp;</span>long;
+{
+    <span class="kw">let </span>short = <span class="string">"short"</span>.to_owned();
+    <span class="kw">let </span>short_ref = <span class="kw-2">&amp;</span>short;
+    foo(long_ref, short_ref);
+}</code></pre></div>
+<p><code>long_ref</code> と <code>short_ref</code> は異なる lifetime を持っているが、どちらも <code>&amp;'a String</code> として受け取っている。
+すなわち、<code>&amp;'long String</code> を <code>&amp;'short String</code> と見做し、どちらも <code>&amp;'short String</code> として扱っている。
+いつでも <code>'long</code> を <code>'short</code> として扱ってよいということはなく、次のような反例が挙げられる。</p>
+
+<div class="example-wrap compile_fail"><a href="#" class="tooltip" title="This example deliberately fails to compile">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>foo_immut&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">_</span>: &amp;&amp;<span class="lifetime">'a </span>String, <span class="kw">_</span>: &amp;&amp;<span class="lifetime">'a </span>String) {}
+<span class="kw">fn </span>foo_mut&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">_</span>: <span class="kw-2">&amp;mut &amp;</span><span class="lifetime">'a </span>String, <span class="kw">_</span>: <span class="kw-2">&amp;mut &amp;</span><span class="lifetime">'a </span>String) {}
+
+<span class="kw">let </span>long = <span class="string">"long"</span>.to_owned();
+<span class="kw">let </span><span class="kw-2">mut </span>long_ref = <span class="kw-2">&amp;</span>long;
+{
+    <span class="kw">let </span>short = <span class="string">"short"</span>.to_owned();
+    <span class="kw">let </span><span class="kw-2">mut </span>short_ref = <span class="kw-2">&amp;</span>short;
+    foo_immut(<span class="kw-2">&amp;</span>long_ref, <span class="kw-2">&amp;</span>short_ref); <span class="comment">// ok, as before
+    </span>foo_mut(<span class="kw-2">&amp;mut </span>long_ref, <span class="kw-2">&amp;mut </span>short_ref); <span class="comment">// CE
+</span>}
+<span class="macro">println!</span>(<span class="string">"{long_ref}"</span>);</code></pre></div>
+<p><code>foo_immut&lt;'a&gt;(..)</code> に関しては、先の例と同様、<code>&amp;long_ref: &amp;'short String</code> として扱うことで解決できる。
+一方、<code>foo_mut&lt;'a&gt;(..)</code> に関してはそうできずに失敗してしまう。次のいずれも不可能なためである。</p>
+<ul>
+<li><code>&amp;mut long_ref: &amp;mut &amp;'short String</code> として扱う (<code>'a == 'short</code>)</li>
+<li><code>&amp;mut short_ref: &amp;mut &amp;'long String</code> として扱う (<code>'a == 'long</code>)</li>
+</ul>
+<p>実際、<code>*long_ref = *short_ref</code> のようなことができてしまうと、<code>'short</code> が終わった時点で
+<code>long_ref</code> が不正なものを指すことになり、困ってしまう<sup id="fnref3"><a href="#fn3">3</a></sup>。</p>
+<div class="example-wrap"><pre class="language-text"><code>error[E0597]: `short` does not live long enough
+  --&gt; src/lib.rs:10:25
+   |
+9  |     let short = &quot;short&quot;.to_owned();
+   |         ----- binding `short` declared here
+10 |     let mut short_ref = &amp;short;
+   |                         ^^^^^^ borrowed value does not live long enough
+...
+13 | }
+   | - `short` dropped here while still borrowed
+14 | println!(&quot;{long_ref}&quot;);
+   |           ---------- borrow later used here
+</code></pre></div>
+<p><code>'a &lt;: 'b</code> のときは <code>&amp;'a T &lt;: &amp;'b T</code> となるため、<code>&amp;T</code> は <code>'a &lt;: 'b</code>
+の関係を保存する操作と見做すことができる。こうした操作を <em>covariant</em> (<code>&amp;'a T</code> is <em>covariant</em> over <code>'a</code>)
+と言う。一方、<code>S &lt;: T</code> であっても <code>&amp;mut S &lt;: &amp;mut T</code> や <code>&amp;mut T &lt;: &amp;mut S</code>
+は成り立つとは限らない<sup id="fnref4"><a href="#fn4">4</a></sup>。こうした操作を <em>invariant</em> と言う
+(<code>&amp;mut T</code> is <em>invariant</em> over <code>T</code>)。また、<code>S &lt;: T</code> のとき <code>F&lt;T&gt; &lt;: F&lt;S&gt;</code>
+となるような操作も存在し、<em>contravariant</em> と言う (<code>F&lt;T&gt;</code> is <em>contravariant</em> over <code>T</code>)。</p>
+<p>典型的な例は次の通りである。</p>
+<div><table><thead><tr><th>generic type</th><th>variance</th></tr></thead><tbody>
+<tr><td><code>&amp;T</code>, <code>Box&lt;T&gt;</code>, <code>Vec&lt;T&gt;</code>, <code>*const T</code></td><td>covariant over <code>T</code></td></tr>
+<tr><td><code>&amp;mut T</code>, <code>UnsafeCell&lt;T&gt;</code>, <code>*mut T</code></td><td>invariant over <code>T</code></td></tr>
+<tr><td><code>fn(T)</code></td><td><em>contra</em>variant over <code>T</code></td></tr>
+<tr><td><code>fn() -&gt; T</code></td><td>covariant over <code>T</code></td></tr>
+<tr><td><code>&amp;'a T</code>, <code>&amp;'a mut T</code></td><td>covariant over <code>'a</code></td></tr>
+</tbody></table>
+</div>
+<p><code>fn(T)</code> が contravariant であることに関して補足しておく。
+<code>S &lt;: T</code> として、<code>fn(T)</code> は引数として <code>S</code> も <code>T</code> も受け取ることができるが、<code>fn(S)</code> は
+<code>S</code> のみ受け取ることができる。そのため、<code>fn(T) &lt;: fn(S)</code> となっている。</p>
+<p><code>fn(T)</code> は、制約の言い方でいえば「<code>T</code> を受け取ることができる関数である」となることに注意せよ。
+一方、<code>fn() -&gt; T</code> は「返す値が <code>T</code> である関数である」であり、<code>fn() -&gt; S</code> は <code>fn() -&gt; T</code>
+の制約も満たしているため、<code>fn() -&gt; S &lt;: fn() -&gt; T</code> となる。</p>
+<h3 id="discussions"><a class="doc-anchor" href="#discussions">§</a>Discussions</h3>
+<p>さて、Unsafe Rust の文脈で variance がどのように重要になるのかを整理する必要がある。</p>
+<p>生ポインタを介すことで lifetime erasure ができてしまうので、自分で気をつける必要があるということ？</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>foo_mut&lt;<span class="lifetime">'a</span>&gt;(s: <span class="kw-2">&amp;mut &amp;</span><span class="lifetime">'a </span>String, t: <span class="kw-2">&amp;mut &amp;</span><span class="lifetime">'a </span>String) { <span class="kw-2">*</span>s = <span class="kw-2">*</span>t; }
+
+<span class="kw">let </span>long = <span class="string">"long"</span>.to_owned();
+<span class="kw">let </span><span class="kw-2">mut </span>long_ref = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(<span class="kw-2">&amp;</span>long <span class="kw">as </span><span class="kw-2">*const </span>String) };
+{
+    <span class="kw">let </span>short = <span class="string">"short"</span>.to_owned();
+    <span class="kw">let </span><span class="kw-2">mut </span>short_ref = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(<span class="kw-2">&amp;</span>short <span class="kw">as </span><span class="kw-2">*const </span>String) };
+    foo_mut(<span class="kw-2">&amp;mut </span>long_ref, <span class="kw-2">&amp;mut </span>short_ref);
+}
+<span class="kw">let </span>_invalid = long_ref.clone(); <span class="comment">// UB</span></code></pre></div>
+<div class="example-wrap"><pre class="language-text"><code>error: Undefined Behavior: out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling
+  --&gt; src/lib.rs:12:16
+   |
+12 | let _invalid = long_ref.clone(); // UB
+   |                ^^^^^^^^ out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling
+</code></pre></div>
+<p>ところで、<a href="https://doc.rust-lang.org/nightly/core/ptr/non_null/struct.NonNull.html" title="struct core::ptr::non_null::NonNull"><code>std::ptr::NonNull</code></a> のドキュメントにおける一行の説明は下記の通りである。</p>
+<blockquote>
+<p><code>*mut T</code> but non-zero and covariant.</p>
+</blockquote>
+<p><code>*mut T</code> は invariant であるから、<code>*mut T</code> ではコンパイルエラーになるが
+<code>NonNull</code> ではコンパイルできるような（未定義動作の）例を考えてみよう。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::ptr::NonNull;
+
+<span class="kw">fn </span>foo_ptrmut&lt;<span class="lifetime">'a</span>&gt;(lhs: <span class="kw-2">*mut &amp;</span><span class="lifetime">'a </span>String, rhs: <span class="kw-2">*mut &amp;</span><span class="lifetime">'a </span>String) {
+    <span class="kw">unsafe </span>{ <span class="kw-2">*</span>lhs = <span class="kw-2">*</span>rhs };
+}
+<span class="kw">fn </span>foo_nonnull&lt;<span class="lifetime">'a</span>&gt;(lhs: NonNull&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>String&gt;, rhs: NonNull&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>String&gt;) {
+    <span class="kw">unsafe </span>{ <span class="kw-2">*</span>lhs.as_ptr() = <span class="kw-2">*</span>rhs.as_ptr() };
+}
+
+<span class="kw">let </span>long = <span class="string">"long"</span>.to_owned();
+<span class="kw">let </span><span class="kw-2">mut </span>long_ref = <span class="kw-2">&amp;</span>long;
+{
+    <span class="kw">let </span>short = <span class="string">"short"</span>.to_owned();
+    <span class="kw">let </span><span class="kw-2">mut </span>short_ref = <span class="kw-2">&amp;</span>short;
+    <span class="comment">// foo_ptrmut(&amp;mut long_ref, &amp;mut short_ref); // CE
+    </span>foo_nonnull(NonNull::from(<span class="kw-2">&amp;mut </span>long_ref), NonNull::from(<span class="kw-2">&amp;mut </span>short_ref));
+}
+<span class="kw">let </span>_invalid = long_ref.clone(); <span class="comment">// UB</span></code></pre></div>
+<p>当然、out-of-bounds pointer use となるため、こうした処理をしないように気をつける必要がある。</p>
+<h3 id="see-also"><a class="doc-anchor" href="#see-also">§</a>See also</h3>
+<ul>
+<li><a href="https://doc.rust-lang.org/nightly/nomicon/subtyping.html">Rustonomicon, Subtyping and Variance</a></li>
+<li><a href="https://rust-lang.github.io/rfcs/0738-variance.html">The Rust RFC Book, 0738 Variance</a></li>
+</ul>
+<div class="footnotes"><hr><ol><li id="fn1"><p>trait に関してはどうか？&nbsp;<a href="#fnref1">↩</a></p></li><li id="fn2"><p>コードの範囲で $<code>\lifetime{short} \subseteq \lifetime{long}</code>$ であることから連想して
+$<code>\lifetime{short} \subtype \lifetime{long}</code>$ だと思ってはいけない。&nbsp;<a href="#fnref2">↩</a></p></li><li id="fn3"><p>実際には <code>foo_mut&lt;'a&gt;(..)</code> は <code>long_ref</code> を書き換えていないが、呼び出し側はそのことには関与しない。&nbsp;<a href="#fnref3">↩</a></p></li><li id="fn4"><p>上記の例では <code>S = &amp;'long String</code>, <code>T = &amp;'short String</code> である。<code>'long &lt;: 'short</code>
+より、<code>S &lt;: T</code> であることがわかっている。&nbsp;<a href="#fnref4">↩</a></p></li></ol></div></div></details></section></div></main></body></html>

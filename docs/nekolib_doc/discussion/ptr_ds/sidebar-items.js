@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["marker"],"struct":["Foo","FooRef"]};
+window.SIDEBAR_ITEMS = {"mod":["draft","rawptr","sb","variance"]};

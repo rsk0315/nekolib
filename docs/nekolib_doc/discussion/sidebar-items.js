@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["decomposable","dp","plane_sweep","ptr_ds"],"struct":["Foo","FooRef"]};
+window.SIDEBAR_ITEMS = {"mod":["decomposable","dp","plane_sweep","ptr_ds"]};
