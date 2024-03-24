@@ -343,7 +343,7 @@ impl<T> Handle<T> {
         let ptr = self.node.as_ptr();
         unsafe {
             (*ptr).cut = false;
-            let par = (*ptr).parent?;
+            let par = (*ptr).parent.take()?;
 
             let (prev, next) = (*ptr).neighbor;
             if self.eq(prev) {
