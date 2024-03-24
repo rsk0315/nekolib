@@ -36,26 +36,23 @@ impl<T: Ord> FibonacciHeap<T> {
     pub fn len(&self) -> usize { self.len }
     pub fn is_empty(&self) -> bool { self.len == 0 }
 
-    pub fn push(&mut self, elt: T) -> Handle<T> {
+    pub fn push(&mut self, elt: T) -> Handle<T>
+    where
+        T: std::fmt::Debug,
+    {
         self.len += 1;
+        eprint!("{elt:?} -> ");
         let new = Node::new(elt);
         self.push_root(RootNode::new(new));
+        eprintln!("{new:?}");
         Handle::new(new)
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        let root = self.max?;
-        if let Some(child) =
-            unsafe { (*(*root.as_ptr()).handle.node.as_ptr()).any_child.take() }
-        {
-            loop {
-                let next = unsafe { (*child.node.as_ptr()).neighbor.1 };
-                child.init_siblings();
-                self.push_root(RootNode::new(child.node));
-                if next.eq(child) {
-                    break;
-                }
-            }
+        let root = self.max.take()?;
+        self.len -= 1;
+        while let Some(child) = unsafe { (*root.as_ptr()).handle.pop_child() } {
+            self.push_root(RootNode::new(child.node));
         }
         // if root has no child, `self.max.is_none() && self.ends.is_some()`
         // may hold at this point.
@@ -96,6 +93,7 @@ impl<T: Ord> FibonacciHeap<T> {
         let mut bucket = Bucket::new();
 
         if let Some(max) = self.max.take() {
+            RootNode::isolate(max);
             bucket.push(max);
         }
         if let Some((first, _)) = self.ends.take() {
@@ -103,9 +101,9 @@ impl<T: Ord> FibonacciHeap<T> {
             while let Some(cur) = root {
                 unsafe {
                     let ptr = cur.as_ptr();
-                    RootNode { handle: (*ptr).handle, next_root: None };
                     root = (*ptr).next_root;
                 }
+                RootNode::isolate(cur);
                 bucket.push(cur);
             }
         }
@@ -118,6 +116,11 @@ impl<T: Ord> FibonacciHeap<T> {
 
 impl<T> Drop for FibonacciHeap<T> {
     fn drop(&mut self) {
+        eprintln!(" --- drop ---");
+        eprintln!("len: {}", self.len);
+        eprintln!("self.max: {:?}", self.max);
+        eprintln!("self.next_root: {:?}", self.ends);
+
         if let Some(max) = self.max.take() {
             RootNode::drop(max);
         }
@@ -134,7 +137,9 @@ impl<T> Drop for FibonacciHeap<T> {
 impl<T: Ord> RootNode<T> {
     pub fn new(node: NonNull<Node<T>>) -> NonNull<Self> {
         let root = Self { handle: Handle::new(node), next_root: None };
-        NonNull::from(Box::leak(Box::new(root)))
+        let res = NonNull::from(Box::leak(Box::new(root)));
+        eprintln!("root: {res:?}");
+        res
     }
 
     pub fn append(fst: NonNull<Self>, snd: NonNull<Self>) {
@@ -165,6 +170,19 @@ impl<T: Ord> RootNode<T> {
     }
     fn is_isolated_root(this: NonNull<Self>) -> bool {
         let ptr = this.as_ptr();
+
+        // eprintln!("ptr: {ptr:?}");
+        // unsafe {
+        //     eprintln!("next_root: {:?}", (*ptr).next_root);
+        //     eprintln!(
+        //         "neighbors: {:?}",
+        //         (
+        //             (*(*ptr).handle.node.as_ptr()).neighbor.0.node,
+        //             (*(*ptr).handle.node.as_ptr()).neighbor.1.node,
+        //         )
+        //     );
+        // }
+
         unsafe {
             (*ptr).next_root.is_none()
                 && (*(*ptr).handle.node.as_ptr()).parent.is_none()
@@ -172,12 +190,23 @@ impl<T: Ord> RootNode<T> {
         }
     }
 
+    fn isolate(this: NonNull<Self>) {
+        let ptr = this.as_ptr();
+        unsafe {
+            (*ptr).next_root.take();
+            (*ptr).handle.init_siblings();
+        }
+    }
+
     fn fuse(par: NonNull<Self>, child: NonNull<Self>) {
         Self::precheck_fuse(par, child);
+        let ptr = child.as_ptr();
         unsafe {
+            // XXX here the heap condition must hold.
             let par = (*par.as_ptr()).handle;
             let child = (*child.as_ptr()).handle;
             par.push_child(child);
+            drop(Box::from_raw(ptr));
         }
     }
 
@@ -188,6 +217,9 @@ impl<T: Ord> RootNode<T> {
     }
 
     fn take(this: NonNull<Self>) -> T {
+        unsafe {
+            eprintln!("drop {:?}", (*this.as_ptr()).handle.node);
+        }
         let ptr = this.as_ptr();
         let node = unsafe { Box::from_raw((*ptr).handle.node.as_ptr()) };
         let res = node.val;
@@ -246,6 +278,8 @@ impl<T> Handle<T> {
         let par = self.node.as_ptr();
         unsafe {
             let child = (*par).any_child.take()?;
+            eprintln!("pop_child()");
+            eprintln!("init {:?}", child.node);
             child.init_siblings();
             let (prev, next) = (*child.node.as_ptr()).neighbor;
             if child.eq(prev) {
@@ -389,7 +423,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sanity_check() {
+    fn single() {
+        let mut q = FibonacciHeap::new();
+        q.push(1);
+        q.push(2);
+        q.push(3);
+        q.pop();
+    }
+
+    #[test]
+    fn push_meld_pop() {
         let mut q = FibonacciHeap::new();
         assert!(q.is_empty());
         q.push(1);
@@ -403,6 +446,22 @@ mod tests {
         q.meld(r);
         assert_eq!(q.len(), 5);
 
-        // q.pop();
+        q.pop();
+        assert_eq!(q.len(), 4);
+    }
+
+    #[test]
+    fn many_pushes() {
+        let mut q = FibonacciHeap::new();
+        let mut r = FibonacciHeap::new();
+        for i in 0..100 {
+            q.push(i);
+            r.push(i);
+            assert_eq!(q.len(), i + 1);
+        }
+        for i in (0..100).rev() {
+            q.pop();
+            assert_eq!(q.len(), i);
+        }
     }
 }
