@@ -30,7 +30,7 @@ struct Bucket<T> {
     bucket: Vec<Option<NonNull<RootNode<T>>>>,
 }
 
-impl<T: Ord> FibonacciHeap<T> {
+impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
     pub fn new() -> Self { Self { len: 0, max: None, ends: None } }
 
     pub fn len(&self) -> usize { self.len }
@@ -41,23 +41,28 @@ impl<T: Ord> FibonacciHeap<T> {
         T: std::fmt::Debug,
     {
         self.len += 1;
-        eprint!("{elt:?} -> ");
         let new = Node::new(elt);
         self.push_root(RootNode::new(new));
-        eprintln!("{new:?}");
         Handle::new(new)
     }
 
     pub fn pop(&mut self) -> Option<T> {
+        eprintln!("-- pop() starts --");
         let root = self.max.take()?;
+        eprintln!("root order: {}", RootNode::order(root));
         self.len -= 1;
         while let Some(child) = unsafe { (*root.as_ptr()).handle.pop_child() } {
+            let order = unsafe { (*child.node.as_ptr()).order };
+            // eprintln!("new root of order {order}");
             self.push_root(RootNode::new(child.node));
         }
-        // if root has no child, `self.max.is_none() && self.ends.is_some()`
+        // if `root` has no child, `self.max.is_none() && self.ends.is_some()`
         // may hold at this point.
         self.coalesce();
-        Some(RootNode::take(root))
+        let res = RootNode::take(root);
+        eprintln!("-- pop() returns {res:?} --");
+        Some(res)
+        // Some(RootNode::take(root))
     }
 
     pub fn meld(&mut self, mut other: Self) {
@@ -76,8 +81,8 @@ impl<T: Ord> FibonacciHeap<T> {
     }
 
     fn push_root(&mut self, new: NonNull<RootNode<T>>) {
-        if let Some(max) = self.max {
-            RootNode::challenge(max, new);
+        if let Some(old) = self.max {
+            RootNode::challenge(old, new);
             if let Some((first, last)) = self.ends {
                 RootNode::append(last, new);
                 self.ends = Some((first, new));
@@ -91,6 +96,7 @@ impl<T: Ord> FibonacciHeap<T> {
 
     fn coalesce(&mut self) {
         let mut bucket = Bucket::new();
+        eprintln!("coalesce()");
 
         if let Some(max) = self.max.take() {
             RootNode::isolate(max);
@@ -109,6 +115,7 @@ impl<T: Ord> FibonacciHeap<T> {
         }
 
         for root in bucket.take() {
+            eprintln!("root: {root:?}");
             self.push_root(root);
         }
     }
@@ -116,11 +123,6 @@ impl<T: Ord> FibonacciHeap<T> {
 
 impl<T> Drop for FibonacciHeap<T> {
     fn drop(&mut self) {
-        eprintln!(" --- drop ---");
-        eprintln!("len: {}", self.len);
-        eprintln!("self.max: {:?}", self.max);
-        eprintln!("self.next_root: {:?}", self.ends);
-
         if let Some(max) = self.max.take() {
             RootNode::drop(max);
         }
@@ -134,11 +136,11 @@ impl<T> Drop for FibonacciHeap<T> {
     }
 }
 
-impl<T: Ord> RootNode<T> {
+impl<T: Ord + std::fmt::Debug> RootNode<T> {
     pub fn new(node: NonNull<Node<T>>) -> NonNull<Self> {
         let root = Self { handle: Handle::new(node), next_root: None };
         let res = NonNull::from(Box::leak(Box::new(root)));
-        eprintln!("root: {res:?}");
+        eprintln!("new root: addr: {res:?}, value: {:?}", Self::val(res));
         res
     }
 
@@ -161,27 +163,13 @@ impl<T: Ord> RootNode<T> {
     }
 
     fn val<'a>(this: NonNull<Self>) -> &'a T {
-        let node = unsafe { (*this.as_ptr()).handle.node };
-        unsafe { &(*node.as_ptr()).val }
+        unsafe { &(*(*this.as_ptr()).handle.node.as_ptr()).val }
     }
     fn order(this: NonNull<Self>) -> usize {
-        let node = unsafe { (*this.as_ptr()).handle.node };
-        unsafe { (*node.as_ptr()).order }
+        unsafe { (*(*this.as_ptr()).handle.node.as_ptr()).order }
     }
     fn is_isolated_root(this: NonNull<Self>) -> bool {
         let ptr = this.as_ptr();
-
-        // eprintln!("ptr: {ptr:?}");
-        // unsafe {
-        //     eprintln!("next_root: {:?}", (*ptr).next_root);
-        //     eprintln!(
-        //         "neighbors: {:?}",
-        //         (
-        //             (*(*ptr).handle.node.as_ptr()).neighbor.0.node,
-        //             (*(*ptr).handle.node.as_ptr()).neighbor.1.node,
-        //         )
-        //     );
-        // }
 
         unsafe {
             (*ptr).next_root.is_none()
@@ -198,15 +186,22 @@ impl<T: Ord> RootNode<T> {
         }
     }
 
-    fn fuse(par: NonNull<Self>, child: NonNull<Self>) {
+    fn fuse(par: NonNull<Self>, child: NonNull<Self>) -> NonNull<Self> {
         Self::precheck_fuse(par, child);
-        let ptr = child.as_ptr();
+        let (greater, less) = if Self::val(par) > Self::val(child) {
+            (par, child)
+        } else {
+            (child, par)
+        };
         unsafe {
-            // XXX here the heap condition must hold.
-            let par = (*par.as_ptr()).handle;
-            let child = (*child.as_ptr()).handle;
-            par.push_child(child);
-            drop(Box::from_raw(ptr));
+            let g = Self::val(greater);
+            let l = Self::val(less);
+            eprintln!(
+                "node {greater:?} ({g:?}) is now parent of node {less:?} ({l:?})"
+            );
+            (*greater.as_ptr()).handle.push_child((*less.as_ptr()).handle);
+            drop(Box::from_raw(less.as_ptr()));
+            greater
         }
     }
 
@@ -217,9 +212,6 @@ impl<T: Ord> RootNode<T> {
     }
 
     fn take(this: NonNull<Self>) -> T {
-        unsafe {
-            eprintln!("drop {:?}", (*this.as_ptr()).handle.node);
-        }
         let ptr = this.as_ptr();
         let node = unsafe { Box::from_raw((*ptr).handle.node.as_ptr()) };
         let res = node.val;
@@ -233,12 +225,13 @@ impl<T> RootNode<T> {
         unsafe {
             let handle = (*this.as_ptr()).handle;
             Handle::drop(handle);
+            eprintln!("drop root: addr {this:?}");
             drop(Box::from_raw(this.as_ptr()));
         }
     }
 }
 
-impl<T: Ord> Node<T> {
+impl<T: Ord + std::fmt::Debug> Node<T> {
     pub fn new(elt: T) -> NonNull<Self> {
         let node = Self {
             val: elt,
@@ -266,10 +259,12 @@ impl<T> Handle<T> {
     fn push_child(self, child: Self) {
         let par = self.node.as_ptr();
         unsafe {
+            (*par).order += 1;
             if let Some(old_child) = (*par).any_child {
-                old_child.insert_sibling(child);
+                old_child.push_sibling(child);
             } else {
                 child.init_siblings();
+                (*child.node.as_ptr()).parent = Some(self);
                 (*par).any_child = Some(child);
             }
         }
@@ -278,17 +273,19 @@ impl<T> Handle<T> {
         let par = self.node.as_ptr();
         unsafe {
             let child = (*par).any_child.take()?;
-            eprintln!("pop_child()");
-            eprintln!("init {:?}", child.node);
-            child.init_siblings();
+            (*par).order -= 1;
+            (*par).cut = true;
+            (*child.node.as_ptr()).parent.take();
             let (prev, next) = (*child.node.as_ptr()).neighbor;
             if child.eq(prev) {
                 // that is the last child; nothing is to be done.
             } else {
-                // next may be equal to prev.
+                // `next` may be equal to `prev`.
+                (*par).any_child = Some(next);
                 (*prev.node.as_ptr()).neighbor.1 = next;
                 (*next.node.as_ptr()).neighbor.0 = prev;
             }
+            child.init_siblings();
             Some(child)
         }
     }
@@ -298,7 +295,7 @@ impl<T> Handle<T> {
         let handle = Handle { node: ptr };
         unsafe { (*ptr.as_ptr()).neighbor = (handle, handle) };
     }
-    fn insert_sibling(self, sibling: Self) {
+    fn push_sibling(self, sibling: Self) {
         unsafe {
             let neighbor = (*self.node.as_ptr()).neighbor;
             if self.eq(neighbor.0) {
@@ -327,7 +324,7 @@ impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self { *self }
 }
 
-impl<T: Ord> Bucket<T> {
+impl<T: Ord + std::fmt::Debug> Bucket<T> {
     pub fn new() -> Self { Self { bucket: vec![] } }
     pub fn push(&mut self, root: NonNull<RootNode<T>>) {
         let order = RootNode::order(root);
@@ -335,13 +332,20 @@ impl<T: Ord> Bucket<T> {
             self.bucket.resize(order + 1, None)
         }
         if let Some(old) = self.bucket[order].take() {
-            RootNode::fuse(root, old);
-            self.push(root);
+            self.push(RootNode::fuse(root, old));
         } else {
+            eprintln!("push: order: {order}, val: {:?}", RootNode::val(root));
             self.bucket[order] = Some(root);
         }
     }
     pub fn take(self) -> impl Iterator<Item = NonNull<RootNode<T>>> {
+        let a: Vec<_> = self
+            .bucket
+            .iter()
+            .enumerate()
+            .map(|(i, o)| o.is_some().then(|| 1 << i))
+            .collect();
+        eprintln!("{a:?}");
         self.bucket.into_iter().filter_map(std::convert::identity)
     }
 }
@@ -446,8 +450,12 @@ mod tests {
         q.meld(r);
         assert_eq!(q.len(), 5);
 
-        q.pop();
-        assert_eq!(q.len(), 4);
+        let mut actual = vec![];
+        for i in (0..5).rev() {
+            actual.extend(q.pop());
+            // assert_eq!(q.len(), i);
+        }
+        assert_eq!(actual, [4, 3, 2, 1, 0]);
     }
 
     #[test]
@@ -459,9 +467,11 @@ mod tests {
             r.push(i);
             assert_eq!(q.len(), i + 1);
         }
+        let mut res = vec![];
         for i in (0..100).rev() {
-            q.pop();
+            res.extend(q.pop());
             assert_eq!(q.len(), i);
         }
+        eprintln!("{res:?}");
     }
 }
