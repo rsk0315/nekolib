@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::ops::Range;
 
 const W: usize = u64::BITS as usize;

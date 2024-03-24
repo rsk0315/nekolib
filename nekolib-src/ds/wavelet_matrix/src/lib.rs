@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::ops::{Range, RangeBounds, RangeInclusive};
 
 use rs01_dict::Rs01Dict;
