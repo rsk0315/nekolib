@@ -26,6 +26,10 @@ pub struct Handle<T> {
     node: NonNull<Node<T>>,
 }
 
+struct Bucket<T> {
+    bucket: Vec<RootNode<T>>,
+}
+
 impl<T: Ord> FibonacciHeap<T> {
     pub fn new() -> Self { Self { len: 0, max: None, ends: None } }
 
@@ -36,7 +40,17 @@ impl<T: Ord> FibonacciHeap<T> {
         Handle::new(new)
     }
 
-    pub fn pop(&mut self) -> Option<T> { todo!() }
+    pub fn pop(&mut self) -> Option<T> {
+        let root = self.max?;
+        if let Some(child) =
+            unsafe { (*(*root.as_ptr()).handle.node.as_ptr()).any_child.take() }
+        {
+            todo!();
+        }
+        unsafe { drop(Box::from_raw(root.as_ptr())) };
+        self.coalesce();
+        todo!();
+    }
 
     pub fn meld(&mut self, other: Self) {
         self.len += other.len;
@@ -64,6 +78,29 @@ impl<T: Ord> FibonacciHeap<T> {
             }
         } else {
             self.max = Some(new);
+        }
+    }
+
+    fn coalesce(&mut self) {
+        let mut bucket = Bucket::new();
+
+        if let Some(max) = self.max.take() {
+            bucket.push(max);
+        }
+        if let Some((first, _)) = self.ends.take() {
+            let mut root = Some(first);
+            while let Some(cur) = root {
+                unsafe {
+                    let ptr = cur.as_ptr();
+                    RootNode { handle: (*ptr).handle, next_root: None };
+                    root = (*ptr).next_root;
+                }
+                bucket.push(cur);
+            }
+        }
+
+        for root in bucket.take() {
+            self.push_root(root);
         }
     }
 }
@@ -147,6 +184,8 @@ impl<T: Ord> Handle<T> {
     fn new(node: NonNull<Node<T>>) -> Self { Self { node } }
     fn dangling() -> Self { Self { node: NonNull::dangling() } }
 
+    fn eq(self, other: Self) -> bool { self.node == other.node }
+
     fn insert_child(self, child: Self) {
         let par = self.node.as_ptr();
         unsafe {
@@ -160,17 +199,70 @@ impl<T: Ord> Handle<T> {
     }
     fn init_siblings(self) {
         let ptr = self.node;
-        unsafe {
-            (*ptr.as_ptr()).neighbor =
-                (Handle { node: ptr }, Handle { node: ptr })
-        };
+        let handle = Handle { node: ptr };
+        unsafe { (*ptr.as_ptr()).neighbor = (handle, handle) };
     }
     fn insert_sibling(self, sibling: Self) {
-        todo!();
+        unsafe {
+            let neighbor = (*self.node.as_ptr()).neighbor;
+            if self.eq(neighbor.0) {
+                // siblings = {self}
+            } else if neighbor.0.eq(neighbor.1) {
+                // |siblings| = 2
+            } else {
+            }
+            todo!();
+        }
     }
 }
 
 impl<T> Copy for Handle<T> {}
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self { *self }
+}
+
+impl<T> Bucket<T> {
+    pub fn new() -> Self { todo!() }
+    pub fn push(&mut self, root: NonNull<RootNode<T>>) {}
+    pub fn take(self) -> impl Iterator<Item = NonNull<RootNode<T>>> {
+        todo!();
+        vec![].into_iter()
+    }
+}
+
+#[test]
+fn nonnull_eq() {
+    use std::ptr::NonNull;
+
+    #[allow(unused)]
+    struct A(i32);
+
+    let a1 = NonNull::from(Box::leak(Box::new(A(0))));
+    let a2 = a1;
+    let b = NonNull::from(Box::leak(Box::new(A(0))));
+    assert_ne!(a1, b);
+    assert_eq!(a1, a2);
+
+    unsafe { *a1.as_ptr() = A(1) };
+    assert_eq!(a1, a2);
+
+    unsafe { *a2.as_ptr() = A(2) };
+    assert_eq!(a1, a2);
+
+    unsafe {
+        drop(Box::from_raw(a1.as_ptr()));
+        drop(Box::from_raw(b.as_ptr()));
+    }
+}
+
+#[test]
+fn memleak() {
+    use std::ptr::NonNull;
+
+    #[allow(unused)]
+    struct A(i32);
+
+    let a = NonNull::from(Box::leak(Box::new(A(0))));
+    let a_box = unsafe { Box::from_raw(a.as_ptr()) };
+    assert_eq!(a_box.0, 0);
 }
