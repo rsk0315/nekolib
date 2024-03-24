@@ -31,16 +31,13 @@ struct Bucket<T> {
     bucket: Vec<Option<NonNull<RootNode<T>>>>,
 }
 
-impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
+impl<T: Ord> FibonacciHeap<T> {
     pub fn new() -> Self { Self { len: 0, max: None, ends: None } }
 
     pub fn len(&self) -> usize { self.len }
     pub fn is_empty(&self) -> bool { self.len == 0 }
 
-    pub fn push(&mut self, elt: T) -> Handle<T>
-    where
-        T: std::fmt::Debug,
-    {
+    pub fn push(&mut self, elt: T) -> Handle<T> {
         self.len += 1;
         let new = Node::new(elt);
         self.push_root(RootNode::new(new));
@@ -152,7 +149,7 @@ impl<T> Drop for FibonacciHeap<T> {
     }
 }
 
-impl<T: Ord + std::fmt::Debug> RootNode<T> {
+impl<T: Ord> RootNode<T> {
     pub fn new(node: NonNull<Node<T>>) -> NonNull<Self> {
         let root = Self { handle: Handle::new(node), next_root: None };
         let root = NonNull::from(Box::leak(Box::new(root)));
@@ -251,7 +248,7 @@ impl<T> RootNode<T> {
     }
 }
 
-impl<T: Ord + std::fmt::Debug> Node<T> {
+impl<T: Ord> Node<T> {
     pub fn new(elt: T) -> NonNull<Self> {
         let node = Self {
             val: elt,
@@ -399,7 +396,7 @@ impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self { *self }
 }
 
-impl<T: Ord + std::fmt::Debug> Bucket<T> {
+impl<T: Ord> Bucket<T> {
     pub fn new() -> Self { Self { bucket: vec![] } }
     pub fn push(&mut self, root: NonNull<RootNode<T>>) {
         let order = RootNode::order(root);
@@ -590,3 +587,5 @@ mod tests {
         assert!(q.is_empty());
     }
 }
+
+// TODO: `heap.iter()` and `node.iter()` should be implemented.
