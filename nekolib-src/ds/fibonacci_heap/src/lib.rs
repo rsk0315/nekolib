@@ -33,6 +33,9 @@ struct Bucket<T> {
 impl<T: Ord> FibonacciHeap<T> {
     pub fn new() -> Self { Self { len: 0, max: None, ends: None } }
 
+    pub fn len(&self) -> usize { self.len }
+    pub fn is_empty(&self) -> bool { self.len == 0 }
+
     pub fn push(&mut self, elt: T) -> Handle<T> {
         self.len += 1;
         let new = Node::new(elt);
@@ -60,9 +63,9 @@ impl<T: Ord> FibonacciHeap<T> {
         Some(RootNode::take(root))
     }
 
-    pub fn meld(&mut self, other: Self) {
+    pub fn meld(&mut self, mut other: Self) {
         self.len += other.len;
-        if let Some((other_first, other_last)) = other.ends {
+        if let Some((other_first, other_last)) = other.ends.take() {
             if let Some((first, last)) = self.ends {
                 RootNode::append(last, other_first);
                 self.ends = Some((first, other_last));
@@ -70,7 +73,7 @@ impl<T: Ord> FibonacciHeap<T> {
                 self.ends = other.ends;
             }
         }
-        if let Some(other_max) = other.max {
+        if let Some(other_max) = other.max.take() {
             self.push_root(other_max);
         }
     }
@@ -109,6 +112,21 @@ impl<T: Ord> FibonacciHeap<T> {
 
         for root in bucket.take() {
             self.push_root(root);
+        }
+    }
+}
+
+impl<T> Drop for FibonacciHeap<T> {
+    fn drop(&mut self) {
+        if let Some(max) = self.max.take() {
+            RootNode::drop(max);
+        }
+        if let Some((first, _)) = self.ends.take() {
+            let mut cur = Some(first);
+            while let Some(root) = cur {
+                cur = unsafe { (*root.as_ptr()).next_root };
+                RootNode::drop(root);
+            }
         }
     }
 }
@@ -159,7 +177,7 @@ impl<T: Ord> RootNode<T> {
         unsafe {
             let par = (*par.as_ptr()).handle;
             let child = (*child.as_ptr()).handle;
-            par.insert_child(child);
+            par.push_child(child);
         }
     }
 
@@ -175,6 +193,16 @@ impl<T: Ord> RootNode<T> {
         let res = node.val;
         unsafe { drop(Box::from_raw(ptr)) };
         res
+    }
+}
+
+impl<T> RootNode<T> {
+    fn drop(this: NonNull<Self>) {
+        unsafe {
+            let handle = (*this.as_ptr()).handle;
+            Handle::drop(handle);
+            drop(Box::from_raw(this.as_ptr()));
+        }
     }
 }
 
@@ -195,7 +223,7 @@ impl<T: Ord> Node<T> {
     }
 }
 
-impl<T: Ord> Handle<T> {
+impl<T> Handle<T> {
     pub fn urge(self, new: T) -> bool { todo!() }
 
     fn new(node: NonNull<Node<T>>) -> Self { Self { node } }
@@ -203,7 +231,7 @@ impl<T: Ord> Handle<T> {
 
     fn eq(self, other: Self) -> bool { self.node == other.node }
 
-    fn insert_child(self, child: Self) {
+    fn push_child(self, child: Self) {
         let par = self.node.as_ptr();
         unsafe {
             if let Some(old_child) = (*par).any_child {
@@ -214,6 +242,23 @@ impl<T: Ord> Handle<T> {
             }
         }
     }
+    fn pop_child(self) -> Option<Self> {
+        let par = self.node.as_ptr();
+        unsafe {
+            let child = (*par).any_child.take()?;
+            child.init_siblings();
+            let (prev, next) = (*child.node.as_ptr()).neighbor;
+            if child.eq(prev) {
+                // that is the last child; nothing is to be done.
+            } else {
+                // next may be equal to prev.
+                (*prev.node.as_ptr()).neighbor.1 = next;
+                (*next.node.as_ptr()).neighbor.0 = prev;
+            }
+            Some(child)
+        }
+    }
+
     fn init_siblings(self) {
         let ptr = self.node;
         let handle = Handle { node: ptr };
@@ -233,6 +278,13 @@ impl<T: Ord> Handle<T> {
                 (*sibling.node.as_ptr()).neighbor = (self, next);
             }
         }
+    }
+
+    fn drop(self) {
+        while let Some(child) = self.pop_child() {
+            Self::drop(child);
+        }
+        unsafe { drop(Box::from_raw(self.node.as_ptr())) };
     }
 }
 
@@ -302,6 +354,7 @@ fn nested_leak() {
     use std::ptr::NonNull;
 
     struct A(i32);
+    #[allow(unused)]
     struct B(NonNull<A>);
     let a = NonNull::from(Box::leak(Box::new(A(100))));
     let b = NonNull::from(Box::leak(Box::new(B(a))));
@@ -317,8 +370,8 @@ fn mutual_ref() {
     use std::ptr::NonNull;
 
     struct A(NonNull<A>);
-    let mut a = NonNull::from(Box::leak(Box::new(A(NonNull::dangling()))));
-    let mut b = NonNull::from(Box::leak(Box::new(A(NonNull::dangling()))));
+    let a = NonNull::from(Box::leak(Box::new(A(NonNull::dangling()))));
+    let b = NonNull::from(Box::leak(Box::new(A(NonNull::dangling()))));
     unsafe {
         (*a.as_ptr()).0 = b;
         (*b.as_ptr()).0 = a;
@@ -328,5 +381,28 @@ fn mutual_ref() {
     unsafe {
         drop(Box::from_raw(a.as_ptr()));
         drop(Box::from_raw(b.as_ptr()));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanity_check() {
+        let mut q = FibonacciHeap::new();
+        assert!(q.is_empty());
+        q.push(1);
+        q.push(3);
+        q.push(4);
+        assert_eq!(q.len(), 3);
+
+        let mut r = FibonacciHeap::new();
+        r.push(0);
+        r.push(2);
+        q.meld(r);
+        assert_eq!(q.len(), 5);
+
+        // q.pop();
     }
 }
