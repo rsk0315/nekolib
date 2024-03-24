@@ -20,6 +20,7 @@ struct Node<T> {
     any_child: Option<Handle<T>>,
     order: usize,
     cut: bool,
+    root: Option<NonNull<RootNode<T>>>,
 }
 
 pub struct Handle<T> {
@@ -50,6 +51,7 @@ impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
         let root = self.max.take()?;
         self.len -= 1;
         while let Some(child) = unsafe { (*root.as_ptr()).handle.pop_child() } {
+            // we clean the parent-pointer of child later.
             self.push_root(RootNode::new(child.node));
         }
         // if `root` has no child, `self.max.is_none() && self.ends.is_some()`
@@ -71,6 +73,29 @@ impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
         if let Some(other_max) = other.max.take() {
             self.push_root(other_max);
         }
+    }
+
+    pub fn urge(&mut self, handle: Handle<T>, new: T) -> bool {
+        let ptr = handle.node.as_ptr();
+        unsafe {
+            if (*ptr).val >= new {
+                return false;
+            }
+
+            (*ptr).val = new;
+            if !handle.is_heapified() {
+                let mut handle = Some(handle);
+                while let Some(cur) = handle {
+                    handle = cur.orphan();
+                    self.push_root(RootNode::new(cur.node));
+                }
+            }
+
+            if let (Some(old), Some(new)) = (self.max, (*ptr).root) {
+                RootNode::challenge(old, new);
+            }
+        }
+        true
     }
 
     fn push_root(&mut self, new: NonNull<RootNode<T>>) {
@@ -130,7 +155,9 @@ impl<T> Drop for FibonacciHeap<T> {
 impl<T: Ord + std::fmt::Debug> RootNode<T> {
     pub fn new(node: NonNull<Node<T>>) -> NonNull<Self> {
         let root = Self { handle: Handle::new(node), next_root: None };
-        NonNull::from(Box::leak(Box::new(root)))
+        let root = NonNull::from(Box::leak(Box::new(root)));
+        unsafe { (*node.as_ptr()).root = Some(root) };
+        root
     }
 
     pub fn append(fst: NonNull<Self>, snd: NonNull<Self>) {
@@ -141,13 +168,23 @@ impl<T: Ord + std::fmt::Debug> RootNode<T> {
     }
 
     pub fn challenge(old: NonNull<Self>, new: NonNull<Self>) {
+        if old == new {
+            return;
+        }
         if Self::val(old) < Self::val(new) {
+            let old_ptr = old.as_ptr();
+            let new_ptr = new.as_ptr();
             unsafe {
                 std::mem::swap(
-                    &mut (*old.as_ptr()).handle,
-                    &mut (*new.as_ptr()).handle,
-                )
-            };
+                    &mut (*(*old_ptr).handle.node.as_ptr()).root,
+                    &mut (*(*new_ptr).handle.node.as_ptr()).root,
+                );
+                std::mem::swap(
+                    &mut (*(*old_ptr).handle.node.as_ptr()).parent,
+                    &mut (*(*new_ptr).handle.node.as_ptr()).parent,
+                );
+                std::mem::swap(&mut (*old_ptr).handle, &mut (*new_ptr).handle);
+            }
         }
     }
 
@@ -159,7 +196,6 @@ impl<T: Ord + std::fmt::Debug> RootNode<T> {
     }
     fn is_isolated_root(this: NonNull<Self>) -> bool {
         let ptr = this.as_ptr();
-
         unsafe {
             (*ptr).next_root.is_none()
                 && (*(*ptr).handle.node.as_ptr()).parent.is_none()
@@ -171,6 +207,7 @@ impl<T: Ord + std::fmt::Debug> RootNode<T> {
         let ptr = this.as_ptr();
         unsafe {
             (*ptr).next_root.take();
+            (*(*ptr).handle.node.as_ptr()).parent.take();
             (*ptr).handle.init_siblings();
         }
     }
@@ -223,6 +260,7 @@ impl<T: Ord + std::fmt::Debug> Node<T> {
             any_child: None,
             order: 0,
             cut: false,
+            root: None,
         };
         let ptr = NonNull::from(Box::leak(Box::new(node)));
         let this = Handle { node: ptr };
@@ -232,14 +270,13 @@ impl<T: Ord + std::fmt::Debug> Node<T> {
 }
 
 impl<T> Handle<T> {
-    pub fn urge(self, new: T) -> bool { todo!() }
-
     fn new(node: NonNull<Node<T>>) -> Self { Self { node } }
     fn dangling() -> Self { Self { node: NonNull::dangling() } }
 
     fn eq(self, other: Self) -> bool { self.node == other.node }
 
     fn push_child(self, child: Self) {
+        debug_assert!(self.is_root());
         let par = self.node.as_ptr();
         unsafe {
             (*par).order += 1;
@@ -247,9 +284,10 @@ impl<T> Handle<T> {
                 old_child.push_sibling(child);
             } else {
                 child.init_siblings();
-                (*child.node.as_ptr()).parent = Some(self);
                 (*par).any_child = Some(child);
             }
+            (*child.node.as_ptr()).parent = Some(self);
+            (*child.node.as_ptr()).root.take();
         }
     }
     fn pop_child(self) -> Option<Self> {
@@ -294,11 +332,65 @@ impl<T> Handle<T> {
         }
     }
 
+    fn is_root(self) -> bool {
+        unsafe {
+            debug_assert_eq!(
+                (*self.node.as_ptr()).root.is_some(),
+                (*self.node.as_ptr()).parent.is_none(),
+            );
+            (*self.node.as_ptr()).parent.is_none()
+        }
+    }
+
+    fn orphan(self) -> Option<Self> {
+        let ptr = self.node.as_ptr();
+        unsafe {
+            (*ptr).cut = false;
+            let par = (*ptr).parent?;
+
+            let (prev, next) = (*ptr).neighbor;
+            if self.eq(prev) {
+                // singleton
+                (*par.node.as_ptr()).any_child = None;
+            } else {
+                (*prev.node.as_ptr()).neighbor.1 = next;
+                (*next.node.as_ptr()).neighbor.0 = prev;
+                if self.eq((*par.node.as_ptr()).any_child.unwrap()) {
+                    (*par.node.as_ptr()).any_child = Some(next);
+                }
+            }
+
+            (*par.node.as_ptr()).order -= 1;
+            if par.is_root() {
+                None
+            } else {
+                if (*par.node.as_ptr()).cut {
+                    Some(par)
+                } else {
+                    (*par.node.as_ptr()).cut = true;
+                    None
+                }
+            }
+        }
+    }
+
     fn drop(self) {
         while let Some(child) = self.pop_child() {
             Self::drop(child);
         }
         unsafe { drop(Box::from_raw(self.node.as_ptr())) };
+    }
+}
+
+impl<T: Ord> Handle<T> {
+    fn is_heapified(self) -> bool {
+        let ptr = self.node.as_ptr();
+        unsafe {
+            match (*ptr).parent {
+                Some(par) => (*par.node.as_ptr()).val >= (*ptr).val,
+                _ => true,
+            }
+        }
     }
 }
 
@@ -458,5 +550,43 @@ mod tests {
         }
         let actual = (0..n).map(|_| q.pop().unwrap());
         assert!(actual.eq((0..n).rev()));
+    }
+
+    #[test]
+    fn urge() {
+        let mut q = FibonacciHeap::new();
+        q.push(1);
+        let x2 = q.push(2);
+        q.push(3);
+        q.urge(x2, 20);
+        let actual: Vec<_> = (0..q.len()).map(|_| q.pop().unwrap()).collect();
+        assert_eq!(actual, [20, 3, 1]);
+
+        let x2 = q.push(2);
+        let x1 = q.push(1);
+        let _x6 = q.push(6);
+        let x3 = q.push(3);
+        let x5 = q.push(5);
+        let _x4 = q.push(4);
+        let _x7 = q.push(7);
+        assert_eq!(q.pop(), Some(7));
+
+        q.urge(x5, 500);
+        assert_eq!(q.pop(), Some(500));
+
+        q.urge(x1, 4);
+        assert_eq!(q.pop(), Some(6));
+
+        q.urge(x2, 1);
+        assert_eq!(q.pop(), Some(4));
+
+        q.urge(x3, 5);
+        assert_eq!(q.pop(), Some(5));
+
+        q.urge(x2, 10);
+        assert_eq!(q.pop(), Some(10));
+
+        assert_eq!(q.pop(), Some(4));
+        assert!(q.is_empty());
     }
 }
