@@ -19,6 +19,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["draft",["",[],["lib.rs"]]],\
 ["ds",["",[],["lib.rs"]]],\
 ["factors",["",[],["lib.rs"]]],\
+["fibonacci_heap",["",[],["lib.rs"]]],\
 ["fmt",["",[],["lib.rs"]]],\
 ["foldable_deque",["",[],["lib.rs"]]],\
 ["foldable_queue",["",[],["lib.rs"]]],\
