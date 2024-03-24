@@ -1176,7 +1176,7 @@
         <span class="kw">let </span>ptr = <span class="self">self</span>.node.as_ptr();
         <span class="kw">unsafe </span>{
             (<span class="kw-2">*</span>ptr).cut = <span class="bool-val">false</span>;
-            <span class="kw">let </span>par = (<span class="kw-2">*</span>ptr).parent<span class="question-mark">?</span>;
+            <span class="kw">let </span>par = (<span class="kw-2">*</span>ptr).parent.take()<span class="question-mark">?</span>;
 
             <span class="kw">let </span>(prev, next) = (<span class="kw-2">*</span>ptr).neighbor;
             <span class="kw">if </span><span class="self">self</span>.eq(prev) {
