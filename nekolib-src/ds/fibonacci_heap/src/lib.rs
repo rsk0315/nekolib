@@ -27,7 +27,7 @@ pub struct Handle<T> {
 }
 
 struct Bucket<T> {
-    bucket: Vec<RootNode<T>>,
+    bucket: Vec<Option<NonNull<RootNode<T>>>>,
 }
 
 impl<T: Ord> FibonacciHeap<T> {
@@ -45,11 +45,19 @@ impl<T: Ord> FibonacciHeap<T> {
         if let Some(child) =
             unsafe { (*(*root.as_ptr()).handle.node.as_ptr()).any_child.take() }
         {
-            todo!();
+            loop {
+                let next = unsafe { (*child.node.as_ptr()).neighbor.1 };
+                child.init_siblings();
+                self.push_root(RootNode::new(child.node));
+                if next.eq(child) {
+                    break;
+                }
+            }
         }
-        unsafe { drop(Box::from_raw(root.as_ptr())) };
+        // if root has no child, `self.max.is_none() && self.ends.is_some()`
+        // may hold at this point.
         self.coalesce();
-        todo!();
+        Some(RootNode::take(root))
     }
 
     pub fn meld(&mut self, other: Self) {
@@ -159,6 +167,14 @@ impl<T: Ord> RootNode<T> {
         debug_assert!(Self::is_isolated_root(par));
         debug_assert!(Self::is_isolated_root(child));
     }
+
+    fn take(this: NonNull<Self>) -> T {
+        let ptr = this.as_ptr();
+        let node = unsafe { Box::from_raw((*ptr).handle.node.as_ptr()) };
+        let res = node.val;
+        unsafe { drop(Box::from_raw(ptr)) };
+        res
+    }
 }
 
 impl<T: Ord> Node<T> {
@@ -207,11 +223,14 @@ impl<T: Ord> Handle<T> {
             let neighbor = (*self.node.as_ptr()).neighbor;
             if self.eq(neighbor.0) {
                 // siblings = {self}
-            } else if neighbor.0.eq(neighbor.1) {
-                // |siblings| = 2
+                (*sibling.node.as_ptr()).neighbor = (self, self);
+                (*self.node.as_ptr()).neighbor = (sibling, sibling);
             } else {
+                let next = neighbor.1;
+                (*self.node.as_ptr()).neighbor.1 = sibling;
+                (*next.node.as_ptr()).neighbor.0 = sibling;
+                (*sibling.node.as_ptr()).neighbor = (self, next);
             }
-            todo!();
         }
     }
 }
@@ -221,12 +240,22 @@ impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self { *self }
 }
 
-impl<T> Bucket<T> {
-    pub fn new() -> Self { todo!() }
-    pub fn push(&mut self, root: NonNull<RootNode<T>>) {}
+impl<T: Ord> Bucket<T> {
+    pub fn new() -> Self { Self { bucket: vec![] } }
+    pub fn push(&mut self, root: NonNull<RootNode<T>>) {
+        let order = RootNode::order(root);
+        if order >= self.bucket.len() {
+            self.bucket.resize(order + 1, None)
+        }
+        if let Some(old) = self.bucket[order].take() {
+            RootNode::fuse(root, old);
+            self.push(root);
+        } else {
+            self.bucket[order] = Some(root);
+        }
+    }
     pub fn take(self) -> impl Iterator<Item = NonNull<RootNode<T>>> {
-        todo!();
-        vec![].into_iter()
+        self.bucket.into_iter().filter_map(std::convert::identity)
     }
 }
 
@@ -265,4 +294,38 @@ fn memleak() {
     let a = NonNull::from(Box::leak(Box::new(A(0))));
     let a_box = unsafe { Box::from_raw(a.as_ptr()) };
     assert_eq!(a_box.0, 0);
+}
+
+#[test]
+fn nested_leak() {
+    use std::ptr::NonNull;
+
+    struct A(i32);
+    struct B(NonNull<A>);
+    let a = NonNull::from(Box::leak(Box::new(A(100))));
+    let b = NonNull::from(Box::leak(Box::new(B(a))));
+    let a0 = unsafe {
+        drop(Box::from_raw(b.as_ptr()));
+        Box::from_raw(a.as_ptr()).0
+    };
+    assert_eq!(a0, 100);
+}
+
+#[test]
+fn mutual_ref() {
+    use std::ptr::NonNull;
+
+    struct A(NonNull<A>);
+    let mut a = NonNull::from(Box::leak(Box::new(A(NonNull::dangling()))));
+    let mut b = NonNull::from(Box::leak(Box::new(A(NonNull::dangling()))));
+    unsafe {
+        (*a.as_ptr()).0 = b;
+        (*b.as_ptr()).0 = a;
+        (*a.as_ptr()).0 = b;
+    };
+
+    unsafe {
+        drop(Box::from_raw(a.as_ptr()));
+        drop(Box::from_raw(b.as_ptr()));
+    }
 }
