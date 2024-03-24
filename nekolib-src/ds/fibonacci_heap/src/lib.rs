@@ -146,10 +146,11 @@ impl<T: Ord> RootNode<T> {
         unsafe { (*node.as_ptr()).order }
     }
     fn is_isolated_root(this: NonNull<Self>) -> bool {
+        let ptr = this.as_ptr();
         unsafe {
-            (*this.as_ptr()).next_root.is_none()
-                && (*(*this.as_ptr()).handle.node.as_ptr()).parent.is_none()
-            // && neighbor.0 == this
+            (*ptr).next_root.is_none()
+                && (*(*ptr).handle.node.as_ptr()).parent.is_none()
+                && (*ptr).handle.eq((*(*ptr).handle.node.as_ptr()).neighbor.0)
         }
     }
 
