@@ -47,22 +47,15 @@ impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        eprintln!("-- pop() starts --");
         let root = self.max.take()?;
-        eprintln!("root order: {}", RootNode::order(root));
         self.len -= 1;
         while let Some(child) = unsafe { (*root.as_ptr()).handle.pop_child() } {
-            let order = unsafe { (*child.node.as_ptr()).order };
-            // eprintln!("new root of order {order}");
             self.push_root(RootNode::new(child.node));
         }
         // if `root` has no child, `self.max.is_none() && self.ends.is_some()`
         // may hold at this point.
         self.coalesce();
-        let res = RootNode::take(root);
-        eprintln!("-- pop() returns {res:?} --");
-        Some(res)
-        // Some(RootNode::take(root))
+        Some(RootNode::take(root))
     }
 
     pub fn meld(&mut self, mut other: Self) {
@@ -96,7 +89,6 @@ impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
 
     fn coalesce(&mut self) {
         let mut bucket = Bucket::new();
-        eprintln!("coalesce()");
 
         if let Some(max) = self.max.take() {
             RootNode::isolate(max);
@@ -115,7 +107,6 @@ impl<T: Ord + std::fmt::Debug> FibonacciHeap<T> {
         }
 
         for root in bucket.take() {
-            eprintln!("root: {root:?}");
             self.push_root(root);
         }
     }
@@ -139,9 +130,7 @@ impl<T> Drop for FibonacciHeap<T> {
 impl<T: Ord + std::fmt::Debug> RootNode<T> {
     pub fn new(node: NonNull<Node<T>>) -> NonNull<Self> {
         let root = Self { handle: Handle::new(node), next_root: None };
-        let res = NonNull::from(Box::leak(Box::new(root)));
-        eprintln!("new root: addr: {res:?}, value: {:?}", Self::val(res));
-        res
+        NonNull::from(Box::leak(Box::new(root)))
     }
 
     pub fn append(fst: NonNull<Self>, snd: NonNull<Self>) {
@@ -194,11 +183,6 @@ impl<T: Ord + std::fmt::Debug> RootNode<T> {
             (child, par)
         };
         unsafe {
-            let g = Self::val(greater);
-            let l = Self::val(less);
-            eprintln!(
-                "node {greater:?} ({g:?}) is now parent of node {less:?} ({l:?})"
-            );
             (*greater.as_ptr()).handle.push_child((*less.as_ptr()).handle);
             drop(Box::from_raw(less.as_ptr()));
             greater
@@ -225,7 +209,6 @@ impl<T> RootNode<T> {
         unsafe {
             let handle = (*this.as_ptr()).handle;
             Handle::drop(handle);
-            eprintln!("drop root: addr {this:?}");
             drop(Box::from_raw(this.as_ptr()));
         }
     }
@@ -334,18 +317,10 @@ impl<T: Ord + std::fmt::Debug> Bucket<T> {
         if let Some(old) = self.bucket[order].take() {
             self.push(RootNode::fuse(root, old));
         } else {
-            eprintln!("push: order: {order}, val: {:?}", RootNode::val(root));
             self.bucket[order] = Some(root);
         }
     }
     pub fn take(self) -> impl Iterator<Item = NonNull<RootNode<T>>> {
-        let a: Vec<_> = self
-            .bucket
-            .iter()
-            .enumerate()
-            .map(|(i, o)| o.is_some().then(|| 1 << i))
-            .collect();
-        eprintln!("{a:?}");
         self.bucket.into_iter().filter_map(std::convert::identity)
     }
 }
@@ -453,7 +428,7 @@ mod tests {
         let mut actual = vec![];
         for i in (0..5).rev() {
             actual.extend(q.pop());
-            // assert_eq!(q.len(), i);
+            assert_eq!(q.len(), i);
         }
         assert_eq!(actual, [4, 3, 2, 1, 0]);
     }
@@ -472,6 +447,16 @@ mod tests {
             res.extend(q.pop());
             assert_eq!(q.len(), i);
         }
-        eprintln!("{res:?}");
+    }
+
+    #[test]
+    fn heap_sort() {
+        let n = 1 << 8;
+        let mut q = FibonacciHeap::new();
+        for i in (0..n).map(|i| (i >> 1) ^ i) {
+            q.push(i);
+        }
+        let actual = (0..n).map(|_| q.pop().unwrap());
+        assert!(actual.eq((0..n).rev()));
     }
 }
