@@ -1,34 +1,37 @@
 use std::ptr::NonNull;
 
+type RootLink<T> = NonNull<RootNode<T>>;
+type Link<T> = NonNull<Node<T>>;
+
 pub struct FibonacciHeap<T> {
     len: usize,
-    max: Option<NonNull<RootNode<T>>>,
-    ends: Option<(NonNull<RootNode<T>>, NonNull<RootNode<T>>)>,
+    max: Option<RootLink<T>>,
+    ends: Option<(RootLink<T>, RootLink<T>)>,
 }
 
 struct RootNode<T> {
-    handle: Handle<T>,
-    next_root: Option<NonNull<RootNode<T>>>,
+    root: Link<T>,
+    next_root: Option<RootLink<T>>,
 }
 
 struct Node<T> {
     val: T,
-    parent: Option<Handle<T>>,
+    parent: Option<Link<T>>,
     // (neighbor.0 == this) implies |sibling| == 1
     // (neighbor.0 == neighbor.1) implies |sibling| <= 2
-    neighbor: (Handle<T>, Handle<T>),
-    any_child: Option<Handle<T>>,
+    neighbor: (Link<T>, Link<T>),
+    any_child: Option<Link<T>>,
     order: usize,
     cut: bool,
-    root: Option<NonNull<RootNode<T>>>,
+    root: Option<RootLink<T>>,
 }
 
 pub struct Handle<T> {
-    node: NonNull<Node<T>>,
+    node: Link<T>,
 }
 
 struct Bucket<T> {
-    bucket: Vec<Option<NonNull<RootNode<T>>>>,
+    bucket: Vec<Option<RootLink<T>>>,
 }
 
 impl<T: Ord> FibonacciHeap<T> {
@@ -47,9 +50,11 @@ impl<T: Ord> FibonacciHeap<T> {
     pub fn pop(&mut self) -> Option<T> {
         let root = self.max.take()?;
         self.len -= 1;
-        while let Some(child) = unsafe { (*root.as_ptr()).handle.pop_child() } {
+        while let Some(child) =
+            unsafe { Node::pop_child((*root.as_ptr()).root) }
+        {
             // we clean the parent-pointer of child later.
-            self.push_root(RootNode::new(child.node));
+            self.push_root(RootNode::new(child));
         }
         // if `root` has no child, `self.max.is_none() && self.ends.is_some()`
         // may hold at this point.
@@ -73,29 +78,29 @@ impl<T: Ord> FibonacciHeap<T> {
     }
 
     pub fn urge(&mut self, handle: Handle<T>, new: T) -> bool {
-        let ptr = handle.node.as_ptr();
+        let node = handle.node;
         unsafe {
-            if (*ptr).val >= new {
+            if (*node.as_ptr()).val >= new {
                 return false;
             }
 
-            (*ptr).val = new;
-            if !handle.is_heapified() {
-                let mut handle = Some(handle);
-                while let Some(cur) = handle {
-                    handle = cur.orphan();
-                    self.push_root(RootNode::new(cur.node));
+            (*node.as_ptr()).val = new;
+            if !Node::is_heapified(node) {
+                let mut node = Some(node);
+                while let Some(cur) = node {
+                    node = Node::orphan(cur);
+                    self.push_root(RootNode::new(cur));
                 }
             }
 
-            if let (Some(old), Some(new)) = (self.max, (*ptr).root) {
+            if let (Some(old), Some(new)) = (self.max, (*node.as_ptr()).root) {
                 RootNode::challenge(old, new);
             }
         }
         true
     }
 
-    fn push_root(&mut self, new: NonNull<RootNode<T>>) {
+    fn push_root(&mut self, new: RootLink<T>) {
         if let Some(old) = self.max {
             RootNode::challenge(old, new);
             if let Some((first, last)) = self.ends {
@@ -149,22 +154,25 @@ impl<T> Drop for FibonacciHeap<T> {
     }
 }
 
-impl<T: Ord> RootNode<T> {
-    pub fn new(node: NonNull<Node<T>>) -> NonNull<Self> {
-        let root = Self { handle: Handle::new(node), next_root: None };
+impl<T> RootNode<T> {
+    pub fn new(node: Link<T>) -> RootLink<T> {
+        let root = Self { root: node, next_root: None };
         let root = NonNull::from(Box::leak(Box::new(root)));
         unsafe { (*node.as_ptr()).root = Some(root) };
         root
     }
 
-    pub fn append(fst: NonNull<Self>, snd: NonNull<Self>) {
+    pub fn append(fst: RootLink<T>, snd: RootLink<T>) {
         unsafe {
             debug_assert!((*fst.as_ptr()).next_root.is_none());
             (*fst.as_ptr()).next_root = Some(snd);
         }
     }
 
-    pub fn challenge(old: NonNull<Self>, new: NonNull<Self>) {
+    pub fn challenge(old: RootLink<T>, new: RootLink<T>)
+    where
+        T: Ord,
+    {
         if old == new {
             return;
         }
@@ -172,44 +180,45 @@ impl<T: Ord> RootNode<T> {
             let old_ptr = old.as_ptr();
             let new_ptr = new.as_ptr();
             unsafe {
+                debug_assert!((*(*old_ptr).root.as_ptr()).parent.is_none());
+                debug_assert!((*(*new_ptr).root.as_ptr()).parent.is_none());
                 std::mem::swap(
-                    &mut (*(*old_ptr).handle.node.as_ptr()).root,
-                    &mut (*(*new_ptr).handle.node.as_ptr()).root,
+                    &mut (*(*old_ptr).root.as_ptr()).root,
+                    &mut (*(*new_ptr).root.as_ptr()).root,
                 );
-                std::mem::swap(
-                    &mut (*(*old_ptr).handle.node.as_ptr()).parent,
-                    &mut (*(*new_ptr).handle.node.as_ptr()).parent,
-                );
-                std::mem::swap(&mut (*old_ptr).handle, &mut (*new_ptr).handle);
+                std::mem::swap(&mut (*old_ptr).root, &mut (*new_ptr).root);
             }
         }
     }
 
-    fn val<'a>(this: NonNull<Self>) -> &'a T {
-        unsafe { &(*(*this.as_ptr()).handle.node.as_ptr()).val }
+    fn val<'a>(this: RootLink<T>) -> &'a T {
+        unsafe { &(*(*this.as_ptr()).root.as_ptr()).val }
     }
-    fn order(this: NonNull<Self>) -> usize {
-        unsafe { (*(*this.as_ptr()).handle.node.as_ptr()).order }
+    fn order(this: RootLink<T>) -> usize {
+        unsafe { (*(*this.as_ptr()).root.as_ptr()).order }
     }
-    fn is_isolated_root(this: NonNull<Self>) -> bool {
+    fn is_isolated_root(this: RootLink<T>) -> bool {
         let ptr = this.as_ptr();
         unsafe {
             (*ptr).next_root.is_none()
-                && (*(*ptr).handle.node.as_ptr()).parent.is_none()
-                && (*ptr).handle.eq((*(*ptr).handle.node.as_ptr()).neighbor.0)
+                && (*(*ptr).root.as_ptr()).parent.is_none()
+                && (*ptr).root == (*(*ptr).root.as_ptr()).neighbor.0
         }
     }
 
-    fn isolate(this: NonNull<Self>) {
+    fn isolate(this: RootLink<T>) {
         let ptr = this.as_ptr();
         unsafe {
             (*ptr).next_root.take();
-            (*(*ptr).handle.node.as_ptr()).parent.take();
-            (*ptr).handle.init_siblings();
+            (*(*ptr).root.as_ptr()).parent.take();
+            Node::init_siblings((*ptr).root);
         }
     }
 
-    fn fuse(par: NonNull<Self>, child: NonNull<Self>) -> NonNull<Self> {
+    fn fuse(par: RootLink<T>, child: RootLink<T>) -> RootLink<T>
+    where
+        T: Ord,
+    {
         Self::precheck_fuse(par, child);
         let (greater, less) = if Self::val(par) > Self::val(child) {
             (par, child)
@@ -217,21 +226,21 @@ impl<T: Ord> RootNode<T> {
             (child, par)
         };
         unsafe {
-            (*greater.as_ptr()).handle.push_child((*less.as_ptr()).handle);
+            Node::push_child((*greater.as_ptr()).root, (*less.as_ptr()).root);
             drop(Box::from_raw(less.as_ptr()));
             greater
         }
     }
 
-    fn precheck_fuse(par: NonNull<Self>, child: NonNull<Self>) {
+    fn precheck_fuse(par: RootLink<T>, child: RootLink<T>) {
         debug_assert_eq!(Self::order(par), Self::order(child));
         debug_assert!(Self::is_isolated_root(par));
         debug_assert!(Self::is_isolated_root(child));
     }
 
-    fn take(this: NonNull<Self>) -> T {
+    fn take(this: RootLink<T>) -> T {
         let ptr = this.as_ptr();
-        let node = unsafe { Box::from_raw((*ptr).handle.node.as_ptr()) };
+        let node = unsafe { Box::from_raw((*ptr).root.as_ptr()) };
         let res = node.val;
         unsafe { drop(Box::from_raw(ptr)) };
         res
@@ -239,156 +248,155 @@ impl<T: Ord> RootNode<T> {
 }
 
 impl<T> RootNode<T> {
-    fn drop(this: NonNull<Self>) {
+    fn drop(this: RootLink<T>) {
         unsafe {
-            let handle = (*this.as_ptr()).handle;
-            Handle::drop(handle);
+            Node::drop((*this.as_ptr()).root);
             drop(Box::from_raw(this.as_ptr()));
         }
     }
 }
 
-impl<T: Ord> Node<T> {
-    pub fn new(elt: T) -> NonNull<Self> {
+impl<T> Node<T> {
+    pub fn new(elt: T) -> Link<T> {
         let node = Self {
             val: elt,
             parent: None,
-            neighbor: (Handle::dangling(), Handle::dangling()),
+            neighbor: (NonNull::dangling(), NonNull::dangling()),
             any_child: None,
             order: 0,
             cut: false,
             root: None,
         };
         let ptr = NonNull::from(Box::leak(Box::new(node)));
-        let this = Handle { node: ptr };
-        this.init_siblings();
+        Node::init_siblings(ptr);
         ptr
     }
-}
 
-impl<T> Handle<T> {
-    fn new(node: NonNull<Node<T>>) -> Self { Self { node } }
-    fn dangling() -> Self { Self { node: NonNull::dangling() } }
-
-    fn eq(self, other: Self) -> bool { self.node == other.node }
-
-    fn push_child(self, child: Self) {
-        debug_assert!(self.is_root());
-        let par = self.node.as_ptr();
+    pub fn push_child(this: Link<T>, child: Link<T>) {
+        debug_assert!(Node::is_root(this));
+        let par = this.as_ptr();
         unsafe {
             (*par).order += 1;
             if let Some(old_child) = (*par).any_child {
-                old_child.push_sibling(child);
+                Node::push_sibling(old_child, child);
             } else {
-                child.init_siblings();
+                Node::init_siblings(child);
                 (*par).any_child = Some(child);
             }
-            (*child.node.as_ptr()).parent = Some(self);
-            (*child.node.as_ptr()).root.take();
+            (*child.as_ptr()).parent = Some(this);
+            (*child.as_ptr()).root.take();
         }
     }
-    fn pop_child(self) -> Option<Self> {
-        let par = self.node.as_ptr();
+
+    pub fn pop_child(this: Link<T>) -> Option<Link<T>> {
+        let par = this.as_ptr();
         unsafe {
             let child = (*par).any_child.take()?;
             (*par).order -= 1;
-            (*par).cut = true;
-            (*child.node.as_ptr()).parent.take();
-            let (prev, next) = (*child.node.as_ptr()).neighbor;
-            if child.eq(prev) {
+            if (*par).parent.is_some() {
+                // root nodes does not use this flag.
+                (*par).cut = true;
+            }
+            (*child.as_ptr()).parent.take();
+            let (prev, next) = (*child.as_ptr()).neighbor;
+            if child == prev {
                 // that is the last child; nothing is to be done.
             } else {
-                // `next` may be equal to `prev`.
+                // `next` may be equal to `prev`, but no special care is needed.
                 (*par).any_child = Some(next);
-                (*prev.node.as_ptr()).neighbor.1 = next;
-                (*next.node.as_ptr()).neighbor.0 = prev;
+                (*prev.as_ptr()).neighbor.1 = next;
+                (*next.as_ptr()).neighbor.0 = prev;
             }
-            child.init_siblings();
+            Node::init_siblings(child);
             Some(child)
         }
     }
 
-    fn init_siblings(self) {
-        let ptr = self.node;
-        let handle = Handle { node: ptr };
-        unsafe { (*ptr.as_ptr()).neighbor = (handle, handle) };
+    pub fn init_siblings(this: Link<T>) {
+        unsafe { (*this.as_ptr()).neighbor = (this, this) };
     }
-    fn push_sibling(self, sibling: Self) {
+    pub fn push_sibling(old: Link<T>, new: Link<T>) {
         unsafe {
-            let neighbor = (*self.node.as_ptr()).neighbor;
-            if self.eq(neighbor.0) {
-                // siblings = {self}
-                (*sibling.node.as_ptr()).neighbor = (self, self);
-                (*self.node.as_ptr()).neighbor = (sibling, sibling);
+            let neighbor = (*old.as_ptr()).neighbor;
+            if old == neighbor.0 {
+                // siblings == {old}
+                (*new.as_ptr()).neighbor = (old, old);
+                (*old.as_ptr()).neighbor = (new, new);
             } else {
                 let next = neighbor.1;
-                (*self.node.as_ptr()).neighbor.1 = sibling;
-                (*next.node.as_ptr()).neighbor.0 = sibling;
-                (*sibling.node.as_ptr()).neighbor = (self, next);
+                (*old.as_ptr()).neighbor.1 = new;
+                (*next.as_ptr()).neighbor.0 = new;
+                (*new.as_ptr()).neighbor = (old, next);
             }
         }
     }
 
-    fn is_root(self) -> bool {
+    fn is_root(this: Link<T>) -> bool {
         unsafe {
             debug_assert_eq!(
-                (*self.node.as_ptr()).root.is_some(),
-                (*self.node.as_ptr()).parent.is_none(),
+                (*this.as_ptr()).root.is_some(),
+                (*this.as_ptr()).parent.is_none(),
             );
-            (*self.node.as_ptr()).parent.is_none()
+            (*this.as_ptr()).parent.is_none()
         }
     }
 
-    fn orphan(self) -> Option<Self> {
-        let ptr = self.node.as_ptr();
+    pub fn orphan(this: Link<T>) -> Option<Link<T>> {
+        let ptr = this.as_ptr();
         unsafe {
             (*ptr).cut = false;
             let par = (*ptr).parent.take()?;
 
             let (prev, next) = (*ptr).neighbor;
-            if self.eq(prev) {
-                // singleton
-                (*par.node.as_ptr()).any_child = None;
+            if this == prev {
+                // the parent has no child now.
+                (*par.as_ptr()).any_child.take();
             } else {
-                (*prev.node.as_ptr()).neighbor.1 = next;
-                (*next.node.as_ptr()).neighbor.0 = prev;
-                if self.eq((*par.node.as_ptr()).any_child.unwrap()) {
-                    (*par.node.as_ptr()).any_child = Some(next);
+                (*prev.as_ptr()).neighbor.1 = next;
+                (*next.as_ptr()).neighbor.0 = prev;
+                if this == (*par.as_ptr()).any_child.unwrap() {
+                    // `next` is now the representative child.
+                    (*par.as_ptr()).any_child = Some(next);
                 }
             }
 
-            (*par.node.as_ptr()).order -= 1;
-            if par.is_root() {
+            (*par.as_ptr()).order -= 1;
+            if Node::is_root(par) {
                 None
+            } else if (*par.as_ptr()).cut {
+                // cascading orphan is occurred.
+                Some(par)
             } else {
-                if (*par.node.as_ptr()).cut {
-                    Some(par)
-                } else {
-                    (*par.node.as_ptr()).cut = true;
-                    None
-                }
+                (*par.as_ptr()).cut = true;
+                None
             }
         }
     }
 
-    fn drop(self) {
-        while let Some(child) = self.pop_child() {
-            Self::drop(child);
-        }
-        unsafe { drop(Box::from_raw(self.node.as_ptr())) };
-    }
-}
-
-impl<T: Ord> Handle<T> {
-    fn is_heapified(self) -> bool {
-        let ptr = self.node.as_ptr();
+    fn is_heapified(child: Link<T>) -> bool
+    where
+        T: Ord,
+    {
         unsafe {
-            match (*ptr).parent {
-                Some(par) => (*par.node.as_ptr()).val >= (*ptr).val,
+            match (*child.as_ptr()).parent {
+                Some(par) => (*par.as_ptr()).val >= (*child.as_ptr()).val,
                 _ => true,
             }
         }
     }
+}
+
+impl<T> Node<T> {
+    fn drop(node: Link<T>) {
+        while let Some(child) = Node::pop_child(node) {
+            Self::drop(child);
+        }
+        unsafe { drop(Box::from_raw(node.as_ptr())) };
+    }
+}
+
+impl<T> Handle<T> {
+    fn new(node: Link<T>) -> Self { Self { node } }
 }
 
 impl<T> Copy for Handle<T> {}
@@ -398,7 +406,7 @@ impl<T> Clone for Handle<T> {
 
 impl<T: Ord> Bucket<T> {
     pub fn new() -> Self { Self { bucket: vec![] } }
-    pub fn push(&mut self, root: NonNull<RootNode<T>>) {
+    pub fn push(&mut self, root: RootLink<T>) {
         let order = RootNode::order(root);
         if order >= self.bucket.len() {
             self.bucket.resize(order + 1, None)
@@ -409,7 +417,7 @@ impl<T: Ord> Bucket<T> {
             self.bucket[order] = Some(root);
         }
     }
-    pub fn take(self) -> impl Iterator<Item = NonNull<RootNode<T>>> {
+    pub fn take(self) -> impl Iterator<Item = RootLink<T>> {
         self.bucket.into_iter().filter_map(std::convert::identity)
     }
 }
