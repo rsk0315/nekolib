@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/ds/fibonacci_heap/src/lib.rs`."><title>lib.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="fibonacci_heap" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (2f090c30d 2024-03-23)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/ds/fibonacci_heap/src/lib.rs`."><title>lib.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="fibonacci_heap" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -831,37 +831,48 @@
 <a href="#589" id="589">589</a>
 <a href="#590" id="590">590</a>
 <a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ptr::NonNull;
+
+<span class="kw">type </span>RootLink&lt;T&gt; = NonNull&lt;RootNode&lt;T&gt;&gt;;
+<span class="kw">type </span>Link&lt;T&gt; = NonNull&lt;Node&lt;T&gt;&gt;;
 
 <span class="kw">pub struct </span>FibonacciHeap&lt;T&gt; {
     len: usize,
-    max: <span class="prelude-ty">Option</span>&lt;NonNull&lt;RootNode&lt;T&gt;&gt;&gt;,
-    ends: <span class="prelude-ty">Option</span>&lt;(NonNull&lt;RootNode&lt;T&gt;&gt;, NonNull&lt;RootNode&lt;T&gt;&gt;)&gt;,
+    max: <span class="prelude-ty">Option</span>&lt;RootLink&lt;T&gt;&gt;,
+    ends: <span class="prelude-ty">Option</span>&lt;(RootLink&lt;T&gt;, RootLink&lt;T&gt;)&gt;,
 }
 
 <span class="kw">struct </span>RootNode&lt;T&gt; {
-    handle: Handle&lt;T&gt;,
-    next_root: <span class="prelude-ty">Option</span>&lt;NonNull&lt;RootNode&lt;T&gt;&gt;&gt;,
+    root: Link&lt;T&gt;,
+    next_root: <span class="prelude-ty">Option</span>&lt;RootLink&lt;T&gt;&gt;,
 }
 
 <span class="kw">struct </span>Node&lt;T&gt; {
     val: T,
-    parent: <span class="prelude-ty">Option</span>&lt;Handle&lt;T&gt;&gt;,
+    parent: <span class="prelude-ty">Option</span>&lt;Link&lt;T&gt;&gt;,
     <span class="comment">// (neighbor.0 == this) implies |sibling| == 1
     // (neighbor.0 == neighbor.1) implies |sibling| &lt;= 2
-    </span>neighbor: (Handle&lt;T&gt;, Handle&lt;T&gt;),
-    any_child: <span class="prelude-ty">Option</span>&lt;Handle&lt;T&gt;&gt;,
+    </span>neighbor: (Link&lt;T&gt;, Link&lt;T&gt;),
+    any_child: <span class="prelude-ty">Option</span>&lt;Link&lt;T&gt;&gt;,
     order: usize,
     cut: bool,
-    root: <span class="prelude-ty">Option</span>&lt;NonNull&lt;RootNode&lt;T&gt;&gt;&gt;,
+    root: <span class="prelude-ty">Option</span>&lt;RootLink&lt;T&gt;&gt;,
 }
 
 <span class="kw">pub struct </span>Handle&lt;T&gt; {
-    node: NonNull&lt;Node&lt;T&gt;&gt;,
+    node: Link&lt;T&gt;,
 }
 
 <span class="kw">struct </span>Bucket&lt;T&gt; {
-    bucket: Vec&lt;<span class="prelude-ty">Option</span>&lt;NonNull&lt;RootNode&lt;T&gt;&gt;&gt;&gt;,
+    bucket: Vec&lt;<span class="prelude-ty">Option</span>&lt;RootLink&lt;T&gt;&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;T: Ord&gt; FibonacciHeap&lt;T&gt; {
@@ -880,9 +891,11 @@
     <span class="kw">pub fn </span>pop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
         <span class="kw">let </span>root = <span class="self">self</span>.max.take()<span class="question-mark">?</span>;
         <span class="self">self</span>.len -= <span class="number">1</span>;
-        <span class="kw">while let </span><span class="prelude-val">Some</span>(child) = <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>root.as_ptr()).handle.pop_child() } {
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(child) =
+            <span class="kw">unsafe </span>{ Node::pop_child((<span class="kw-2">*</span>root.as_ptr()).root) }
+        {
             <span class="comment">// we clean the parent-pointer of child later.
-            </span><span class="self">self</span>.push_root(RootNode::new(child.node));
+            </span><span class="self">self</span>.push_root(RootNode::new(child));
         }
         <span class="comment">// if `root` has no child, `self.max.is_none() &amp;&amp; self.ends.is_some()`
         // may hold at this point.
@@ -906,29 +919,29 @@
     }
 
     <span class="kw">pub fn </span>urge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: Handle&lt;T&gt;, new: T) -&gt; bool {
-        <span class="kw">let </span>ptr = handle.node.as_ptr();
+        <span class="kw">let </span>node = handle.node;
         <span class="kw">unsafe </span>{
-            <span class="kw">if </span>(<span class="kw-2">*</span>ptr).val &gt;= new {
+            <span class="kw">if </span>(<span class="kw-2">*</span>node.as_ptr()).val &gt;= new {
                 <span class="kw">return </span><span class="bool-val">false</span>;
             }
 
-            (<span class="kw-2">*</span>ptr).val = new;
-            <span class="kw">if </span>!handle.is_heapified() {
-                <span class="kw">let </span><span class="kw-2">mut </span>handle = <span class="prelude-val">Some</span>(handle);
-                <span class="kw">while let </span><span class="prelude-val">Some</span>(cur) = handle {
-                    handle = cur.orphan();
-                    <span class="self">self</span>.push_root(RootNode::new(cur.node));
+            (<span class="kw-2">*</span>node.as_ptr()).val = new;
+            <span class="kw">if </span>!Node::is_heapified(node) {
+                <span class="kw">let </span><span class="kw-2">mut </span>node = <span class="prelude-val">Some</span>(node);
+                <span class="kw">while let </span><span class="prelude-val">Some</span>(cur) = node {
+                    node = Node::orphan(cur);
+                    <span class="self">self</span>.push_root(RootNode::new(cur));
                 }
             }
 
-            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(old), <span class="prelude-val">Some</span>(new)) = (<span class="self">self</span>.max, (<span class="kw-2">*</span>ptr).root) {
+            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(old), <span class="prelude-val">Some</span>(new)) = (<span class="self">self</span>.max, (<span class="kw-2">*</span>node.as_ptr()).root) {
                 RootNode::challenge(old, new);
             }
         }
         <span class="bool-val">true
     </span>}
 
-    <span class="kw">fn </span>push_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new: NonNull&lt;RootNode&lt;T&gt;&gt;) {
+    <span class="kw">fn </span>push_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new: RootLink&lt;T&gt;) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(old) = <span class="self">self</span>.max {
             RootNode::challenge(old, new);
             <span class="kw">if let </span><span class="prelude-val">Some</span>((first, last)) = <span class="self">self</span>.ends {
@@ -982,22 +995,25 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T: Ord&gt; RootNode&lt;T&gt; {
-    <span class="kw">pub fn </span>new(node: NonNull&lt;Node&lt;T&gt;&gt;) -&gt; NonNull&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>root = <span class="self">Self </span>{ handle: Handle::new(node), next_root: <span class="prelude-val">None </span>};
+<span class="kw">impl</span>&lt;T&gt; RootNode&lt;T&gt; {
+    <span class="kw">pub fn </span>new(node: Link&lt;T&gt;) -&gt; RootLink&lt;T&gt; {
+        <span class="kw">let </span>root = <span class="self">Self </span>{ root: node, next_root: <span class="prelude-val">None </span>};
         <span class="kw">let </span>root = NonNull::from(Box::leak(Box::new(root)));
         <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>node.as_ptr()).root = <span class="prelude-val">Some</span>(root) };
         root
     }
 
-    <span class="kw">pub fn </span>append(fst: NonNull&lt;<span class="self">Self</span>&gt;, snd: NonNull&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">pub fn </span>append(fst: RootLink&lt;T&gt;, snd: RootLink&lt;T&gt;) {
         <span class="kw">unsafe </span>{
             <span class="macro">debug_assert!</span>((<span class="kw-2">*</span>fst.as_ptr()).next_root.is_none());
             (<span class="kw-2">*</span>fst.as_ptr()).next_root = <span class="prelude-val">Some</span>(snd);
         }
     }
 
-    <span class="kw">pub fn </span>challenge(old: NonNull&lt;<span class="self">Self</span>&gt;, new: NonNull&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">pub fn </span>challenge(old: RootLink&lt;T&gt;, new: RootLink&lt;T&gt;)
+    <span class="kw">where
+        </span>T: Ord,
+    {
         <span class="kw">if </span>old == new {
             <span class="kw">return</span>;
         }
@@ -1005,44 +1021,45 @@
             <span class="kw">let </span>old_ptr = old.as_ptr();
             <span class="kw">let </span>new_ptr = new.as_ptr();
             <span class="kw">unsafe </span>{
+                <span class="macro">debug_assert!</span>((<span class="kw-2">*</span>(<span class="kw-2">*</span>old_ptr).root.as_ptr()).parent.is_none());
+                <span class="macro">debug_assert!</span>((<span class="kw-2">*</span>(<span class="kw-2">*</span>new_ptr).root.as_ptr()).parent.is_none());
                 std::mem::swap(
-                    <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>old_ptr).handle.node.as_ptr()).root,
-                    <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>new_ptr).handle.node.as_ptr()).root,
+                    <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>old_ptr).root.as_ptr()).root,
+                    <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>new_ptr).root.as_ptr()).root,
                 );
-                std::mem::swap(
-                    <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>old_ptr).handle.node.as_ptr()).parent,
-                    <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>new_ptr).handle.node.as_ptr()).parent,
-                );
-                std::mem::swap(<span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>old_ptr).handle, <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>new_ptr).handle);
+                std::mem::swap(<span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>old_ptr).root, <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>new_ptr).root);
             }
         }
     }
 
-    <span class="kw">fn </span>val&lt;<span class="lifetime">'a</span>&gt;(this: NonNull&lt;<span class="self">Self</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {
-        <span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>this.as_ptr()).handle.node.as_ptr()).val }
+    <span class="kw">fn </span>val&lt;<span class="lifetime">'a</span>&gt;(this: RootLink&lt;T&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {
+        <span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span>(<span class="kw-2">*</span>(<span class="kw-2">*</span>this.as_ptr()).root.as_ptr()).val }
     }
-    <span class="kw">fn </span>order(this: NonNull&lt;<span class="self">Self</span>&gt;) -&gt; usize {
-        <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>(<span class="kw-2">*</span>this.as_ptr()).handle.node.as_ptr()).order }
+    <span class="kw">fn </span>order(this: RootLink&lt;T&gt;) -&gt; usize {
+        <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>(<span class="kw-2">*</span>this.as_ptr()).root.as_ptr()).order }
     }
-    <span class="kw">fn </span>is_isolated_root(this: NonNull&lt;<span class="self">Self</span>&gt;) -&gt; bool {
+    <span class="kw">fn </span>is_isolated_root(this: RootLink&lt;T&gt;) -&gt; bool {
         <span class="kw">let </span>ptr = this.as_ptr();
         <span class="kw">unsafe </span>{
             (<span class="kw-2">*</span>ptr).next_root.is_none()
-                &amp;&amp; (<span class="kw-2">*</span>(<span class="kw-2">*</span>ptr).handle.node.as_ptr()).parent.is_none()
-                &amp;&amp; (<span class="kw-2">*</span>ptr).handle.eq((<span class="kw-2">*</span>(<span class="kw-2">*</span>ptr).handle.node.as_ptr()).neighbor.<span class="number">0</span>)
-        }
+                &amp;&amp; (<span class="kw-2">*</span>(<span class="kw-2">*</span>ptr).root.as_ptr()).parent.is_none()
+                &amp;&amp; (<span class="kw-2">*</span>ptr).root == (<span class="kw-2">*</span>(<span class="kw-2">*</span>ptr).root.as_ptr()).neighbor.<span class="number">0
+        </span>}
     }
 
-    <span class="kw">fn </span>isolate(this: NonNull&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">fn </span>isolate(this: RootLink&lt;T&gt;) {
         <span class="kw">let </span>ptr = this.as_ptr();
         <span class="kw">unsafe </span>{
             (<span class="kw-2">*</span>ptr).next_root.take();
-            (<span class="kw-2">*</span>(<span class="kw-2">*</span>ptr).handle.node.as_ptr()).parent.take();
-            (<span class="kw-2">*</span>ptr).handle.init_siblings();
+            (<span class="kw-2">*</span>(<span class="kw-2">*</span>ptr).root.as_ptr()).parent.take();
+            Node::init_siblings((<span class="kw-2">*</span>ptr).root);
         }
     }
 
-    <span class="kw">fn </span>fuse(par: NonNull&lt;<span class="self">Self</span>&gt;, child: NonNull&lt;<span class="self">Self</span>&gt;) -&gt; NonNull&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>fuse(par: RootLink&lt;T&gt;, child: RootLink&lt;T&gt;) -&gt; RootLink&lt;T&gt;
+    <span class="kw">where
+        </span>T: Ord,
+    {
         <span class="self">Self</span>::precheck_fuse(par, child);
         <span class="kw">let </span>(greater, less) = <span class="kw">if </span><span class="self">Self</span>::val(par) &gt; <span class="self">Self</span>::val(child) {
             (par, child)
@@ -1050,21 +1067,21 @@
             (child, par)
         };
         <span class="kw">unsafe </span>{
-            (<span class="kw-2">*</span>greater.as_ptr()).handle.push_child((<span class="kw-2">*</span>less.as_ptr()).handle);
+            Node::push_child((<span class="kw-2">*</span>greater.as_ptr()).root, (<span class="kw-2">*</span>less.as_ptr()).root);
             drop(Box::from_raw(less.as_ptr()));
             greater
         }
     }
 
-    <span class="kw">fn </span>precheck_fuse(par: NonNull&lt;<span class="self">Self</span>&gt;, child: NonNull&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">fn </span>precheck_fuse(par: RootLink&lt;T&gt;, child: RootLink&lt;T&gt;) {
         <span class="macro">debug_assert_eq!</span>(<span class="self">Self</span>::order(par), <span class="self">Self</span>::order(child));
         <span class="macro">debug_assert!</span>(<span class="self">Self</span>::is_isolated_root(par));
         <span class="macro">debug_assert!</span>(<span class="self">Self</span>::is_isolated_root(child));
     }
 
-    <span class="kw">fn </span>take(this: NonNull&lt;<span class="self">Self</span>&gt;) -&gt; T {
+    <span class="kw">fn </span>take(this: RootLink&lt;T&gt;) -&gt; T {
         <span class="kw">let </span>ptr = this.as_ptr();
-        <span class="kw">let </span>node = <span class="kw">unsafe </span>{ Box::from_raw((<span class="kw-2">*</span>ptr).handle.node.as_ptr()) };
+        <span class="kw">let </span>node = <span class="kw">unsafe </span>{ Box::from_raw((<span class="kw-2">*</span>ptr).root.as_ptr()) };
         <span class="kw">let </span>res = node.val;
         <span class="kw">unsafe </span>{ drop(Box::from_raw(ptr)) };
         res
@@ -1072,156 +1089,155 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; RootNode&lt;T&gt; {
-    <span class="kw">fn </span>drop(this: NonNull&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">fn </span>drop(this: RootLink&lt;T&gt;) {
         <span class="kw">unsafe </span>{
-            <span class="kw">let </span>handle = (<span class="kw-2">*</span>this.as_ptr()).handle;
-            Handle::drop(handle);
+            Node::drop((<span class="kw-2">*</span>this.as_ptr()).root);
             drop(Box::from_raw(this.as_ptr()));
         }
     }
 }
 
-<span class="kw">impl</span>&lt;T: Ord&gt; Node&lt;T&gt; {
-    <span class="kw">pub fn </span>new(elt: T) -&gt; NonNull&lt;<span class="self">Self</span>&gt; {
+<span class="kw">impl</span>&lt;T&gt; Node&lt;T&gt; {
+    <span class="kw">pub fn </span>new(elt: T) -&gt; Link&lt;T&gt; {
         <span class="kw">let </span>node = <span class="self">Self </span>{
             val: elt,
             parent: <span class="prelude-val">None</span>,
-            neighbor: (Handle::dangling(), Handle::dangling()),
+            neighbor: (NonNull::dangling(), NonNull::dangling()),
             any_child: <span class="prelude-val">None</span>,
             order: <span class="number">0</span>,
             cut: <span class="bool-val">false</span>,
             root: <span class="prelude-val">None</span>,
         };
         <span class="kw">let </span>ptr = NonNull::from(Box::leak(Box::new(node)));
-        <span class="kw">let </span>this = Handle { node: ptr };
-        this.init_siblings();
+        Node::init_siblings(ptr);
         ptr
     }
-}
 
-<span class="kw">impl</span>&lt;T&gt; Handle&lt;T&gt; {
-    <span class="kw">fn </span>new(node: NonNull&lt;Node&lt;T&gt;&gt;) -&gt; <span class="self">Self </span>{ <span class="self">Self </span>{ node } }
-    <span class="kw">fn </span>dangling() -&gt; <span class="self">Self </span>{ <span class="self">Self </span>{ node: NonNull::dangling() } }
-
-    <span class="kw">fn </span>eq(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; bool { <span class="self">self</span>.node == other.node }
-
-    <span class="kw">fn </span>push_child(<span class="self">self</span>, child: <span class="self">Self</span>) {
-        <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_root());
-        <span class="kw">let </span>par = <span class="self">self</span>.node.as_ptr();
+    <span class="kw">pub fn </span>push_child(this: Link&lt;T&gt;, child: Link&lt;T&gt;) {
+        <span class="macro">debug_assert!</span>(Node::is_root(this));
+        <span class="kw">let </span>par = this.as_ptr();
         <span class="kw">unsafe </span>{
             (<span class="kw-2">*</span>par).order += <span class="number">1</span>;
             <span class="kw">if let </span><span class="prelude-val">Some</span>(old_child) = (<span class="kw-2">*</span>par).any_child {
-                old_child.push_sibling(child);
+                Node::push_sibling(old_child, child);
             } <span class="kw">else </span>{
-                child.init_siblings();
+                Node::init_siblings(child);
                 (<span class="kw-2">*</span>par).any_child = <span class="prelude-val">Some</span>(child);
             }
-            (<span class="kw-2">*</span>child.node.as_ptr()).parent = <span class="prelude-val">Some</span>(<span class="self">self</span>);
-            (<span class="kw-2">*</span>child.node.as_ptr()).root.take();
+            (<span class="kw-2">*</span>child.as_ptr()).parent = <span class="prelude-val">Some</span>(this);
+            (<span class="kw-2">*</span>child.as_ptr()).root.take();
         }
     }
-    <span class="kw">fn </span>pop_child(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>par = <span class="self">self</span>.node.as_ptr();
+
+    <span class="kw">pub fn </span>pop_child(this: Link&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Link&lt;T&gt;&gt; {
+        <span class="kw">let </span>par = this.as_ptr();
         <span class="kw">unsafe </span>{
             <span class="kw">let </span>child = (<span class="kw-2">*</span>par).any_child.take()<span class="question-mark">?</span>;
             (<span class="kw-2">*</span>par).order -= <span class="number">1</span>;
-            (<span class="kw-2">*</span>par).cut = <span class="bool-val">true</span>;
-            (<span class="kw-2">*</span>child.node.as_ptr()).parent.take();
-            <span class="kw">let </span>(prev, next) = (<span class="kw-2">*</span>child.node.as_ptr()).neighbor;
-            <span class="kw">if </span>child.eq(prev) {
+            <span class="kw">if </span>(<span class="kw-2">*</span>par).parent.is_some() {
+                <span class="comment">// root nodes does not use this flag.
+                </span>(<span class="kw-2">*</span>par).cut = <span class="bool-val">true</span>;
+            }
+            (<span class="kw-2">*</span>child.as_ptr()).parent.take();
+            <span class="kw">let </span>(prev, next) = (<span class="kw-2">*</span>child.as_ptr()).neighbor;
+            <span class="kw">if </span>child == prev {
                 <span class="comment">// that is the last child; nothing is to be done.
             </span>} <span class="kw">else </span>{
-                <span class="comment">// `next` may be equal to `prev`.
+                <span class="comment">// `next` may be equal to `prev`, but no special care is needed.
                 </span>(<span class="kw-2">*</span>par).any_child = <span class="prelude-val">Some</span>(next);
-                (<span class="kw-2">*</span>prev.node.as_ptr()).neighbor.<span class="number">1 </span>= next;
-                (<span class="kw-2">*</span>next.node.as_ptr()).neighbor.<span class="number">0 </span>= prev;
+                (<span class="kw-2">*</span>prev.as_ptr()).neighbor.<span class="number">1 </span>= next;
+                (<span class="kw-2">*</span>next.as_ptr()).neighbor.<span class="number">0 </span>= prev;
             }
-            child.init_siblings();
+            Node::init_siblings(child);
             <span class="prelude-val">Some</span>(child)
         }
     }
 
-    <span class="kw">fn </span>init_siblings(<span class="self">self</span>) {
-        <span class="kw">let </span>ptr = <span class="self">self</span>.node;
-        <span class="kw">let </span>handle = Handle { node: ptr };
-        <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>ptr.as_ptr()).neighbor = (handle, handle) };
+    <span class="kw">pub fn </span>init_siblings(this: Link&lt;T&gt;) {
+        <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>this.as_ptr()).neighbor = (this, this) };
     }
-    <span class="kw">fn </span>push_sibling(<span class="self">self</span>, sibling: <span class="self">Self</span>) {
+    <span class="kw">pub fn </span>push_sibling(old: Link&lt;T&gt;, new: Link&lt;T&gt;) {
         <span class="kw">unsafe </span>{
-            <span class="kw">let </span>neighbor = (<span class="kw-2">*</span><span class="self">self</span>.node.as_ptr()).neighbor;
-            <span class="kw">if </span><span class="self">self</span>.eq(neighbor.<span class="number">0</span>) {
-                <span class="comment">// siblings = {self}
-                </span>(<span class="kw-2">*</span>sibling.node.as_ptr()).neighbor = (<span class="self">self</span>, <span class="self">self</span>);
-                (<span class="kw-2">*</span><span class="self">self</span>.node.as_ptr()).neighbor = (sibling, sibling);
+            <span class="kw">let </span>neighbor = (<span class="kw-2">*</span>old.as_ptr()).neighbor;
+            <span class="kw">if </span>old == neighbor.<span class="number">0 </span>{
+                <span class="comment">// siblings == {old}
+                </span>(<span class="kw-2">*</span>new.as_ptr()).neighbor = (old, old);
+                (<span class="kw-2">*</span>old.as_ptr()).neighbor = (new, new);
             } <span class="kw">else </span>{
                 <span class="kw">let </span>next = neighbor.<span class="number">1</span>;
-                (<span class="kw-2">*</span><span class="self">self</span>.node.as_ptr()).neighbor.<span class="number">1 </span>= sibling;
-                (<span class="kw-2">*</span>next.node.as_ptr()).neighbor.<span class="number">0 </span>= sibling;
-                (<span class="kw-2">*</span>sibling.node.as_ptr()).neighbor = (<span class="self">self</span>, next);
+                (<span class="kw-2">*</span>old.as_ptr()).neighbor.<span class="number">1 </span>= new;
+                (<span class="kw-2">*</span>next.as_ptr()).neighbor.<span class="number">0 </span>= new;
+                (<span class="kw-2">*</span>new.as_ptr()).neighbor = (old, next);
             }
         }
     }
 
-    <span class="kw">fn </span>is_root(<span class="self">self</span>) -&gt; bool {
+    <span class="kw">fn </span>is_root(this: Link&lt;T&gt;) -&gt; bool {
         <span class="kw">unsafe </span>{
             <span class="macro">debug_assert_eq!</span>(
-                (<span class="kw-2">*</span><span class="self">self</span>.node.as_ptr()).root.is_some(),
-                (<span class="kw-2">*</span><span class="self">self</span>.node.as_ptr()).parent.is_none(),
+                (<span class="kw-2">*</span>this.as_ptr()).root.is_some(),
+                (<span class="kw-2">*</span>this.as_ptr()).parent.is_none(),
             );
-            (<span class="kw-2">*</span><span class="self">self</span>.node.as_ptr()).parent.is_none()
+            (<span class="kw-2">*</span>this.as_ptr()).parent.is_none()
         }
     }
 
-    <span class="kw">fn </span>orphan(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>ptr = <span class="self">self</span>.node.as_ptr();
+    <span class="kw">pub fn </span>orphan(this: Link&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Link&lt;T&gt;&gt; {
+        <span class="kw">let </span>ptr = this.as_ptr();
         <span class="kw">unsafe </span>{
             (<span class="kw-2">*</span>ptr).cut = <span class="bool-val">false</span>;
             <span class="kw">let </span>par = (<span class="kw-2">*</span>ptr).parent.take()<span class="question-mark">?</span>;
 
             <span class="kw">let </span>(prev, next) = (<span class="kw-2">*</span>ptr).neighbor;
-            <span class="kw">if </span><span class="self">self</span>.eq(prev) {
-                <span class="comment">// singleton
-                </span>(<span class="kw-2">*</span>par.node.as_ptr()).any_child = <span class="prelude-val">None</span>;
+            <span class="kw">if </span>this == prev {
+                <span class="comment">// the parent has no child now.
+                </span>(<span class="kw-2">*</span>par.as_ptr()).any_child.take();
             } <span class="kw">else </span>{
-                (<span class="kw-2">*</span>prev.node.as_ptr()).neighbor.<span class="number">1 </span>= next;
-                (<span class="kw-2">*</span>next.node.as_ptr()).neighbor.<span class="number">0 </span>= prev;
-                <span class="kw">if </span><span class="self">self</span>.eq((<span class="kw-2">*</span>par.node.as_ptr()).any_child.unwrap()) {
-                    (<span class="kw-2">*</span>par.node.as_ptr()).any_child = <span class="prelude-val">Some</span>(next);
+                (<span class="kw-2">*</span>prev.as_ptr()).neighbor.<span class="number">1 </span>= next;
+                (<span class="kw-2">*</span>next.as_ptr()).neighbor.<span class="number">0 </span>= prev;
+                <span class="kw">if </span>this == (<span class="kw-2">*</span>par.as_ptr()).any_child.unwrap() {
+                    <span class="comment">// `next` is now the representative child.
+                    </span>(<span class="kw-2">*</span>par.as_ptr()).any_child = <span class="prelude-val">Some</span>(next);
                 }
             }
 
-            (<span class="kw-2">*</span>par.node.as_ptr()).order -= <span class="number">1</span>;
-            <span class="kw">if </span>par.is_root() {
+            (<span class="kw-2">*</span>par.as_ptr()).order -= <span class="number">1</span>;
+            <span class="kw">if </span>Node::is_root(par) {
                 <span class="prelude-val">None
-            </span>} <span class="kw">else </span>{
-                <span class="kw">if </span>(<span class="kw-2">*</span>par.node.as_ptr()).cut {
-                    <span class="prelude-val">Some</span>(par)
-                } <span class="kw">else </span>{
-                    (<span class="kw-2">*</span>par.node.as_ptr()).cut = <span class="bool-val">true</span>;
-                    <span class="prelude-val">None
-                </span>}
-            }
+            </span>} <span class="kw">else if </span>(<span class="kw-2">*</span>par.as_ptr()).cut {
+                <span class="comment">// cascading orphan is occurred.
+                </span><span class="prelude-val">Some</span>(par)
+            } <span class="kw">else </span>{
+                (<span class="kw-2">*</span>par.as_ptr()).cut = <span class="bool-val">true</span>;
+                <span class="prelude-val">None
+            </span>}
         }
     }
 
-    <span class="kw">fn </span>drop(<span class="self">self</span>) {
-        <span class="kw">while let </span><span class="prelude-val">Some</span>(child) = <span class="self">self</span>.pop_child() {
-            <span class="self">Self</span>::drop(child);
-        }
-        <span class="kw">unsafe </span>{ drop(Box::from_raw(<span class="self">self</span>.node.as_ptr())) };
-    }
-}
-
-<span class="kw">impl</span>&lt;T: Ord&gt; Handle&lt;T&gt; {
-    <span class="kw">fn </span>is_heapified(<span class="self">self</span>) -&gt; bool {
-        <span class="kw">let </span>ptr = <span class="self">self</span>.node.as_ptr();
+    <span class="kw">fn </span>is_heapified(child: Link&lt;T&gt;) -&gt; bool
+    <span class="kw">where
+        </span>T: Ord,
+    {
         <span class="kw">unsafe </span>{
-            <span class="kw">match </span>(<span class="kw-2">*</span>ptr).parent {
-                <span class="prelude-val">Some</span>(par) =&gt; (<span class="kw-2">*</span>par.node.as_ptr()).val &gt;= (<span class="kw-2">*</span>ptr).val,
+            <span class="kw">match </span>(<span class="kw-2">*</span>child.as_ptr()).parent {
+                <span class="prelude-val">Some</span>(par) =&gt; (<span class="kw-2">*</span>par.as_ptr()).val &gt;= (<span class="kw-2">*</span>child.as_ptr()).val,
                 <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
             }
         }
     }
+}
+
+<span class="kw">impl</span>&lt;T&gt; Node&lt;T&gt; {
+    <span class="kw">fn </span>drop(node: Link&lt;T&gt;) {
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(child) = Node::pop_child(node) {
+            <span class="self">Self</span>::drop(child);
+        }
+        <span class="kw">unsafe </span>{ drop(Box::from_raw(node.as_ptr())) };
+    }
+}
+
+<span class="kw">impl</span>&lt;T&gt; Handle&lt;T&gt; {
+    <span class="kw">fn </span>new(node: Link&lt;T&gt;) -&gt; <span class="self">Self </span>{ <span class="self">Self </span>{ node } }
 }
 
 <span class="kw">impl</span>&lt;T&gt; Copy <span class="kw">for </span>Handle&lt;T&gt; {}
@@ -1231,7 +1247,7 @@
 
 <span class="kw">impl</span>&lt;T: Ord&gt; Bucket&lt;T&gt; {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{ <span class="self">Self </span>{ bucket: <span class="macro">vec!</span>[] } }
-    <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, root: NonNull&lt;RootNode&lt;T&gt;&gt;) {
+    <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, root: RootLink&lt;T&gt;) {
         <span class="kw">let </span>order = RootNode::order(root);
         <span class="kw">if </span>order &gt;= <span class="self">self</span>.bucket.len() {
             <span class="self">self</span>.bucket.resize(order + <span class="number">1</span>, <span class="prelude-val">None</span>)
@@ -1242,7 +1258,7 @@
             <span class="self">self</span>.bucket[order] = <span class="prelude-val">Some</span>(root);
         }
     }
-    <span class="kw">pub fn </span>take(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = NonNull&lt;RootNode&lt;T&gt;&gt;&gt; {
+    <span class="kw">pub fn </span>take(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = RootLink&lt;T&gt;&gt; {
         <span class="self">self</span>.bucket.into_iter().filter_map(std::convert::identity)
     }
 }
