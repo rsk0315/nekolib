@@ -77,7 +77,7 @@ impl<T: Ord> FibonacciHeap<T> {
         }
     }
 
-    pub fn urge(&mut self, handle: Handle<T>, new: T) -> bool {
+    pub unsafe fn urge(&mut self, handle: Handle<T>, new: T) -> bool {
         let node = handle.node;
         unsafe {
             if (*node.as_ptr()).val >= new {
@@ -563,7 +563,7 @@ mod tests {
         q.push(1);
         let x2 = q.push(2);
         q.push(3);
-        q.urge(x2, 20);
+        unsafe { q.urge(x2, 20) };
         let actual: Vec<_> = (0..q.len()).map(|_| q.pop().unwrap()).collect();
         assert_eq!(actual, [20, 3, 1]);
 
@@ -576,19 +576,19 @@ mod tests {
         let _x7 = q.push(7);
         assert_eq!(q.pop(), Some(7));
 
-        q.urge(x5, 500);
+        unsafe { q.urge(x5, 500) };
         assert_eq!(q.pop(), Some(500));
 
-        q.urge(x1, 4);
+        unsafe { q.urge(x1, 4) };
         assert_eq!(q.pop(), Some(6));
 
-        q.urge(x2, 1);
+        unsafe { q.urge(x2, 1) };
         assert_eq!(q.pop(), Some(4));
 
-        q.urge(x3, 5);
+        unsafe { q.urge(x3, 5) };
         assert_eq!(q.pop(), Some(5));
 
-        q.urge(x2, 10);
+        unsafe { q.urge(x2, 10) };
         assert_eq!(q.pop(), Some(10));
 
         assert_eq!(q.pop(), Some(4));
