@@ -138,3 +138,22 @@
 //!
 //! ## See also
 //! - [rust-lang / **miri**](https://github.com/rust-lang/miri)
+
+#[test]
+fn invalidate() {
+    struct Foo(u32, u32);
+    let mut foo = Foo(10, 20);
+    let foo_mut: *mut _ = &mut foo;
+    unsafe { (*foo_mut).0 += 1 };
+    unsafe { assert_eq!((*foo_mut).0, 11) };
+    // let foo_const: *const _ = &foo;
+    let foo_const = &foo;
+    unsafe {
+        let _foo = &(*foo_mut);
+    }
+    assert_eq!(foo.0, 11);
+    // unsafe { assert_eq!((*foo_const).1, 20) };
+    assert_eq!(foo_const.1, 20);
+    unsafe { (*foo_mut).0 += 1 }; // UB detected when using -Zmiri-tree-borrows
+    unsafe { assert_eq!((*foo_mut).0, 12) };
+}
