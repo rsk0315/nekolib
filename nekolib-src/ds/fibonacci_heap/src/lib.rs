@@ -26,7 +26,7 @@ struct Node<T> {
     root: Option<RootLink<T>>,
 }
 
-pub struct Handle<T> {
+pub struct NodeRef<T> {
     node: Link<T>,
 }
 
@@ -40,11 +40,11 @@ impl<T: Ord> FibonacciHeap<T> {
     pub fn len(&self) -> usize { self.len }
     pub fn is_empty(&self) -> bool { self.len == 0 }
 
-    pub fn push(&mut self, elt: T) -> Handle<T> {
+    pub fn push(&mut self, elt: T) -> NodeRef<T> {
         self.len += 1;
         let new = Node::new(elt);
         self.push_root(RootNode::new(new));
-        Handle::new(new)
+        NodeRef::new(new)
     }
 
     pub fn pop(&mut self) -> Option<T> {
@@ -77,7 +77,7 @@ impl<T: Ord> FibonacciHeap<T> {
         }
     }
 
-    pub unsafe fn urge(&mut self, handle: Handle<T>, new: T) -> bool {
+    pub unsafe fn urge(&mut self, handle: NodeRef<T>, new: T) -> bool {
         let node = handle.node;
         unsafe {
             if (*node.as_ptr()).val >= new {
@@ -395,12 +395,12 @@ impl<T> Node<T> {
     }
 }
 
-impl<T> Handle<T> {
+impl<T> NodeRef<T> {
     fn new(node: Link<T>) -> Self { Self { node } }
 }
 
-impl<T> Copy for Handle<T> {}
-impl<T> Clone for Handle<T> {
+impl<T> Copy for NodeRef<T> {}
+impl<T> Clone for NodeRef<T> {
     fn clone(&self) -> Self { *self }
 }
 
