@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/ds/fibonacci_heap/src/lib.rs`."><title>lib.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="fibonacci_heap" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (5f2c7d2bf 2024-03-25)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/ds/fibonacci_heap/src/lib.rs`."><title>lib.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="fibonacci_heap" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (c9f8f3438 2024-03-27)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -867,7 +867,7 @@
     root: <span class="prelude-ty">Option</span>&lt;RootLink&lt;T&gt;&gt;,
 }
 
-<span class="kw">pub struct </span>Handle&lt;T&gt; {
+<span class="kw">pub struct </span>NodeRef&lt;T&gt; {
     node: Link&lt;T&gt;,
 }
 
@@ -881,11 +881,11 @@
     <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="self">self</span>.len }
     <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="self">self</span>.len == <span class="number">0 </span>}
 
-    <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, elt: T) -&gt; Handle&lt;T&gt; {
+    <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, elt: T) -&gt; NodeRef&lt;T&gt; {
         <span class="self">self</span>.len += <span class="number">1</span>;
         <span class="kw">let </span>new = Node::new(elt);
         <span class="self">self</span>.push_root(RootNode::new(new));
-        Handle::new(new)
+        NodeRef::new(new)
     }
 
     <span class="kw">pub fn </span>pop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
@@ -918,7 +918,7 @@
         }
     }
 
-    <span class="kw">pub unsafe fn </span>urge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: Handle&lt;T&gt;, new: T) -&gt; bool {
+    <span class="kw">pub unsafe fn </span>urge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: NodeRef&lt;T&gt;, new: T) -&gt; bool {
         <span class="kw">let </span>node = handle.node;
         <span class="kw">unsafe </span>{
             <span class="kw">if </span>(<span class="kw-2">*</span>node.as_ptr()).val &gt;= new {
@@ -1236,12 +1236,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; Handle&lt;T&gt; {
+<span class="kw">impl</span>&lt;T&gt; NodeRef&lt;T&gt; {
     <span class="kw">fn </span>new(node: Link&lt;T&gt;) -&gt; <span class="self">Self </span>{ <span class="self">Self </span>{ node } }
 }
 
-<span class="kw">impl</span>&lt;T&gt; Copy <span class="kw">for </span>Handle&lt;T&gt; {}
-<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>Handle&lt;T&gt; {
+<span class="kw">impl</span>&lt;T&gt; Copy <span class="kw">for </span>NodeRef&lt;T&gt; {}
+<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>NodeRef&lt;T&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{ <span class="kw-2">*</span><span class="self">self </span>}
 }
 

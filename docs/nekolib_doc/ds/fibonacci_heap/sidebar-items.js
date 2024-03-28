@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["FibonacciHeap","Handle"]};
+window.SIDEBAR_ITEMS = {"struct":["FibonacciHeap","NodeRef"]};
