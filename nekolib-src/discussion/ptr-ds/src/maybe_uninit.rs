@@ -48,13 +48,12 @@ mod playground {
         unsafe { *foo.a[1].assume_init_mut() = "deux".to_owned() }; // also ok
 
         let a = unsafe {
-            // Is `_` allowed because of the invariance?
-            &mut *(&mut foo.a[..2] as *mut [MaybeUninit<_>] as *mut [_])
+            &mut *(&mut foo.a[..2] as *mut [MaybeUninit<_>] as *mut [String])
         };
         a[0] = "uno".to_owned();
 
         let a = unsafe {
-            &*(&foo.a[..2] as *const [MaybeUninit<String>] as *const [String])
+            &*(&foo.a[..2] as *const [MaybeUninit<_>] as *const [String])
         };
         assert_eq!(a, ["uno", "deux"]);
 
