@@ -13,6 +13,7 @@
 //! - [handle](sample_handle/index.html)
 //! - TODO: [node-ref](sample_noderef/index.html)
 
+pub mod maybe_uninit;
 pub mod rawptr;
 pub mod sb;
 pub mod variance;
