@@ -319,7 +319,6 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! 未初期化の値。
 //!
 
@@ -370,13 +369,12 @@
         </span><span class="kw">unsafe </span>{ <span class="kw-2">*</span>foo.a[<span class="number">1</span>].assume_init_mut() = <span class="string">"deux"</span>.to_owned() }; <span class="comment">// also ok
 
         </span><span class="kw">let </span>a = <span class="kw">unsafe </span>{
-            <span class="comment">// Is `_` allowed because of the invariance?
-            </span><span class="kw-2">&amp;mut *</span>(<span class="kw-2">&amp;mut </span>foo.a[..<span class="number">2</span>] <span class="kw">as </span><span class="kw-2">*mut </span>[MaybeUninit&lt;<span class="kw">_</span>&gt;] <span class="kw">as </span><span class="kw-2">*mut </span>[<span class="kw">_</span>])
+            <span class="kw-2">&amp;mut *</span>(<span class="kw-2">&amp;mut </span>foo.a[..<span class="number">2</span>] <span class="kw">as </span><span class="kw-2">*mut </span>[MaybeUninit&lt;<span class="kw">_</span>&gt;] <span class="kw">as </span><span class="kw-2">*mut </span>[String])
         };
         a[<span class="number">0</span>] = <span class="string">"uno"</span>.to_owned();
 
         <span class="kw">let </span>a = <span class="kw">unsafe </span>{
-            <span class="kw-2">&amp;*</span>(<span class="kw-2">&amp;</span>foo.a[..<span class="number">2</span>] <span class="kw">as </span><span class="kw-2">*const </span>[MaybeUninit&lt;String&gt;] <span class="kw">as </span><span class="kw-2">*const </span>[String])
+            <span class="kw-2">&amp;*</span>(<span class="kw-2">&amp;</span>foo.a[..<span class="number">2</span>] <span class="kw">as </span><span class="kw-2">*const </span>[MaybeUninit&lt;<span class="kw">_</span>&gt;] <span class="kw">as </span><span class="kw-2">*const </span>[String])
         };
         <span class="macro">assert_eq!</span>(a, [<span class="string">"uno"</span>, <span class="string">"deux"</span>]);
 
