@@ -1,6 +1,7 @@
 use inner::doc_inline_reexport;
 
 doc_inline_reexport! {
+    btree_seq,
     fibonacci_heap,
     foldable_deque,
     foldable_queue,
