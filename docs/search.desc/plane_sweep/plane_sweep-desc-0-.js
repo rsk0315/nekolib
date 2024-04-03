@@ -1,0 +1,1 @@
+searchState.loadedDescShard("plane_sweep", 0, "平面走査。")

@@ -1,0 +1,1 @@
+searchState.loadedDescShard("majority_vote", 0, "")

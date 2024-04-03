@@ -1,0 +1,1 @@
+searchState.loadedDescShard("dp", 0, "動的計画法。")
