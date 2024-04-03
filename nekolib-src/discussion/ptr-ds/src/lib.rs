@@ -19,6 +19,7 @@ pub mod sb;
 pub mod variance;
 
 pub mod sample_handle;
+pub mod sample_list;
 pub mod sample_noderef;
 
 pub mod draft;

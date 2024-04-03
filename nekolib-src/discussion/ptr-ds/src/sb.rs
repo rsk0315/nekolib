@@ -63,10 +63,50 @@ mod treebor {
         let mut a = 1_u32;
         let mut_a = &mut a;
         let mut_p = mut_a as *mut u32;
+        assert_eq!(*mut_a, 1);
         unsafe { *mut_p += 1 };
         let shr_a = &a;
         let shr_p = shr_a as *const u32;
         assert_eq!(unsafe { *shr_p }, 2);
         assert_eq!(unsafe { *mut_p }, 2);
+    }
+
+    #[test]
+    fn foreign_read_on_reserved() {
+        let a = &mut 1;
+        let rmut = unsafe { &mut *(&mut *a as *mut _) };
+        // Stacked Borrows: `rmut` is now Disabled
+        // Tree Borrows: `rmut` stays Reserved
+        let _v = *a;
+        *rmut += 1;
+        assert_eq!(*rmut, 2);
+    }
+
+    #[test]
+    fn foreign_read_on_active() {
+        let a = &mut 1;
+        let rmut_1 = unsafe { &mut *(&mut *a as *mut _) };
+        // Tree Borrows: `rmut_1` is now Active
+        *rmut_1 += 1;
+
+        // Stacked Borrows: `rmut_1` is now Disabled
+        // Tree Borrows: `rmut_1` is now Frozen
+        let _v = *a;
+        let _v = *rmut_1; // ok
+
+        let rmut_2 = unsafe { &mut *(&mut *a as *mut _) };
+        let _v = *rmut_2;
+        let _v = *rmut_1; // ok
+    }
+
+    #[test]
+    fn interleave() {
+        let mut a = 0;
+        let p1 = unsafe { &mut *(&mut a as *mut i32) };
+        let p2 = unsafe { &mut *(&mut a as *mut i32) };
+
+        *p1 += 1;
+        *p2 += 2;
+        assert_eq!(a, 3);
     }
 }
