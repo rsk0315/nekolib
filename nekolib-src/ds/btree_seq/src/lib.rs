@@ -47,13 +47,20 @@ pub struct Range<'a, T>(PhantomData<&'a T>);
 pub struct RangeMut<'a, T>(PhantomData<&'a mut T>);
 
 mod marker {
+    use std::marker::PhantomData;
+
     pub enum Owned {}
     pub enum Dying {}
+    pub struct Mut<'a>(PhantomData<&'a mut ()>);
 
     pub enum Leaf {}
     pub enum Internal {}
     pub enum LeafOrInternal {}
 }
+
+trait Traversable {}
+impl Traversable for marker::Dying {}
+impl<'a> Traversable for marker::Mut<'a> {}
 
 impl<T> LeafNode<T> {
     fn new() -> NonNull<LeafNode<T>> {
@@ -81,6 +88,8 @@ impl<T> LeafNode<T> {
 
 type OwnedNodeRef<T> = NodeRef<marker::Owned, T, marker::LeafOrInternal>;
 type DyingNodeRef<T> = NodeRef<marker::Dying, T, marker::LeafOrInternal>;
+type MutNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>;
+type MutLeafNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Leaf>;
 
 impl<T> OwnedNodeRef<T> {
     fn new_leaf(elt: T) -> Self {
@@ -91,9 +100,45 @@ impl<T> OwnedNodeRef<T> {
         }
     }
 
+    fn first_leaf_mut<'a>(&'a self) -> MutLeafNodeRef<'a, T> {
+        let mut node: MutNodeRef<'a, T> = self.cast();
+        while let Some(child) = node.first_child() {
+            node = child;
+        }
+        node.cast()
+    }
+    fn last_leaf_mut<'a>(&'a self) -> MutLeafNodeRef<'a, T> {
+        let mut node: MutNodeRef<'a, T> = self.cast();
+        while let Some(child) = node.last_child() {
+            node = child;
+        }
+        node.cast()
+    }
+
     fn drop_subtree(&mut self) {
         let mut dying: DyingNodeRef<_> = self.cast();
         dying.drop_subtree();
+    }
+}
+
+impl<BorrowType: Traversable, T>
+    NodeRef<BorrowType, T, marker::LeafOrInternal>
+{
+    fn first_child(&self) -> Option<Self> {
+        let ptr = self.get_internal_ptr()?;
+        let node = unsafe { (*ptr).children[0].assume_init() };
+        let height = self.height - 1;
+        Some(Self { node, height, _marker: PhantomData })
+    }
+
+    fn last_child(&self) -> Option<Self> {
+        let ptr = self.get_internal_ptr()?;
+        let node = unsafe {
+            let init_len = (*ptr).data.buflen as usize;
+            (*ptr).children[init_len].assume_init()
+        };
+        let height = self.height - 1;
+        Some(Self { node, height, _marker: PhantomData })
     }
 }
 
@@ -121,6 +166,12 @@ impl<T> DyingNodeRef<T> {
             }
         }
     }
+}
+
+impl<'a, T> MutLeafNodeRef<'a, T> {
+    fn push_front(self, elt: T) { todo!() }
+    fn push_back(self, elt: T) { todo!() }
+    fn adjoin(self, sep: T, other: Self) { todo!() }
 }
 
 impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
@@ -151,6 +202,27 @@ impl<T> RootNode<T> {
         NonNull::from(Box::leak(Box::new(root)))
     }
 
+    fn borrow_mut<'a>(
+        &'a mut self,
+    ) -> NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal> {
+        self.node_ref.cast()
+    }
+
+    fn push_front(root: NonNull<RootNode<T>>, elt: T) {
+        unsafe { (*root.as_ptr()).node_ref.first_leaf_mut().push_front(elt) };
+    }
+    fn push_back(root: NonNull<RootNode<T>>, elt: T) {
+        unsafe { (*root.as_ptr()).node_ref.last_leaf_mut().push_back(elt) };
+    }
+    fn adjoin(left: NonNull<RootNode<T>>, sep: T, right: NonNull<RootNode<T>>) {
+        // unsafe {
+        //     let left = (*left.as_ptr()).borrow_mut();
+        //     let right = (*right.as_ptr()).borrow_mut();
+        //     left.adjoin(sep, right);
+        // }
+        todo!()
+    }
+
     fn drop_subtree(root: NonNull<RootNode<T>>) {
         let ptr = root.as_ptr();
         unsafe { (*ptr).node_ref.drop_subtree() };
@@ -170,17 +242,39 @@ impl<T> BTreeSeq<T> {
     }
     pub fn is_empty(&self) -> bool { self.root.is_none() }
 
-    pub fn push_back(&mut self, elt: T) { todo!() }
-    pub fn push_front(&mut self, elt: T) { todo!() }
-    pub fn pop_back(&mut self) -> Option<T> { todo!() }
+    pub fn push_front(&mut self, elt: T) {
+        if let Some(root) = self.root {
+            RootNode::push_front(root, elt);
+        } else {
+            self.root = Some(RootNode::new(elt));
+        }
+    }
+    pub fn push_back(&mut self, elt: T) {
+        if let Some(root) = self.root {
+            RootNode::push_back(root, elt);
+        } else {
+            self.root = Some(RootNode::new(elt));
+        }
+    }
     pub fn pop_front(&mut self) -> Option<T> { todo!() }
+    pub fn pop_back(&mut self) -> Option<T> { todo!() }
 
     pub fn insert(&mut self, i: usize, elt: T) { todo!() }
     pub fn remove(&mut self, i: usize) -> Option<T> { todo!() }
 
     pub fn append(&mut self, other: BTreeSeq<T>) { todo!() }
     pub fn split_off(&mut self, at: usize) -> BTreeSeq<T> { todo!() }
-    pub fn join(&mut self, sep: T, other: BTreeSeq<T>) { todo!() }
+    pub fn adjoin(&mut self, sep: T, mut other: BTreeSeq<T>) {
+        match (self.root, other.root) {
+            (Some(left), Some(right)) => RootNode::adjoin(left, sep, right),
+            (Some(left), None) => RootNode::push_back(left, sep),
+            (None, Some(right)) => {
+                RootNode::push_front(right, sep);
+                self.root = Some(right);
+            }
+            (None, None) => self.root = Some(RootNode::new(sep)),
+        }
+    }
 
     pub fn get(&self, i: usize) -> Option<&T> { todo!() }
     pub fn get_mut(&mut self, i: usize) -> Option<&mut T> { todo!() }
