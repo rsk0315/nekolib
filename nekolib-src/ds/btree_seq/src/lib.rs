@@ -30,7 +30,6 @@ struct NodeRef<BorrowType, T, NodeType> {
 
 struct RootNode<T> {
     node_ref: OwnedNodeRef<T>,
-    height: u8,
 }
 
 enum Todo {}
@@ -51,6 +50,7 @@ mod marker {
 
     pub enum Owned {}
     pub enum Dying {}
+    pub struct Immut<'a>(PhantomData<&'a ()>);
     pub struct Mut<'a>(PhantomData<&'a mut ()>);
 
     pub enum Leaf {}
@@ -60,11 +60,17 @@ mod marker {
 
 trait Traversable {}
 impl Traversable for marker::Dying {}
+impl<'a> Traversable for marker::Immut<'a> {}
 impl<'a> Traversable for marker::Mut<'a> {}
 
+impl<T, NodeType> Copy for NodeRef<marker::Immut<'_>, T, NodeType> {}
+impl<'a, T, NodeType> Clone for NodeRef<marker::Immut<'a>, T, NodeType> {
+    fn clone(&self) -> Self { self.cast() }
+}
+
 impl<T> LeafNode<T> {
-    fn new() -> NonNull<LeafNode<T>> {
-        let mut node_uninit = MaybeUninit::<LeafNode<T>>::uninit();
+    fn new() -> NonNull<Self> {
+        let mut node_uninit = MaybeUninit::<Self>::uninit();
         let ptr = node_uninit.as_mut_ptr();
         let node = unsafe {
             ptr::addr_of_mut!((*ptr).buflen).write(0);
@@ -74,20 +80,70 @@ impl<T> LeafNode<T> {
         };
         NonNull::from(Box::leak(Box::new(node)))
     }
-    fn singleton(elt: T) -> NonNull<LeafNode<T>> {
+    fn singleton(elt: T) -> NonNull<Self> {
+        let node = Self::new();
+        Self::push(node, elt);
+        node
+    }
+    fn push(node: NonNull<Self>, elt: T) {
+        unsafe {
+            let ptr = node.as_ptr();
+            (*ptr).treelen += 1;
+            let init_len = (*ptr).buflen;
+            let i = init_len as usize;
+            (*ptr).buf[i].write(elt);
+            (*ptr).buflen += 1;
+        }
+    }
+}
+
+impl<T> InternalNode<T> {
+    fn new() -> NonNull<Self> {
+        let mut node_uninit = MaybeUninit::<Self>::uninit();
+        let ptr = node_uninit.as_mut_ptr();
+        let node = unsafe {
+            ptr::addr_of_mut!((*ptr).data.buflen).write(0);
+            ptr::addr_of_mut!((*ptr).data.treelen).write(0);
+            ptr::addr_of_mut!((*ptr).data.parent).write(None);
+            node_uninit.assume_init()
+        };
+        NonNull::from(Box::leak(Box::new(node)))
+    }
+    fn single_child(child: NonNull<LeafNode<T>>) -> NonNull<Self> {
         let node = Self::new();
         unsafe {
             let ptr = node.as_ptr();
-            (*ptr).buflen = 1;
-            (*ptr).treelen = 1;
-            (*ptr).buf[0].write(elt);
+            let child_ptr = child.as_ptr();
+            (*child_ptr).parent = Some(node);
+            (*child_ptr).parent_idx.write(0);
+            (*ptr).children[0].write(child);
+            (*ptr).data.treelen = (*child_ptr).treelen;
         }
         node
+    }
+    fn push(node: NonNull<Self>, elt: T, child: NonNull<LeafNode<T>>) {
+        unsafe {
+            let ptr = node.as_ptr();
+            let child_ptr = child.as_ptr();
+            (*ptr).data.treelen += 1 + (*child_ptr).treelen;
+            let init_len = (*ptr).data.buflen;
+            let i = init_len as usize;
+            (*child_ptr).parent = Some(node);
+            (*child_ptr).parent_idx.write(init_len + 1);
+            (*ptr).children[i + 1].write(child);
+            (*ptr).data.buf[i].write(elt);
+            (*ptr).data.buflen += 1;
+        }
+    }
+    fn as_leaf_ptr(this: NonNull<Self>) -> NonNull<LeafNode<T>> {
+        NonNull::new(this.as_ptr() as *mut LeafNode<T>).unwrap()
     }
 }
 
 type OwnedNodeRef<T> = NodeRef<marker::Owned, T, marker::LeafOrInternal>;
 type DyingNodeRef<T> = NodeRef<marker::Dying, T, marker::LeafOrInternal>;
+type ImmutNodeRef<'a, T> =
+    NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal>;
 type MutNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>;
 type MutLeafNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Leaf>;
 
@@ -130,12 +186,20 @@ impl<BorrowType: Traversable, T>
         let height = self.height - 1;
         Some(Self { node, height, _marker: PhantomData })
     }
-
     fn last_child(&self) -> Option<Self> {
         let ptr = self.get_internal_ptr()?;
         let node = unsafe {
             let init_len = (*ptr).data.buflen as usize;
             (*ptr).children[init_len].assume_init()
+        };
+        let height = self.height - 1;
+        Some(Self { node, height, _marker: PhantomData })
+    }
+    fn select_child(&self, i: usize) -> Option<Self> {
+        let ptr = self.get_internal_ptr()?;
+        let node = unsafe {
+            let init_len = (*ptr).data.buflen as usize;
+            (i <= init_len).then(|| (*ptr).children[i].assume_init())?
         };
         let height = self.height - 1;
         Some(Self { node, height, _marker: PhantomData })
@@ -168,6 +232,106 @@ impl<T> DyingNodeRef<T> {
     }
 }
 
+impl<'a, T> ImmutNodeRef<'a, T> {
+    fn visualize(self)
+    where
+        T: std::fmt::Debug,
+    {
+        struct State {
+            path: Vec<Kind>,
+        }
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        enum Kind {
+            IntPre,
+            IntFst,
+            IntMid,
+            IntLst,
+            LeafFst,
+            LeafMid,
+            LeafLst,
+        }
+        use Kind::*;
+        impl State {
+            fn display<T: std::fmt::Debug>(&self, elt: &T) {
+                let mut prefix = "".to_owned();
+                for i in 0..self.path.len() - 1 {
+                    let k0 = self.path[i];
+                    let k1 = self.path[i + 1];
+                    let term = i + 1 == self.path.len() - 1;
+                    prefix += match (k0, k1) {
+                        (IntPre, IntPre) => "    ",
+                        (IntPre, IntFst) if term => "┌── ",
+                        (IntPre, IntFst | IntMid | IntLst) => "│   ",
+                        (IntPre, LeafFst) => "┌── ",
+                        (IntPre, LeafMid | LeafLst) => "├── ",
+                        (IntFst, IntFst) if term => "├── ",
+                        (IntFst, IntPre | IntFst | IntMid | IntLst) => "│   ",
+                        (IntFst, LeafFst | LeafMid | LeafLst) => "├── ",
+                        (IntMid, IntFst) if term => "├── ",
+                        (IntMid, IntPre | IntFst | IntMid | IntLst) => "│   ",
+                        (IntMid, LeafFst | LeafMid | LeafLst) => "├── ",
+                        (IntLst, IntPre) => "│   ",
+                        (IntLst, IntFst) if term => "└── ",
+                        (IntLst, IntFst | IntMid | IntLst) => "    ",
+                        (IntLst, LeafFst | LeafMid) => "├── ",
+                        (IntLst, LeafLst) => "└── ",
+                        (LeafFst | LeafMid | LeafLst, _) => unreachable!(),
+                    };
+                }
+                eprintln!("{prefix}{elt:?}");
+            }
+            fn push(&mut self, k: Kind) { self.path.push(k); }
+            fn pop(&mut self) { self.path.pop(); }
+        }
+
+        fn dfs<'a, T: std::fmt::Debug>(
+            node_ref: ImmutNodeRef<'a, T>,
+            state: &mut State,
+        ) {
+            unsafe {
+                let ptr = node_ref.node.as_ptr();
+                let init_len = (*ptr).buflen as usize;
+                let height = node_ref.height;
+                if node_ref.is_internal() {
+                    {
+                        state.push(Kind::IntPre);
+                        dfs(node_ref.first_child().unwrap(), state);
+                        state.pop();
+                    }
+                    for i in 0..init_len {
+                        if i == 0 {
+                            state.push(Kind::IntFst);
+                        } else if i == init_len - 1 {
+                            state.push(Kind::IntLst);
+                        } else {
+                            state.push(Kind::IntMid);
+                        }
+                        state.display((*ptr).buf[i].assume_init_ref());
+                        dfs(node_ref.select_child(i + 1).unwrap(), state);
+                        state.pop();
+                    }
+                } else {
+                    let leaf_ptr = ptr;
+                    for i in 0..init_len {
+                        if i == 0 {
+                            state.push(Kind::LeafFst);
+                        } else if i == init_len - 1 {
+                            state.push(Kind::LeafLst);
+                        } else {
+                            state.push(Kind::LeafMid);
+                        }
+                        state.display((*ptr).buf[i].assume_init_ref());
+                        state.pop();
+                    }
+                }
+            }
+        }
+
+        let mut state = State { path: vec![] };
+        dfs(self, &mut state);
+    }
+}
+
 impl<'a, T> MutLeafNodeRef<'a, T> {
     fn push_front(self, elt: T) { todo!() }
     fn push_back(self, elt: T) { todo!() }
@@ -197,14 +361,12 @@ impl<T> RootNode<T> {
     fn new(elt: T) -> NonNull<Self> {
         let root = Self {
             node_ref: OwnedNodeRef::<T>::new_leaf(elt).forget_type(),
-            height: 0,
         };
         NonNull::from(Box::leak(Box::new(root)))
     }
 
-    fn borrow_mut<'a>(
-        &'a mut self,
-    ) -> NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal> {
+    fn borrow<'a>(&'a self) -> ImmutNodeRef<'a, T> { self.node_ref.cast() }
+    fn borrow_mut<'a>(&'a mut self) -> MutNodeRef<'a, T> {
         self.node_ref.cast()
     }
 
@@ -226,6 +388,13 @@ impl<T> RootNode<T> {
     fn drop_subtree(root: NonNull<RootNode<T>>) {
         let ptr = root.as_ptr();
         unsafe { (*ptr).node_ref.drop_subtree() };
+    }
+
+    fn visualize(root: NonNull<RootNode<T>>)
+    where
+        T: std::fmt::Debug,
+    {
+        unsafe { (*root.as_ptr()).borrow().visualize() }
     }
 }
 
@@ -293,6 +462,17 @@ impl<T> BTreeSeq<T> {
         let mut tmp = self.split_off(new_first);
         tmp.append(std::mem::take(self));
         *self = tmp;
+    }
+
+    pub fn visualize(&self)
+    where
+        T: std::fmt::Debug,
+    {
+        if let Some(root) = self.root {
+            RootNode::visualize(root);
+        } else {
+            eprintln!(".");
+        }
     }
 }
 
@@ -409,6 +589,8 @@ impl<T> RootNode<T> {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::RangeFrom;
+
     use super::*;
 
     #[test]
@@ -423,5 +605,49 @@ mod tests {
         let a = BTreeSeq::singleton(());
         assert_eq!(a.len(), 1);
         assert!(!a.is_empty());
+    }
+
+    #[test]
+    fn test_vz() {
+        let node0 = |it: &mut RangeFrom<i32>| {
+            let leaf = LeafNode::singleton(it.next().unwrap());
+            LeafNode::push(leaf, it.next().unwrap());
+            LeafNode::push(leaf, it.next().unwrap());
+            leaf
+        };
+        let node1 = |it: &mut RangeFrom<i32>| {
+            let intn = InternalNode::single_child(node0(it));
+            let v0 = it.next().unwrap();
+            InternalNode::push(intn, v0, node0(it));
+            let v1 = it.next().unwrap();
+            InternalNode::push(intn, v1, node0(it));
+            let v2 = it.next().unwrap();
+            InternalNode::push(intn, v2, node0(it));
+            InternalNode::as_leaf_ptr(intn)
+        };
+        let node2 = |it: &mut RangeFrom<i32>| {
+            let intn = InternalNode::single_child(node1(it));
+            let v0 = it.next().unwrap();
+            InternalNode::push(intn, v0, node1(it));
+            let v1 = it.next().unwrap();
+            InternalNode::push(intn, v1, node1(it));
+            let v2 = it.next().unwrap();
+            InternalNode::push(intn, v2, node1(it));
+            InternalNode::as_leaf_ptr(intn)
+        };
+
+        let seq = |node, height| {
+            let root = RootNode {
+                node_ref: OwnedNodeRef { node, height, _marker: PhantomData },
+            };
+            let root = NonNull::from(Box::leak(Box::new(root)));
+            BTreeSeq { root: Some(root) }
+        };
+
+        eprintln!();
+        seq(node2(&mut (0..)), 2).visualize();
+        seq(node1(&mut (0..)), 1).visualize();
+        seq(node0(&mut (0..)), 0).visualize();
+        BTreeSeq::<()>::new().visualize();
     }
 }
