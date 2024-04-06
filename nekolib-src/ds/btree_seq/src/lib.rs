@@ -1,5 +1,8 @@
 use std::{
-    marker::PhantomData, mem::MaybeUninit, ops::RangeBounds, ptr::NonNull,
+    marker::PhantomData,
+    mem::MaybeUninit,
+    ops::RangeBounds,
+    ptr::{self, NonNull},
 };
 
 const B: usize = 6;
@@ -16,19 +19,17 @@ struct LeafNode<T> {
 #[repr(C)]
 struct InternalNode<T> {
     data: LeafNode<T>,
-    children: [MaybeUninit<BoxedNode<T>>; CAPACITY + 1],
+    children: [MaybeUninit<NonNull<LeafNode<T>>>; CAPACITY + 1],
 }
 
-struct NodeRef<BorrowType, T> {
+struct NodeRef<BorrowType, T, NodeType> {
     node: NonNull<LeafNode<T>>,
     height: u8,
-    _marker: PhantomData<(BorrowType, T)>,
+    _marker: PhantomData<(BorrowType, T, NodeType)>,
 }
 
-type BoxedNode<T> = NonNull<LeafNode<T>>;
-
 struct RootNode<T> {
-    node: NonNull<LeafNode<T>>,
+    node_ref: NodeRef<marker::Owned, T, marker::LeafOrInternal>,
     height: u8,
 }
 
@@ -45,12 +46,79 @@ pub struct IntoIter<T>(PhantomData<T>);
 pub struct Range<'a, T>(PhantomData<&'a T>);
 pub struct RangeMut<'a, T>(PhantomData<&'a mut T>);
 
+mod marker {
+    pub enum Owned {}
+
+    pub enum Leaf {}
+    pub enum Internal {}
+    pub enum LeafOrInternal {}
+}
+
+impl<T> LeafNode<T> {
+    fn new() -> NonNull<LeafNode<T>> {
+        let mut node_uninit = MaybeUninit::<LeafNode<T>>::uninit();
+        let ptr = node_uninit.as_mut_ptr();
+        let node = unsafe {
+            ptr::addr_of_mut!((*ptr).buflen).write(0);
+            ptr::addr_of_mut!((*ptr).treelen).write(0);
+            ptr::addr_of_mut!((*ptr).parent).write(None);
+            node_uninit.assume_init()
+        };
+        NonNull::from(Box::leak(Box::new(node)))
+    }
+    fn singleton(elt: T) -> NonNull<LeafNode<T>> {
+        let node = Self::new();
+        unsafe {
+            let ptr = node.as_ptr();
+            (*ptr).buflen = 1;
+            (*ptr).treelen = 1;
+            (*ptr).buf[0].write(elt);
+        }
+        node
+    }
+}
+
+type RootNodeRef<T> = NodeRef<marker::Owned, T, marker::Leaf>;
+
+impl<T> RootNodeRef<T> {
+    fn new_leaf(elt: T) -> Self {
+        Self {
+            node: LeafNode::<T>::singleton(elt),
+            height: 0,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
+    fn forget_type(self) -> NodeRef<BorrowType, T, marker::LeafOrInternal> {
+        NodeRef {
+            node: self.node,
+            height: self.height,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<T> RootNode<T> {
+    fn new(elt: T) -> NonNull<Self> {
+        let root = Self {
+            node_ref: RootNodeRef::<T>::new_leaf(elt).forget_type(),
+            height: 0,
+        };
+        NonNull::from(Box::leak(Box::from(root)))
+    }
+}
+
 impl<T> BTreeSeq<T> {
     pub fn new() -> Self { Self { root: None } }
+    pub fn singleton(elt: T) -> Self { Self { root: Some(RootNode::new(elt)) } }
 
     pub fn len(&self) -> usize {
         self.root
-            .map(|root| unsafe { (*(*root.as_ptr()).node.as_ptr()).treelen })
+            .map(|root| unsafe {
+                (*(*root.as_ptr()).node_ref.node.as_ptr()).treelen
+            })
             .unwrap_or(0)
     }
     pub fn is_empty(&self) -> bool { self.root.is_none() }
