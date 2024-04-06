@@ -318,8 +318,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_empty() {
+        let a = BTreeSeq::<()>::new();
+        assert_eq!(a.len(), 0);
+        assert!(a.is_empty());
+    }
+
+    #[test]
     fn test_singleton() {
         let a = BTreeSeq::singleton(());
         assert_eq!(a.len(), 1);
+        assert!(!a.is_empty());
     }
 }
