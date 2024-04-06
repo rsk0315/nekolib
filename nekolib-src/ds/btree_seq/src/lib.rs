@@ -248,6 +248,7 @@ impl<T> DyingNodeRef<T> {
 }
 
 impl<'a, T> ImmutNodeRef<'a, T> {
+    #[cfg(test)]
     fn visualize(self)
     where
         T: std::fmt::Debug,
@@ -453,6 +454,7 @@ impl<T> RootNode<T> {
         unsafe { (*ptr).node_ref.drop_subtree() };
     }
 
+    #[cfg(test)]
     fn visualize(root: NonNull<RootNode<T>>)
     where
         T: std::fmt::Debug,
@@ -527,6 +529,7 @@ impl<T> BTreeSeq<T> {
         *self = tmp;
     }
 
+    #[cfg(test)]
     pub fn visualize(&self)
     where
         T: std::fmt::Debug,
