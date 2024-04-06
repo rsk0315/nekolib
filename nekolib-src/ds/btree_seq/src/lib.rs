@@ -29,7 +29,7 @@ struct NodeRef<BorrowType, T, NodeType> {
 }
 
 struct RootNode<T> {
-    node_ref: NodeRef<marker::Owned, T, marker::LeafOrInternal>,
+    node_ref: OwnedNodeRef<T>,
     height: u8,
 }
 
@@ -48,6 +48,7 @@ pub struct RangeMut<'a, T>(PhantomData<&'a mut T>);
 
 mod marker {
     pub enum Owned {}
+    pub enum Dying {}
 
     pub enum Leaf {}
     pub enum Internal {}
@@ -78,9 +79,10 @@ impl<T> LeafNode<T> {
     }
 }
 
-type RootNodeRef<T> = NodeRef<marker::Owned, T, marker::Leaf>;
+type OwnedNodeRef<T> = NodeRef<marker::Owned, T, marker::LeafOrInternal>;
+type DyingNodeRef<T> = NodeRef<marker::Dying, T, marker::LeafOrInternal>;
 
-impl<T> RootNodeRef<T> {
+impl<T> OwnedNodeRef<T> {
     fn new_leaf(elt: T) -> Self {
         Self {
             node: LeafNode::<T>::singleton(elt),
@@ -88,25 +90,70 @@ impl<T> RootNodeRef<T> {
             _marker: PhantomData,
         }
     }
+
+    fn drop_subtree(&mut self) {
+        let mut dying: DyingNodeRef<_> = self.cast();
+        dying.drop_subtree();
+    }
+}
+
+impl<T> DyingNodeRef<T> {
+    fn drop_subtree(&mut self) {
+        let height = self.height;
+        let leaf_ptr = self.node.as_ptr();
+        unsafe {
+            let init_len = (*leaf_ptr).buflen as usize;
+            for e in &mut (*leaf_ptr).buf[..init_len] {
+                e.assume_init_drop();
+            }
+            if let Some(internal_ptr) = self.get_internal_ptr() {
+                for e in &(*internal_ptr).children[..=init_len] {
+                    let mut child = DyingNodeRef {
+                        node: e.assume_init(),
+                        height: height - 1,
+                        _marker: PhantomData,
+                    };
+                    child.drop_subtree();
+                }
+                drop(Box::from_raw(internal_ptr));
+            } else {
+                drop(Box::from_raw(leaf_ptr));
+            }
+        }
+    }
 }
 
 impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     fn forget_type(self) -> NodeRef<BorrowType, T, marker::LeafOrInternal> {
+        self.cast()
+    }
+    fn cast<NewBorrowType, NewNodeType>(
+        &self,
+    ) -> NodeRef<NewBorrowType, T, NewNodeType> {
         NodeRef {
             node: self.node,
             height: self.height,
             _marker: PhantomData,
         }
     }
+    fn get_internal_ptr(&self) -> Option<*mut InternalNode<T>> {
+        (self.is_internal()).then(|| self.node.as_ptr() as *mut InternalNode<T>)
+    }
+    fn is_internal(&self) -> bool { self.height > 0 }
 }
 
 impl<T> RootNode<T> {
     fn new(elt: T) -> NonNull<Self> {
         let root = Self {
-            node_ref: RootNodeRef::<T>::new_leaf(elt).forget_type(),
+            node_ref: OwnedNodeRef::<T>::new_leaf(elt).forget_type(),
             height: 0,
         };
-        NonNull::from(Box::leak(Box::from(root)))
+        NonNull::from(Box::leak(Box::new(root)))
+    }
+
+    fn drop_subtree(root: NonNull<RootNode<T>>) {
+        let ptr = root.as_ptr();
+        unsafe { (*ptr).node_ref.drop_subtree() };
     }
 }
 
@@ -156,7 +203,14 @@ impl<T> BTreeSeq<T> {
 }
 
 impl<T> Drop for BTreeSeq<T> {
-    fn drop(&mut self) { todo!() }
+    fn drop(&mut self) {
+        if let Some(root) = self.root {
+            unsafe {
+                RootNode::drop_subtree(root);
+                drop(Box::from_raw(root.as_ptr()));
+            }
+        }
+    }
 }
 
 impl<T> Default for BTreeSeq<T> {
@@ -259,6 +313,13 @@ impl<T> RootNode<T> {
     fn select(root: NonNull<Self>, i: usize) -> Option<Todo> { todo!() }
 }
 
-impl<T> Drop for RootNode<T> {
-    fn drop(&mut self) { todo!() }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_singleton() {
+        let a = BTreeSeq::singleton(());
+        assert_eq!(a.len(), 1);
+    }
 }
