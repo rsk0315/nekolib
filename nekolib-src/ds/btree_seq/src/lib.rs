@@ -10,7 +10,7 @@ const CAPACITY: usize = 2 * B - 1;
 
 struct LeafNode<T> {
     buflen: u8,
-    treelen: usize,
+    treelen: usize, // move to `InternalNode<T>`?
     buf: [MaybeUninit<T>; CAPACITY],
     parent: Option<NonNull<InternalNode<T>>>,
     parent_idx: MaybeUninit<u8>,
@@ -30,6 +30,13 @@ struct NodeRef<BorrowType, T, NodeType> {
 
 struct RootNode<T> {
     node_ref: OwnedNodeRef<T>,
+}
+
+struct SplitResult<T> {
+    left: NonNull<LeafNode<T>>,
+    right: NonNull<LeafNode<T>>,
+    root: NonNull<LeafNode<T>>,
+    height: u8,
 }
 
 enum Todo {}
@@ -66,6 +73,14 @@ impl<'a> Traversable for marker::Mut<'a> {}
 impl<T, NodeType> Copy for NodeRef<marker::Immut<'_>, T, NodeType> {}
 impl<'a, T, NodeType> Clone for NodeRef<marker::Immut<'a>, T, NodeType> {
     fn clone(&self) -> Self { self.cast() }
+}
+
+fn shr<T>(slice: &mut [T]) {
+    let src = ptr::addr_of!(slice[0]);
+    let dst = ptr::addr_of_mut!(slice[1]);
+    unsafe {
+        ptr::copy(src, dst, slice.len());
+    }
 }
 
 impl<T> LeafNode<T> {
@@ -333,9 +348,46 @@ impl<'a, T> ImmutNodeRef<'a, T> {
 }
 
 impl<'a, T> MutLeafNodeRef<'a, T> {
-    fn push_front(self, elt: T) { todo!() }
-    fn push_back(self, elt: T) { todo!() }
+    #[must_use]
+    fn push_front(self, elt: T) -> Option<(NonNull<LeafNode<T>>, u8)> {
+        unsafe {
+            let (ptr, changed) = if self.is_full() {
+                let SplitResult { left, root, height, .. } = self.split();
+                (left.as_ptr(), Some((root, height)))
+            } else {
+                (self.node.as_ptr(), None)
+            };
+            let len = (*ptr).buflen as usize;
+            shr(&mut (*ptr).buf[..len]);
+            (*ptr).buf[0].write(elt);
+            (*ptr).buflen += 1;
+            (*ptr).treelen += 1;
+            todo!("size fix up");
+            changed
+        }
+    }
+    fn push_back(self, elt: T) -> Option<(NonNull<LeafNode<T>>, u8)> {
+        unsafe {
+            let (ptr, changed) = if self.is_full() {
+                let SplitResult { right, root, height, .. } = self.split();
+                (right.as_ptr(), Some((root, height)))
+            } else {
+                (self.node.as_ptr(), None)
+            };
+            let len = (*ptr).buflen as usize;
+            (*ptr).buf[len].write(elt);
+            (*ptr).buflen += 1;
+            (*ptr).treelen += 1;
+            todo!("size fix up");
+            changed
+        }
+    }
     fn adjoin(self, sep: T, other: Self) { todo!() }
+
+    #[must_use]
+    fn split(self) -> SplitResult<T> {
+        todo!();
+    }
 }
 
 impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
@@ -355,6 +407,10 @@ impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
         (self.is_internal()).then(|| self.node.as_ptr() as *mut InternalNode<T>)
     }
     fn is_internal(&self) -> bool { self.height > 0 }
+    fn is_full(&self) -> bool {
+        let ptr = self.node.as_ptr();
+        unsafe { (*ptr).buflen as usize == CAPACITY }
+    }
 }
 
 impl<T> RootNode<T> {
@@ -371,7 +427,14 @@ impl<T> RootNode<T> {
     }
 
     fn push_front(root: NonNull<RootNode<T>>, elt: T) {
-        unsafe { (*root.as_ptr()).node_ref.first_leaf_mut().push_front(elt) };
+        unsafe {
+            if let Some((new_root, new_height)) =
+                (*root.as_ptr()).node_ref.first_leaf_mut().push_front(elt)
+            {
+                (*root.as_ptr()).node_ref.node = new_root;
+                (*root.as_ptr()).node_ref.height = new_height;
+            }
+        };
     }
     fn push_back(root: NonNull<RootNode<T>>, elt: T) {
         unsafe { (*root.as_ptr()).node_ref.last_leaf_mut().push_back(elt) };
@@ -649,5 +712,25 @@ mod tests {
         seq(node1(&mut (0..)), 1).visualize();
         seq(node0(&mut (0..)), 0).visualize();
         BTreeSeq::<()>::new().visualize();
+    }
+
+    #[test]
+    fn test_shr() {
+        struct Foo([MaybeUninit<String>; 5]);
+        unsafe {
+            let mut foo = MaybeUninit::<Foo>::uninit().assume_init();
+            foo.0[0].write("second".to_owned());
+            foo.0[1].write("third".to_owned());
+            shr(&mut foo.0[..2]);
+            foo.0[0].write("first".to_owned());
+
+            assert_eq!(foo.0[0].assume_init_ref(), "first");
+            assert_eq!(foo.0[1].assume_init_ref(), "second");
+            assert_eq!(foo.0[2].assume_init_ref(), "third");
+
+            foo.0[0].assume_init_drop();
+            foo.0[1].assume_init_drop();
+            foo.0[2].assume_init_drop();
+        }
     }
 }
