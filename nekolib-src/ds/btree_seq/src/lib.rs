@@ -210,6 +210,27 @@ impl<T> OwnedNodeRef<T> {
     }
 }
 
+impl<BorrowType, T> NodeRef<BorrowType, T, marker::LeafOrInternal> {
+    fn get_internal_ptr(&self) -> Option<*mut InternalNode<T>> {
+        (self.is_internal()).then(|| self.node.as_ptr() as *mut InternalNode<T>)
+    }
+    fn treelen(&self) -> usize {
+        unsafe {
+            if let Some(internal_ptr) = self.get_internal_ptr() {
+                (*internal_ptr).treelen
+            } else {
+                (*self.node.as_ptr()).buflen as _
+            }
+        }
+    }
+}
+
+impl<BorrowType, T> NodeRef<BorrowType, T, marker::Internal> {
+    fn as_internal_ptr(&self) -> *mut InternalNode<T> {
+        self.node.as_ptr() as *mut InternalNode<T>
+    }
+}
+
 impl<BorrowType: Traversable, T>
     NodeRef<BorrowType, T, marker::LeafOrInternal>
 {
@@ -236,6 +257,36 @@ impl<BorrowType: Traversable, T>
         };
         let height = self.height - 1;
         Some(Self { node, height, _marker: PhantomData })
+    }
+}
+
+impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Internal> {
+    fn first_child(&self) -> NodeRef<BorrowType, T, marker::LeafOrInternal> {
+        let ptr = self.as_internal_ptr();
+        let node = unsafe { (*ptr).children[0].assume_init() };
+        let height = self.height - 1;
+        NodeRef { node, height, _marker: PhantomData }
+    }
+    fn last_child(&self) -> NodeRef<BorrowType, T, marker::LeafOrInternal> {
+        let ptr = self.as_internal_ptr();
+        let node = unsafe {
+            let init_len = (*ptr).data.buflen as usize;
+            (*ptr).children[init_len].assume_init()
+        };
+        let height = self.height - 1;
+        NodeRef { node, height, _marker: PhantomData }
+    }
+    fn select_child(
+        &self,
+        i: usize,
+    ) -> Option<NodeRef<BorrowType, T, marker::LeafOrInternal>> {
+        let ptr = self.as_internal_ptr();
+        let node = unsafe {
+            let init_len = (*ptr).data.buflen as usize;
+            (i <= init_len).then(|| (*ptr).children[i].assume_init())?
+        };
+        let height = self.height - 1;
+        Some(NodeRef { node, height, _marker: PhantomData })
     }
 }
 
@@ -431,7 +482,20 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     fn repair_children(&mut self) {
         // Repair `.parent` and `.parent_idx` of the children of this
         // node, as well as `.treelen` of this node.
-        todo!()
+        let ptr = self.as_internal_ptr();
+        let parent = NonNull::new(ptr);
+        unsafe {
+            let init_len = (*ptr).data.buflen as usize;
+            let mut treelen = init_len;
+            for i in 0..=init_len {
+                let child = self.select_child(i).unwrap();
+                let ptr = child.node.as_ptr();
+                (*ptr).parent = parent;
+                (*child.node.as_ptr()).parent_idx.write(i as _);
+                treelen += (*child.node.as_ptr()).buflen as usize;
+            }
+            (*ptr).treelen = treelen;
+        }
     }
 }
 
@@ -448,23 +512,11 @@ impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
             _marker: PhantomData,
         }
     }
-    fn get_internal_ptr(&self) -> Option<*mut InternalNode<T>> {
-        (self.is_internal()).then(|| self.node.as_ptr() as *mut InternalNode<T>)
-    }
     fn is_leaf(&self) -> bool { self.height == 0 }
     fn is_internal(&self) -> bool { self.height > 0 }
     fn is_full(&self) -> bool {
         let ptr = self.node.as_ptr();
         unsafe { (*ptr).buflen as usize == CAPACITY }
-    }
-    fn treelen(&self) -> usize {
-        unsafe {
-            if let Some(internal_ptr) = self.get_internal_ptr() {
-                (*internal_ptr).treelen
-            } else {
-                (*self.node.as_ptr()).buflen as _
-            }
-        }
     }
 }
 
