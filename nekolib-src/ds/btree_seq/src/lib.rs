@@ -300,9 +300,9 @@ impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     fn parent_with_index(
         &self,
     ) -> Option<(NodeRef<BorrowType, T, marker::Internal>, u8)> {
-        let parent = self.parent()?;
-        let idx = unsafe { (*self.node.as_ptr()).parent_idx.assume_init() };
-        Some((parent, idx))
+        self.parent().map(|parent| unsafe {
+            (parent, (*self.node.as_ptr()).parent_idx.assume_init())
+        })
     }
 }
 
@@ -433,6 +433,10 @@ impl<'a, T> ImmutNodeRef<'a, T> {
     }
 }
 
+impl<'a, T, BorrowType> NodeRef<marker::Mut<'a>, T, BorrowType> {
+    fn reborrow_mut(&mut self) -> Self { self.cast() }
+}
+
 impl<'a, T> MutLeafNodeRef<'a, T> {
     #[must_use]
     fn push_front(self, elt: T) -> (NonNull<LeafNode<T>>, u8) {
@@ -446,14 +450,56 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     fn adjoin(self, _sep: T, _other: Self) { todo!() }
 
     #[must_use]
-    fn insert(self, _i: usize, _elt: T) -> (NonNull<LeafNode<T>>, u8) {
-        todo!()
+    fn insert(mut self, i: usize, elt: T) -> (NonNull<LeafNode<T>>, u8) {
+        if let Some((parent, parent_idx)) = self.parent_with_index() {
+            if self.is_full() {
+                let ([mut left, mut right], pop) = self.split_half();
+                if i < B {
+                    left.insert_fit(i, elt);
+                } else {
+                    right.insert_fit(i - B, elt);
+                }
+                parent.insert(parent_idx as _, pop, [
+                    left.reborrow_mut(),
+                    right.reborrow_mut(),
+                ])
+            } else {
+                self.insert_fit(i, elt);
+                parent.repair_to_root() // NOTE: just `.treelen += 1` will do.
+            }
+        } else {
+            if self.is_full() {
+                let ([mut left, mut right], pop) = self.split_half();
+                if i < B {
+                    left.insert_fit(i, elt);
+                } else {
+                    right.insert_fit(i - B, elt);
+                }
+                let parent = InternalNode::single_child(left.node, B - 1);
+                InternalNode::push(parent, pop, right.node, B);
+                (InternalNode::as_leaf_ptr(parent), 1)
+            } else {
+                self.insert_fit(i, elt);
+                (self.node, 0)
+            }
+        }
+    }
+
+    fn insert_fit(&mut self, i: usize, elt: T) {
+        let ptr = self.node.as_ptr();
+        unsafe {
+            let init_len = (*ptr).buflen as usize;
+            debug_assert!(i <= init_len);
+            if i < init_len {
+                shr(&mut (*ptr).buf[i..init_len], 1);
+            }
+            (*ptr).buf[i].write(elt);
+            (*ptr).buflen += 1;
+        }
     }
 
     #[must_use]
-    fn split_half<NodeType>(
-        self,
-    ) -> ([NodeRef<marker::Mut<'a>, T, NodeType>; 2], T) {
+    fn split_half(self) -> ([NodeRef<marker::Mut<'a>, T, marker::Leaf>; 2], T) {
         // The field `.parent_idx` (of `self.node` and its siblings) should
         // be repaired by the caller, as we can't determine the parents of
         // these nodes at this point.
@@ -470,14 +516,17 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
 
 impl<'a, T> MutInternalNodeRef<'a, T> {
     #[must_use]
-    fn insert<BorrowType>(
+    fn insert<NodeType>(
         self,
         _i: usize,
         _elt: T,
-        [_left, _right]: [NodeRef<marker::Mut<'a>, T, BorrowType>; 2],
+        [_left, _right]: [NodeRef<marker::Mut<'a>, T, NodeType>; 2],
     ) -> (NonNull<LeafNode<T>>, u8) {
         todo!()
     }
+
+    #[must_use]
+    fn repair_to_root(self) -> (NonNull<LeafNode<T>>, u8) { todo!() }
 
     fn repair_children(&mut self) {
         // Repair `.parent` and `.parent_idx` of the children of this
