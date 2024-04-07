@@ -32,13 +32,6 @@ struct RootNode<T> {
     node_ref: OwnedNodeRef<T>,
 }
 
-struct SplitResult<T> {
-    left: NonNull<LeafNode<T>>,
-    right: NonNull<LeafNode<T>>,
-    root: NonNull<LeafNode<T>>,
-    height: u8,
-}
-
 enum Todo {}
 
 pub struct BTreeSeq<T> {
@@ -399,10 +392,10 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         let i = unsafe { (*self.node.as_ptr()).buflen as usize };
         self.insert(i, elt)
     }
-    fn adjoin(self, sep: T, other: Self) { todo!() }
+    fn adjoin(self, _sep: T, _other: Self) { todo!() }
 
     #[must_use]
-    fn insert(mut self, i: usize, elt: T) -> (NonNull<LeafNode<T>>, u8) {
+    fn insert(self, _i: usize, _elt: T) -> (NonNull<LeafNode<T>>, u8) {
         todo!()
     }
 
@@ -428,9 +421,9 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     #[must_use]
     fn insert<BorrowType>(
         self,
-        i: usize,
-        elt: T,
-        [left, right]: [NodeRef<marker::Mut<'a>, T, BorrowType>; 2],
+        _i: usize,
+        _elt: T,
+        [_left, _right]: [NodeRef<marker::Mut<'a>, T, BorrowType>; 2],
     ) -> (NonNull<LeafNode<T>>, u8) {
         todo!()
     }
@@ -504,6 +497,7 @@ impl<T> RootNode<T> {
             (*root.as_ptr()).node_ref.height = new_height;
         };
     }
+    #[allow(unused)]
     fn adjoin(left: NonNull<RootNode<T>>, sep: T, right: NonNull<RootNode<T>>) {
         // unsafe {
         //     let left = (*left.as_ptr()).borrow_mut();
@@ -555,12 +549,12 @@ impl<T> BTreeSeq<T> {
     pub fn pop_front(&mut self) -> Option<T> { todo!() }
     pub fn pop_back(&mut self) -> Option<T> { todo!() }
 
-    pub fn insert(&mut self, i: usize, elt: T) { todo!() }
-    pub fn remove(&mut self, i: usize) -> Option<T> { todo!() }
+    pub fn insert(&mut self, _i: usize, _elt: T) { todo!() }
+    pub fn remove(&mut self, _i: usize) -> Option<T> { todo!() }
 
-    pub fn append(&mut self, other: BTreeSeq<T>) { todo!() }
-    pub fn split_off(&mut self, at: usize) -> BTreeSeq<T> { todo!() }
-    pub fn adjoin(&mut self, sep: T, mut other: BTreeSeq<T>) {
+    pub fn append(&mut self, _other: BTreeSeq<T>) { todo!() }
+    pub fn split_off(&mut self, _at: usize) -> BTreeSeq<T> { todo!() }
+    pub fn adjoin(&mut self, sep: T, other: BTreeSeq<T>) {
         match (self.root, other.root) {
             (Some(left), Some(right)) => RootNode::adjoin(left, sep, right),
             (Some(left), None) => RootNode::push_back(left, sep),
@@ -572,19 +566,22 @@ impl<T> BTreeSeq<T> {
         }
     }
 
-    pub fn get(&self, i: usize) -> Option<&T> { todo!() }
-    pub fn get_mut(&mut self, i: usize) -> Option<&mut T> { todo!() }
+    pub fn get(&self, _i: usize) -> Option<&T> { todo!() }
+    pub fn get_mut(&mut self, _i: usize) -> Option<&mut T> { todo!() }
 
     pub fn into_iter(self) -> IntoIter<T> { todo!() }
     pub fn iter(&self) -> Iter<'_, T> { todo!() }
     pub fn iter_mut(&mut self) -> IterMut<'_, T> { todo!() }
 
-    pub fn range(&self, r: impl RangeBounds<usize>) -> Range<'_, T> { todo!() }
-    pub fn range_mut(&mut self, r: impl RangeBounds<usize>) -> RangeMut<'_, T> {
+    pub fn range(&self, _r: impl RangeBounds<usize>) -> Range<'_, T> { todo!() }
+    pub fn range_mut(
+        &mut self,
+        _r: impl RangeBounds<usize>,
+    ) -> RangeMut<'_, T> {
         todo!()
     }
 
-    pub fn bisect(&self, pred: impl FnMut(&T) -> bool) -> usize { todo!() }
+    pub fn bisect(&self, _pred: impl FnMut(&T) -> bool) -> usize { todo!() }
     pub fn rotate(&mut self, new_first: usize) {
         let mut tmp = self.split_off(new_first);
         tmp.append(std::mem::take(self));
@@ -698,21 +695,21 @@ impl<'a, T> DoubleEndedIterator for RangeMut<'a, T> {
 
 impl<T> RootNode<T> {
     fn join(
-        left: Option<NonNull<Self>>,
-        mid: T,
-        right: Option<NonNull<Self>>,
+        _left: Option<NonNull<Self>>,
+        _mid: T,
+        _right: Option<NonNull<Self>>,
     ) -> NonNull<Self> {
         todo!()
     }
 
     fn split(
-        root: NonNull<Self>,
-        at: NonNull<LeafNode<T>>,
+        _root: NonNull<Self>,
+        _at: NonNull<LeafNode<T>>,
     ) -> (Option<NonNull<Self>>, Option<NonNull<Self>>) {
         todo!()
     }
 
-    fn select(root: NonNull<Self>, i: usize) -> Option<Todo> { todo!() }
+    fn select(_root: NonNull<Self>, _i: usize) -> Option<Todo> { todo!() }
 }
 
 #[cfg(test)]
