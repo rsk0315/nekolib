@@ -68,10 +68,10 @@ impl<'a, T, NodeType> Clone for NodeRef<marker::Immut<'a>, T, NodeType> {
     fn clone(&self) -> Self { self.cast() }
 }
 
-fn shr<T>(slice: &mut [T]) {
-    let src = ptr::addr_of!(slice[0]);
-    let dst = ptr::addr_of_mut!(slice[1]);
+fn shr<T>(slice: &mut [T], k: usize) {
     unsafe {
+        let src = ptr::addr_of!(slice[0]);
+        let dst = ptr::addr_of_mut!(slice[0]).add(k);
         ptr::copy(src, dst, slice.len());
     }
 }
@@ -779,21 +779,27 @@ mod tests {
 
     #[test]
     fn test_shr() {
-        struct Foo([MaybeUninit<String>; 5]);
+        struct Foo([MaybeUninit<String>; 6]);
         unsafe {
             let mut foo = MaybeUninit::<Foo>::uninit().assume_init();
-            foo.0[0].write("second".to_owned());
-            foo.0[1].write("third".to_owned());
-            shr(&mut foo.0[..2]);
+            foo.0[0].write("fourth".to_owned());
+            foo.0[1].write("fifth".to_owned());
+            shr(&mut foo.0[..2], 3);
             foo.0[0].write("first".to_owned());
+            foo.0[1].write("second".to_owned());
+            foo.0[2].write("third".to_owned());
 
             assert_eq!(foo.0[0].assume_init_ref(), "first");
             assert_eq!(foo.0[1].assume_init_ref(), "second");
             assert_eq!(foo.0[2].assume_init_ref(), "third");
+            assert_eq!(foo.0[3].assume_init_ref(), "fourth");
+            assert_eq!(foo.0[4].assume_init_ref(), "fifth");
 
             foo.0[0].assume_init_drop();
             foo.0[1].assume_init_drop();
             foo.0[2].assume_init_drop();
+            foo.0[3].assume_init_drop();
+            foo.0[4].assume_init_drop();
         }
     }
 
