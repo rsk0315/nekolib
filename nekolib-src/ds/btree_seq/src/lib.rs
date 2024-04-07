@@ -10,7 +10,6 @@ const CAPACITY: usize = 2 * B - 1;
 
 struct LeafNode<T> {
     buflen: u8,
-    treelen: usize, // move to `InternalNode<T>`?
     buf: [MaybeUninit<T>; CAPACITY],
     parent: Option<NonNull<InternalNode<T>>>,
     parent_idx: MaybeUninit<u8>,
@@ -19,6 +18,7 @@ struct LeafNode<T> {
 #[repr(C)]
 struct InternalNode<T> {
     data: LeafNode<T>,
+    treelen: usize,
     children: [MaybeUninit<NonNull<LeafNode<T>>>; CAPACITY + 1],
 }
 
@@ -89,7 +89,6 @@ impl<T> LeafNode<T> {
         let ptr = node_uninit.as_mut_ptr();
         let node = unsafe {
             ptr::addr_of_mut!((*ptr).buflen).write(0);
-            ptr::addr_of_mut!((*ptr).treelen).write(0);
             ptr::addr_of_mut!((*ptr).parent).write(None);
             node_uninit.assume_init()
         };
@@ -103,11 +102,28 @@ impl<T> LeafNode<T> {
     fn push(node: NonNull<Self>, elt: T) {
         unsafe {
             let ptr = node.as_ptr();
-            (*ptr).treelen += 1;
             let init_len = (*ptr).buflen;
             let i = init_len as usize;
             (*ptr).buf[i].write(elt);
             (*ptr).buflen += 1;
+        }
+    }
+
+    fn split_half(node: NonNull<Self>) -> ([NonNull<Self>; 2], T) {
+        // The field `.parent` of split nodes should be repaired by the
+        // caller.
+        unsafe {
+            debug_assert_eq!((*node.as_ptr()).buflen as usize, CAPACITY);
+            let left = node;
+            let right = Self::new();
+            let half = B - 1; // == `(CAPACITY - 1) / 2`
+            let src = ptr::addr_of!((*left.as_ptr()).buf[half + 1]);
+            let dst = ptr::addr_of_mut!((*right.as_ptr()).buf[0]);
+            ptr::copy_nonoverlapping(src, dst, half);
+            let pop = (*left.as_ptr()).buf[half].assume_init_read();
+            (*left.as_ptr()).buflen = half as _;
+            (*right.as_ptr()).buflen = half as _;
+            ([left, right], pop)
         }
     }
 }
@@ -118,13 +134,16 @@ impl<T> InternalNode<T> {
         let ptr = node_uninit.as_mut_ptr();
         let node = unsafe {
             ptr::addr_of_mut!((*ptr).data.buflen).write(0);
-            ptr::addr_of_mut!((*ptr).data.treelen).write(0);
             ptr::addr_of_mut!((*ptr).data.parent).write(None);
+            ptr::addr_of_mut!((*ptr).treelen).write(0);
             node_uninit.assume_init()
         };
         NonNull::from(Box::leak(Box::new(node)))
     }
-    fn single_child(child: NonNull<LeafNode<T>>) -> NonNull<Self> {
+    fn single_child(
+        child: NonNull<LeafNode<T>>,
+        child_treelen: usize,
+    ) -> NonNull<Self> {
         let node = Self::new();
         unsafe {
             let ptr = node.as_ptr();
@@ -132,15 +151,20 @@ impl<T> InternalNode<T> {
             (*child_ptr).parent = Some(node);
             (*child_ptr).parent_idx.write(0);
             (*ptr).children[0].write(child);
-            (*ptr).data.treelen = (*child_ptr).treelen;
+            (*ptr).treelen = child_treelen;
         }
         node
     }
-    fn push(node: NonNull<Self>, elt: T, child: NonNull<LeafNode<T>>) {
+    fn push(
+        node: NonNull<Self>,
+        elt: T,
+        child: NonNull<LeafNode<T>>,
+        child_treelen: usize,
+    ) {
         unsafe {
             let ptr = node.as_ptr();
             let child_ptr = child.as_ptr();
-            (*ptr).data.treelen += 1 + (*child_ptr).treelen;
+            (*ptr).treelen += 1 + child_treelen;
             let init_len = (*ptr).data.buflen;
             let i = init_len as usize;
             (*child_ptr).parent = Some(node);
@@ -161,6 +185,7 @@ type ImmutNodeRef<'a, T> =
     NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal>;
 type MutNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>;
 type MutLeafNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Leaf>;
+type MutInternalNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Internal>;
 
 impl<T> OwnedNodeRef<T> {
     fn new_leaf(elt: T) -> Self {
@@ -218,6 +243,22 @@ impl<BorrowType: Traversable, T>
         };
         let height = self.height - 1;
         Some(Self { node, height, _marker: PhantomData })
+    }
+}
+
+impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
+    fn parent(&self) -> Option<NodeRef<BorrowType, T, marker::Internal>> {
+        let ptr = self.node.as_ptr();
+        let node = unsafe { InternalNode::as_leaf_ptr((*ptr).parent?) };
+        let height = self.height + 1;
+        Some(NodeRef { node, height, _marker: PhantomData })
+    }
+    fn parent_with_index(
+        &self,
+    ) -> Option<(NodeRef<BorrowType, T, marker::Internal>, u8)> {
+        let parent = self.parent()?;
+        let idx = unsafe { (*self.node.as_ptr()).parent_idx.assume_init() };
+        Some((parent, idx))
     }
 }
 
@@ -350,44 +391,54 @@ impl<'a, T> ImmutNodeRef<'a, T> {
 
 impl<'a, T> MutLeafNodeRef<'a, T> {
     #[must_use]
-    fn push_front(self, elt: T) -> Option<(NonNull<LeafNode<T>>, u8)> {
-        unsafe {
-            let (ptr, changed) = if self.is_full() {
-                let SplitResult { left, root, height, .. } = self.split();
-                (left.as_ptr(), Some((root, height)))
-            } else {
-                (self.node.as_ptr(), None)
-            };
-            let len = (*ptr).buflen as usize;
-            shr(&mut (*ptr).buf[..len]);
-            (*ptr).buf[0].write(elt);
-            (*ptr).buflen += 1;
-            (*ptr).treelen += 1;
-            todo!("size fix up");
-            changed
-        }
+    fn push_front(self, elt: T) -> (NonNull<LeafNode<T>>, u8) {
+        self.insert(0, elt)
     }
-    fn push_back(self, elt: T) -> Option<(NonNull<LeafNode<T>>, u8)> {
-        unsafe {
-            let (ptr, changed) = if self.is_full() {
-                let SplitResult { right, root, height, .. } = self.split();
-                (right.as_ptr(), Some((root, height)))
-            } else {
-                (self.node.as_ptr(), None)
-            };
-            let len = (*ptr).buflen as usize;
-            (*ptr).buf[len].write(elt);
-            (*ptr).buflen += 1;
-            (*ptr).treelen += 1;
-            todo!("size fix up");
-            changed
-        }
+    #[must_use]
+    fn push_back(self, elt: T) -> (NonNull<LeafNode<T>>, u8) {
+        let i = unsafe { (*self.node.as_ptr()).buflen as usize };
+        self.insert(i, elt)
     }
     fn adjoin(self, sep: T, other: Self) { todo!() }
 
     #[must_use]
-    fn split(self) -> SplitResult<T> {
-        todo!();
+    fn insert(mut self, i: usize, elt: T) -> (NonNull<LeafNode<T>>, u8) {
+        todo!()
+    }
+
+    #[must_use]
+    fn split_half<NodeType>(
+        self,
+    ) -> ([NodeRef<marker::Mut<'a>, T, NodeType>; 2], T) {
+        // The field `.parent_idx` (of `self.node` and its siblings) should
+        // be repaired by the caller, as we can't determine the parents of
+        // these nodes at this point.
+        debug_assert!(self.is_full() || self.is_leaf());
+        let (children, pop) = LeafNode::split_half(self.node);
+        let children = children.map(|node| NodeRef {
+            node,
+            height: 0,
+            _marker: PhantomData,
+        });
+        (children, pop)
+    }
+}
+
+impl<'a, T> MutInternalNodeRef<'a, T> {
+    #[must_use]
+    fn insert<BorrowType>(
+        self,
+        i: usize,
+        elt: T,
+        [left, right]: [NodeRef<marker::Mut<'a>, T, BorrowType>; 2],
+    ) -> (NonNull<LeafNode<T>>, u8) {
+        todo!()
+    }
+
+    fn repair_children(&mut self) {
+        // Repair `.parent` and `.parent_idx` of the children of this
+        // node, as well as `.treelen` of this node.
+        todo!()
     }
 }
 
@@ -407,10 +458,20 @@ impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     fn get_internal_ptr(&self) -> Option<*mut InternalNode<T>> {
         (self.is_internal()).then(|| self.node.as_ptr() as *mut InternalNode<T>)
     }
+    fn is_leaf(&self) -> bool { self.height == 0 }
     fn is_internal(&self) -> bool { self.height > 0 }
     fn is_full(&self) -> bool {
         let ptr = self.node.as_ptr();
         unsafe { (*ptr).buflen as usize == CAPACITY }
+    }
+    fn treelen(&self) -> usize {
+        unsafe {
+            if let Some(internal_ptr) = self.get_internal_ptr() {
+                (*internal_ptr).treelen
+            } else {
+                (*self.node.as_ptr()).buflen as _
+            }
+        }
     }
 }
 
@@ -429,16 +490,19 @@ impl<T> RootNode<T> {
 
     fn push_front(root: NonNull<RootNode<T>>, elt: T) {
         unsafe {
-            if let Some((new_root, new_height)) =
-                (*root.as_ptr()).node_ref.first_leaf_mut().push_front(elt)
-            {
-                (*root.as_ptr()).node_ref.node = new_root;
-                (*root.as_ptr()).node_ref.height = new_height;
-            }
+            let (new_root, new_height) =
+                (*root.as_ptr()).node_ref.first_leaf_mut().push_front(elt);
+            (*root.as_ptr()).node_ref.node = new_root;
+            (*root.as_ptr()).node_ref.height = new_height;
         };
     }
     fn push_back(root: NonNull<RootNode<T>>, elt: T) {
-        unsafe { (*root.as_ptr()).node_ref.last_leaf_mut().push_back(elt) };
+        unsafe {
+            let (new_root, new_height) =
+                (*root.as_ptr()).node_ref.last_leaf_mut().push_back(elt);
+            (*root.as_ptr()).node_ref.node = new_root;
+            (*root.as_ptr()).node_ref.height = new_height;
+        };
     }
     fn adjoin(left: NonNull<RootNode<T>>, sep: T, right: NonNull<RootNode<T>>) {
         // unsafe {
@@ -469,9 +533,7 @@ impl<T> BTreeSeq<T> {
 
     pub fn len(&self) -> usize {
         self.root
-            .map(|root| unsafe {
-                (*(*root.as_ptr()).node_ref.node.as_ptr()).treelen
-            })
+            .map(|root| unsafe { (*root.as_ptr()).node_ref.treelen() })
             .unwrap_or(0)
     }
     pub fn is_empty(&self) -> bool { self.root.is_none() }
@@ -681,24 +743,25 @@ mod tests {
             LeafNode::push(leaf, it.next().unwrap());
             leaf
         };
+        // `child_treelen` are not important here, for now.
         let node1 = |it: &mut RangeFrom<i32>| {
-            let intn = InternalNode::single_child(node0(it));
+            let intn = InternalNode::single_child(node0(it), 0);
             let v0 = it.next().unwrap();
-            InternalNode::push(intn, v0, node0(it));
+            InternalNode::push(intn, v0, node0(it), 0);
             let v1 = it.next().unwrap();
-            InternalNode::push(intn, v1, node0(it));
+            InternalNode::push(intn, v1, node0(it), 0);
             let v2 = it.next().unwrap();
-            InternalNode::push(intn, v2, node0(it));
+            InternalNode::push(intn, v2, node0(it), 0);
             InternalNode::as_leaf_ptr(intn)
         };
         let node2 = |it: &mut RangeFrom<i32>| {
-            let intn = InternalNode::single_child(node1(it));
+            let intn = InternalNode::single_child(node1(it), 0);
             let v0 = it.next().unwrap();
-            InternalNode::push(intn, v0, node1(it));
+            InternalNode::push(intn, v0, node1(it), 0);
             let v1 = it.next().unwrap();
-            InternalNode::push(intn, v1, node1(it));
+            InternalNode::push(intn, v1, node1(it), 0);
             let v2 = it.next().unwrap();
-            InternalNode::push(intn, v2, node1(it));
+            InternalNode::push(intn, v2, node1(it), 0);
             InternalNode::as_leaf_ptr(intn)
         };
 
@@ -735,5 +798,15 @@ mod tests {
             foo.0[1].assume_init_drop();
             foo.0[2].assume_init_drop();
         }
+    }
+
+    #[test]
+    fn test_push_back() {
+        let mut a = BTreeSeq::new();
+        for i in 0..11 {
+            a.push_back(i);
+            assert_eq!(a.len(), i + 1);
+        }
+        a.visualize();
     }
 }
