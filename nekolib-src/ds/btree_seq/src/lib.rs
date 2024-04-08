@@ -5,7 +5,7 @@ use std::{
     ptr::{self, NonNull},
 };
 
-const B: usize = 3;
+const B: usize = 4;
 const CAPACITY: usize = 2 * B - 1;
 
 struct LeafNode<T> {
@@ -554,6 +554,8 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         if let Some((parent, parent_idx)) = self.parent_with_index() {
             if self.is_full() {
                 let ([mut left, mut right], pop) = self.split_half();
+                left.repair_children();
+                right.repair_children();
                 if i < B {
                     left.insert_fit(i, elt, children);
                 } else {
@@ -570,13 +572,21 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         } else {
             if self.is_full() {
                 let ([mut left, mut right], pop) = self.split_half();
+                left.repair_children();
+                right.repair_children();
                 if i < B {
                     left.insert_fit(i, elt, children);
                 } else {
                     right.insert_fit(i - B, elt, children)
                 }
-                let parent = InternalNode::single_child(left.node, B - 1);
-                InternalNode::push(parent, pop, right.node, B);
+                let (leftlen, rightlen) = unsafe {
+                    (
+                        (*left.as_internal_ptr()).treelen,
+                        (*right.as_internal_ptr()).treelen,
+                    )
+                };
+                let parent = InternalNode::single_child(left.node, leftlen);
+                InternalNode::push(parent, pop, right.node, rightlen);
                 (InternalNode::as_leaf_ptr(parent), height + 1)
             } else {
                 self.insert_fit(i, elt, children);
@@ -620,7 +630,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         let (children, pop) = InternalNode::split_half(internal_ptr);
         let children = children.map(|node| NodeRef {
             node: InternalNode::as_leaf_ptr(node),
-            height: height + 1,
+            height,
             _marker: PhantomData,
         });
         (children, pop)
@@ -652,7 +662,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
                 let ptr = child.node.as_ptr();
                 (*ptr).parent = parent;
                 (*child.node.as_ptr()).parent_idx.write(i as _);
-                treelen += (*child.node.as_ptr()).buflen as usize;
+                treelen += child.treelen();
             }
             (*ptr).treelen = treelen;
         }
@@ -1018,11 +1028,11 @@ mod tests {
     #[test]
     fn test_push_back() {
         let mut a = BTreeSeq::new();
-        for i in 0..=100 {
+        for i in 0..200 {
             a.push_back(i);
-            eprintln!();
-            a.visualize();
             assert_eq!(a.len(), i + 1);
         }
+        eprintln!();
+        a.visualize();
     }
 }
