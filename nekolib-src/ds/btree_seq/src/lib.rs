@@ -610,11 +610,11 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             debug_assert!(i <= init_len);
             if i < init_len {
                 shr(&mut (*ptr).data.buf[i..init_len], 1);
-                shr(&mut (*ptr).children[i..init_len], 1); // (off-by-one?)
+                shr(&mut (*ptr).children[i..=init_len], 1);
             }
             (*ptr).data.buf[i].write(elt);
-            (*ptr).children[i].write(left.node); // (??)
-            (*ptr).children[i + 1].write(right.node); // (??)
+            (*ptr).children[i].write(left.node);
+            (*ptr).children[i + 1].write(right.node);
             (*ptr).data.buflen += 1;
         }
         self.repair_children();
@@ -1043,9 +1043,9 @@ mod tests {
         let n = 200;
         for i in (0..n).rev() {
             a.push_front(i);
-            eprintln!();
-            a.visualize();
             assert_eq!(a.len(), n - i);
         }
+        eprintln!();
+        a.visualize();
     }
 }
