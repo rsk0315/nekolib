@@ -397,7 +397,7 @@ impl<'a, T> ImmutNodeRef<'a, T> {
                         (IntLst, LeafFst | LeafMid) => "├── ",
                         (IntLst, LeafLst) => "└── ",
                         (IntSgl, IntPre) => "│   ",
-                        (IntSgl, IntFst) if term => "┌── ",
+                        (IntSgl, IntFst) if term => "└── ",
                         (IntSgl, IntFst | IntMid | IntLst) => "    ",
                         (IntSgl, LeafFst | LeafMid) => "├── ",
                         (IntSgl, LeafLst) => "└── ",
@@ -1017,15 +1017,12 @@ mod tests {
 
     #[test]
     fn test_push_back() {
-        for n in 0..100 {
-            let mut a = BTreeSeq::new();
-            for i in 0..=n {
-                a.push_back(i);
-                assert_eq!(a.len(), i + 1);
-            }
-
+        let mut a = BTreeSeq::new();
+        for i in 0..=100 {
+            a.push_back(i);
             eprintln!();
             a.visualize();
+            assert_eq!(a.len(), i + 1);
         }
     }
 }
