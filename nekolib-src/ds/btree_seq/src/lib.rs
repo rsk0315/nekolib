@@ -1035,4 +1035,17 @@ mod tests {
         eprintln!();
         a.visualize();
     }
+
+    #[test]
+    fn test_push_front() {
+        // bad
+        let mut a = BTreeSeq::new();
+        let n = 200;
+        for i in (0..n).rev() {
+            a.push_front(i);
+            eprintln!();
+            a.visualize();
+            assert_eq!(a.len(), n - i);
+        }
+    }
 }
