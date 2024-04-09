@@ -1038,7 +1038,6 @@ mod tests {
 
     #[test]
     fn test_push_front() {
-        // bad
         let mut a = BTreeSeq::new();
         let n = 200;
         for i in (0..n).rev() {
