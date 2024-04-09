@@ -465,6 +465,40 @@ impl<'a, T, BorrowType> NodeRef<marker::Mut<'a>, T, BorrowType> {
     fn reborrow_mut(&mut self) -> Self { self.cast() }
 }
 
+impl<'a, T> MutNodeRef<'a, T> {
+    fn adjoin(self, sep: T, mut right: Self) -> OwnedNodeRef<T> {
+        let mut left = self;
+
+        let (node, height) = if left.height < right.height {
+            while left.height < right.height {
+                right = right.first_child().unwrap();
+            }
+            let parent = right.parent().unwrap();
+            parent.insert(0, sep, [left, right])
+        } else if left.height > right.height {
+            while left.height > right.height {
+                left = left.last_child().unwrap();
+            }
+            let parent = left.parent().unwrap();
+            let init_len = unsafe { (*parent.node.as_ptr()).buflen as usize };
+            parent.insert(init_len, sep, [left, right])
+        } else {
+            let height = left.height;
+            let root = InternalNode::single_child(left.node, left.treelen());
+            InternalNode::push(root, sep, right.node, right.treelen());
+            (InternalNode::as_leaf_ptr(root), height + 1)
+        };
+
+        // XXX We have to take care of the invariant of `.buflen` of
+        // `left` and `right`. The root node may ignore the lower bound
+        // of it, but at least one of `left` and `right` are no longer
+        // the root node.
+        todo!();
+
+        NodeRef { node, height, _marker: PhantomData }
+    }
+}
+
 impl<'a, T> MutLeafNodeRef<'a, T> {
     #[must_use]
     fn push_front(self, elt: T) -> (NonNull<LeafNode<T>>, u8) {
@@ -475,7 +509,6 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         let i = unsafe { (*self.node.as_ptr()).buflen as usize };
         self.insert(i, elt)
     }
-    fn adjoin(self, _sep: T, _other: Self) { todo!() }
 
     #[must_use]
     fn insert(mut self, i: usize, elt: T) -> (NonNull<LeafNode<T>>, u8) {
@@ -721,12 +754,13 @@ impl<T> RootNode<T> {
     }
     #[allow(unused)]
     fn adjoin(left: NonNull<RootNode<T>>, sep: T, right: NonNull<RootNode<T>>) {
-        // unsafe {
-        //     let left = (*left.as_ptr()).borrow_mut();
-        //     let right = (*right.as_ptr()).borrow_mut();
-        //     left.adjoin(sep, right);
-        // }
-        todo!()
+        unsafe {
+            let left_root = (*left.as_ptr()).borrow_mut();
+            let right_root = (*right.as_ptr()).borrow_mut();
+            let new_root = left_root.adjoin(sep, right_root);
+            (*left.as_ptr()).node_ref = new_root;
+            drop(Box::from_raw(right.as_ptr()));
+        }
     }
 
     fn drop_subtree(root: NonNull<RootNode<T>>) {
@@ -776,8 +810,8 @@ impl<T> BTreeSeq<T> {
 
     pub fn append(&mut self, _other: BTreeSeq<T>) { todo!() }
     pub fn split_off(&mut self, _at: usize) -> BTreeSeq<T> { todo!() }
-    pub fn adjoin(&mut self, sep: T, other: BTreeSeq<T>) {
-        match (self.root, other.root) {
+    pub fn adjoin(&mut self, sep: T, mut other: BTreeSeq<T>) {
+        match (self.root, other.root.take()) {
             (Some(left), Some(right)) => RootNode::adjoin(left, sep, right),
             (Some(left), None) => RootNode::push_back(left, sep),
             (None, Some(right)) => {
@@ -1046,5 +1080,22 @@ mod tests {
         }
         eprintln!();
         a.visualize();
+    }
+
+    #[test]
+    fn test_adjoin() {
+        // bad
+        let mut left = BTreeSeq::new();
+        let leftlen = 300;
+        for i in 0..leftlen {
+            left.push_back(i);
+        }
+        let mut right = BTreeSeq::new();
+        let rightlen = 50;
+        for i in 0..rightlen {
+            right.push_back(leftlen + 1 + i);
+        }
+        left.adjoin(leftlen, right);
+        left.visualize();
     }
 }
