@@ -47,9 +47,10 @@ impl<const MOD: u32> DivAssign for StaticModInt<MOD> {
 }
 
 impl<const MOD: u32> StaticModInt<MOD> {
-    fn recip(self) -> Self { self.checked_recip().unwrap() }
-    fn checked_recip(self) -> Option<Self> { Some(self.pow(MOD - 2)) } // XXX use ECL
-    fn pow(self, exp: impl BinIter) -> Self {
+    pub fn recip(self) -> Self { self.checked_recip().unwrap() }
+    // XXX use Euclidean algorithm
+    pub fn checked_recip(self) -> Option<Self> { Some(self.pow(MOD - 2)) }
+    pub fn pow(self, exp: impl BinIter) -> Self {
         let mut res = Self::new(1);
         let mut dbl = self;
         for b in exp.bin_iter() {
