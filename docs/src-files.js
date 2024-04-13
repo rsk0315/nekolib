@@ -24,7 +24,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["foldable_deque",["",[],["lib.rs"]]],\
 ["foldable_queue",["",[],["lib.rs"]]],\
 ["gcd",["",[],["lib.rs"]]],\
-["getrandom",["",[],["error.rs","error_impls.rs","lazy.rs","lib.rs","linux_android.rs","use_file.rs","util.rs","util_libc.rs"]]],\
+["getrandom",["",[],["error.rs","error_impls.rs","lazy.rs","lib.rs","linux_android_with_fallback.rs","use_file.rs","util.rs","util_libc.rs"]]],\
 ["graph",["",[],["lib.rs"]]],\
 ["inner",["",[],["lib.rs"]]],\
 ["input",["",[],["lib.rs"]]],\
