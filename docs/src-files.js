@@ -75,6 +75,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["vec_segtree",["",[],["lib.rs"]]],\
 ["wavelet_matrix",["",[],["lib.rs"]]],\
 ["word",["",[],["lib.rs"]]],\
+["word_set",["",[],["lib.rs"]]],\
 ["yes_no",["",[],["lib.rs"]]]\
 ]'));
 createSrcSidebar();

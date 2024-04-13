@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["bin_iter","pdep_pext"],"struct":["PdepPextMaskU128","PdepPextMaskU16","PdepPextMaskU32","PdepPextMaskU64","PdepPextMaskU8","PdepPextMaskUsize","UIntIter"],"trait":["BinIter","Binary","Pdep","Pext"]};
+window.SIDEBAR_ITEMS = {"mod":["bin_iter","pdep_pext","word_set"],"struct":["PdepPextMaskU128","PdepPextMaskU16","PdepPextMaskU32","PdepPextMaskU64","PdepPextMaskU8","PdepPextMaskUsize","UIntIter"],"trait":["BinIter","Binary","Pdep","Pext","WordSet"]};
