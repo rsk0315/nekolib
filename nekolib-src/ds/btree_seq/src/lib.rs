@@ -7,6 +7,7 @@ use std::{
 
 const B: usize = 4;
 const CAPACITY: usize = 2 * B - 1;
+const MIN_BUFLEN: usize = B - 1;
 
 struct LeafNode<T> {
     buflen: u8,
@@ -323,6 +324,42 @@ impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
             (parent, (*self.node.as_ptr()).parent_idx.assume_init())
         })
     }
+    fn left_sibling(&self) -> Option<NodeRef<BorrowType, T, NodeType>> {
+        let (parent, parent_idx) = self.parent_with_index()?;
+        let left_idx = parent_idx.checked_sub(1)? as usize;
+        // The node type of siblings are same as the that of `self`.
+        parent.select_child(left_idx).map(|o| o.cast())
+    }
+    fn right_sibling(&self) -> Option<NodeRef<BorrowType, T, NodeType>> {
+        let (parent, parent_idx) = self.parent_with_index()?;
+        parent.select_child((parent_idx + 1) as _).map(|o| o.cast())
+    }
+    fn left_shareable(&self) -> Option<NodeRef<BorrowType, T, NodeType>> {
+        let left_sibling = self.left_sibling()?;
+        let leftlen = unsafe { (*left_sibling.node.as_ptr()).buflen as usize };
+        let rightlen = unsafe { (*self.node.as_ptr()).buflen as usize };
+        (leftlen + rightlen >= 2 * MIN_BUFLEN).then(|| left_sibling)
+    }
+    fn right_shareable(&self) -> Option<NodeRef<BorrowType, T, NodeType>> {
+        let right_sibling = self.right_sibling()?;
+        let leftlen = unsafe { (*self.node.as_ptr()).buflen as usize };
+        let rightlen =
+            unsafe { (*right_sibling.node.as_ptr()).buflen as usize };
+        (leftlen + rightlen >= 2 * MIN_BUFLEN).then(|| right_sibling)
+    }
+    fn left_mergeable(&self) -> Option<NodeRef<BorrowType, T, NodeType>> {
+        let left_sibling = self.left_sibling()?;
+        let leftlen = unsafe { (*left_sibling.node.as_ptr()).buflen as usize };
+        let rightlen = unsafe { (*self.node.as_ptr()).buflen as usize };
+        (leftlen + rightlen + 1 <= CAPACITY).then(|| left_sibling)
+    }
+    fn right_mergeable(&self) -> Option<NodeRef<BorrowType, T, NodeType>> {
+        let right_sibling = self.right_sibling()?;
+        let leftlen = unsafe { (*self.node.as_ptr()).buflen as usize };
+        let rightlen =
+            unsafe { (*right_sibling.node.as_ptr()).buflen as usize };
+        (leftlen + rightlen + 1 <= CAPACITY).then(|| right_sibling)
+    }
 }
 
 impl<T> DyingNodeRef<T> {
@@ -514,7 +551,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     fn insert(mut self, i: usize, elt: T) -> (NonNull<LeafNode<T>>, u8) {
         if let Some((parent, parent_idx)) = self.parent_with_index() {
             if self.is_full() {
-                let ([mut left, mut right], pop) = self.split_half();
+                let ([mut left, mut right], pop) = self.resolve_overfull();
                 if i < B {
                     left.insert_fit(i, elt);
                 } else {
@@ -530,7 +567,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             }
         } else {
             if self.is_full() {
-                let ([mut left, mut right], pop) = self.split_half();
+                let ([mut left, mut right], pop) = self.resolve_overfull();
                 if i < B {
                     left.insert_fit(i, elt);
                 } else {
@@ -560,7 +597,9 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     }
 
     #[must_use]
-    fn split_half(self) -> ([NodeRef<marker::Mut<'a>, T, marker::Leaf>; 2], T) {
+    fn resolve_overfull(
+        self,
+    ) -> ([NodeRef<marker::Mut<'a>, T, marker::Leaf>; 2], T) {
         // The field `.parent_idx` (of `self.node` and its siblings) should
         // be repaired by the caller, as we can't determine the parents of
         // these nodes at this point.
@@ -572,6 +611,69 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             _marker: PhantomData,
         });
         (children, pop)
+    }
+
+    #[must_use]
+    fn resolve_underfull(self) -> NodeRef<marker::Mut<'a>, T, marker::Leaf> {
+        // Returns the new `NodeRef`, say `res`, to the node which
+        // contains elements of `self`. The parent of `res` may be
+        // underfull. The children of `res` are repaired, but `res`
+        // should be repaired by the caller.
+        debug_assert!(self.is_underfull() && self.is_leaf() && !self.is_root());
+        if let Some(left_sibling) = self.left_shareable() {
+            left_sibling.share(self);
+            self
+        } else if let Some(right_sibling) = self.right_shareable() {
+            self.share(right_sibling);
+            self
+        } else if let Some(left_sibling) = self.left_mergeable() {
+            left_sibling.merge(self)
+        } else if let Some(right_sibling) = self.right_mergeable() {
+            self.merge(right_sibling)
+        } else {
+            unreachable!()
+        }
+    }
+
+    fn share(&mut self, other: &mut Self) {
+        // From their parent's point of view, the sharing does not
+        // affect the `.treelen` field.
+        unsafe {
+            let left = self.node.as_ptr();
+            let right = other.node.as_ptr();
+            let leftlen_old = (*left).buflen as usize;
+            let rightlen_old = (*right).buflen as usize;
+            let leftlen_new = (leftlen_old + rightlen_old) / 2;
+            let rightlen_new = leftlen_old + rightlen_old - leftlen_new;
+            let (parent, parent_idx) = self.parent_with_index().unwrap();
+            let parent = parent.node.as_ptr();
+            let parent_idx = parent_idx as usize;
+            let parent_elt = (*parent).buf[parent_idx].assume_init_read();
+            if leftlen_old < rightlen_old {
+                (*left).buf[leftlen_old].write(parent_elt);
+                let dst = ptr::addr_of_mut!((*left).buf[leftlen_old + 1]);
+                let src = ptr::addr_of!((*right).buf[0]);
+                let count = leftlen_new - leftlen_old - 1;
+                ptr::copy_nonoverlapping(src, dst, count);
+                let new_parent_elt = (*right).buf[count].assume_init_read();
+                (*parent).buf[parent_idx].write(new_parent_elt);
+                let dst = ptr::addr_of_mut!((*right).buf[0]);
+                let src = ptr::addr_of!((*right).buf[count + 1]);
+                let count = rightlen_new; // (!) check the equation
+                ptr::copy(src, dst, count);
+            } else {
+                todo!();
+            }
+            (*left).buflen = leftlen_new as _;
+            (*right).buflen = rightlen_new as _;
+        }
+    }
+    #[must_use]
+    fn merge(self, other: Self) -> Self {
+        // If their parent become underfull, the cascading fix-up takes
+        // place usually. However if it is the root and we take its only
+        // element, we become the new root.
+        todo!()
     }
 }
 
@@ -586,7 +688,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         let height = self.height;
         if let Some((parent, parent_idx)) = self.parent_with_index() {
             if self.is_full() {
-                let ([mut left, mut right], pop) = self.split_half();
+                let ([mut left, mut right], pop) = self.resolve_overfull();
                 left.repair_children();
                 right.repair_children();
                 if i < B {
@@ -604,7 +706,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             }
         } else {
             if self.is_full() {
-                let ([mut left, mut right], pop) = self.split_half();
+                let ([mut left, mut right], pop) = self.resolve_overfull();
                 left.repair_children();
                 right.repair_children();
                 if i < B {
@@ -654,7 +756,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     }
 
     #[must_use]
-    fn split_half(
+    fn resolve_overfull(
         self,
     ) -> ([NodeRef<marker::Mut<'a>, T, marker::Internal>; 2], T) {
         debug_assert!(self.is_full() && self.is_internal());
@@ -717,9 +819,16 @@ impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     }
     fn is_leaf(&self) -> bool { self.height == 0 }
     fn is_internal(&self) -> bool { self.height > 0 }
+    fn is_root(&self) -> bool {
+        unsafe { (*self.node.as_ptr()).parent.is_none() }
+    }
     fn is_full(&self) -> bool {
         let ptr = self.node.as_ptr();
         unsafe { (*ptr).buflen as usize == CAPACITY }
+    }
+    fn is_underfull(&self) -> bool {
+        let ptr = self.node.as_ptr();
+        unsafe { ((*ptr).buflen as usize) < MIN_BUFLEN }
     }
 }
 
