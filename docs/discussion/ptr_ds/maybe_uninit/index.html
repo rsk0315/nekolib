@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="未初期化の値。"><title>discussion::ptr_ds::maybe_uninit - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-2c208a72533b4dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (79424056b 2024-04-12)" data-channel="nightly" data-search-js="search-ffac13a0df2b1870.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-c97aec732c613ca4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="未初期化の値。"><title>discussion::ptr_ds::maybe_uninit - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-2c208a72533b4dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (ccfcd950b 2024-04-15)" data-channel="nightly" data-search-js="search-ffac13a0df2b1870.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-c97aec732c613ca4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -240,4 +240,146 @@
 </script>
 
 </head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><h2 class="location"><a href="#">Module maybe_uninit</a></h2><div class="sidebar-elems"><h2><a href="../index.html">In discussion::ptr_ds</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../discussion/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../../index.html">discussion</a>::<wbr><a href="../index.html">ptr_ds</a>::<wbr><a class="mod" href="#">maybe_uninit</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../../src/ptr_ds/lib.rs.html#16">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>未初期化の値。</p>
+<h3 id="preliminaries"><a class="doc-anchor" href="#preliminaries">§</a>Preliminaries</h3>
+<p>実行時の所望のタイミングで初期化されるような値を作りたいことがある。
+次のような Safe Rust のコードはコンパイルエラーとなる。</p>
+
+<div class="example-wrap compile_fail"><a href="#" class="tooltip" title="This example deliberately fails to compile">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">let </span>a = <span class="number">123</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>b;
+<span class="kw">if </span>a % <span class="number">5 </span>&lt;= <span class="number">3 </span>{ b = <span class="string">"foo"</span>; }
+<span class="kw">if </span>a % <span class="number">7 </span>&lt;= <span class="number">4 </span>{ b = <span class="string">"bar"</span>; }
+<span class="kw">let </span>_invalid = b; <span class="comment">// CE</span></code></pre></div>
+<p><a href="https://doc.rust-lang.org/nightly/core/mem/maybe_uninit/union.MaybeUninit.html" title="union core::mem::maybe_uninit::MaybeUninit"><code>MaybeUninit</code></a> を使うことで、下記のように書くことができる。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::mem::MaybeUninit;
+
+<span class="kw">let </span>a = <span class="number">123</span>;
+<span class="kw">let </span><span class="kw-2">mut </span>b_uninit = MaybeUninit::&lt;<span class="kw-2">&amp;</span>str&gt;::uninit();
+<span class="kw">let </span>ptr = b_uninit.as_mut_ptr();
+<span class="kw">if </span>a % <span class="number">5 </span>&lt;= <span class="number">3 </span>{ <span class="kw">unsafe </span>{ ptr.write(<span class="string">"foo"</span>) } };
+<span class="kw">if </span>a % <span class="number">7 </span>&lt;= <span class="number">4 </span>{ <span class="kw">unsafe </span>{ ptr.write(<span class="string">"bar"</span>) } };
+<span class="kw">let </span>b = <span class="kw">unsafe </span>{ b_uninit.assume_init() };
+<span class="macro">assert_eq!</span>(b, <span class="string">"bar"</span>);</code></pre></div>
+<p><code>.assume_init()</code> を呼んだ時点で実際には未初期化だった場合、当然未定義動作となる。</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::mem::MaybeUninit;
+
+<span class="kw">let </span>a = MaybeUninit::&lt;i32&gt;::uninit();
+<span class="kw">let </span>_invalid = <span class="kw">unsafe </span>{ a.assume_init() };</code></pre></div>
+<div class="example-wrap"><pre class="language-text"><code> --&gt; src/lib.rs:6:25
+  |
+6 | let _invalid = unsafe { a.assume_init() };
+  |                         ^^^^^^^^^^^^^^^ using uninitialized data, but this operation requires initialized memory
+</code></pre></div>
+<p><code>MaybeUninit&lt;T&gt;</code> をメンバに持つ型 <code>U</code> に対する <code>MaybeUninit&lt;U&gt;</code> や、<code>[MaybeUninit&lt;T&gt;; N]</code>
+や、<code>Box&lt;MaybeUninit&lt;T&gt;&gt;</code> などの例を見てみる。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{mem::MaybeUninit, ptr};
+
+<span class="kw">struct </span>Foo {
+    vector: Vec&lt;i32&gt;,
+    string: MaybeUninit&lt;String&gt;,
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>foo = <span class="kw">unsafe </span>{
+    <span class="kw">let </span><span class="kw-2">mut </span>foo_uninit = MaybeUninit::&lt;Foo&gt;::uninit();
+    <span class="kw">let </span>ptr = foo_uninit.as_mut_ptr();
+    <span class="comment">// (*ptr).vector = vec![]; // UB
+    </span><span class="macro">ptr::addr_of_mut!</span>((<span class="kw-2">*</span>ptr).vector).write(<span class="macro">vec!</span>[<span class="number">0</span>]);
+    foo_uninit.assume_init()
+};
+<span class="macro">assert_eq!</span>(foo.vector, [<span class="number">0</span>]);
+
+<span class="kw">let </span>s_ptr = foo.string.as_mut_ptr();
+<span class="kw">unsafe </span>{
+    s_ptr.write(<span class="string">"init"</span>.to_owned());
+    <span class="macro">assert_eq!</span>(foo.string.assume_init_ref(), <span class="string">"init"</span>);
+    drop(foo.string.assume_init_drop());
+}</code></pre></div>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::mem::MaybeUninit;
+
+<span class="comment">// let mut foo_uninit = [MaybeUninit::&lt;String&gt;::uninit(); 3]; // !Copy
+</span><span class="kw">let </span><span class="kw-2">mut </span>foo_uninit = <span class="kw">unsafe </span>{
+    MaybeUninit::&lt;[MaybeUninit&lt;String&gt;; <span class="number">3</span>]&gt;::uninit().assume_init()
+};
+<span class="kw">unsafe </span>{
+    foo_uninit[<span class="number">0</span>].write(<span class="string">"uno"</span>.to_owned());
+    foo_uninit[<span class="number">1</span>].write(<span class="string">"dos"</span>.to_owned());
+
+    <span class="kw">let </span>foo = {
+        <span class="kw-2">&amp;*</span>(<span class="kw-2">&amp;</span>foo_uninit[..<span class="number">2</span>] <span class="kw">as </span><span class="kw-2">*const </span>[MaybeUninit&lt;<span class="kw">_</span>&gt;] <span class="kw">as </span><span class="kw-2">*const </span>[String])
+    };
+    <span class="macro">assert_eq!</span>(foo[<span class="number">0</span>], <span class="string">"uno"</span>);
+    <span class="macro">assert_eq!</span>(foo[<span class="number">1</span>], <span class="string">"dos"</span>);
+
+    foo_uninit[<span class="number">0</span>].assume_init_drop();
+    foo_uninit[<span class="number">1</span>].assume_init_drop();
+}</code></pre></div>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{mem::MaybeUninit, ptr};
+
+<span class="kw">struct </span>Foo {
+    vector: Vec&lt;i32&gt;,
+    string: String,
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>foo_uninit = Box::new(MaybeUninit::&lt;Foo&gt;::uninit());
+<span class="kw">let </span>foo: Box&lt;Foo&gt; = <span class="kw">unsafe </span>{
+    <span class="kw">let </span>ptr = foo_uninit.as_mut_ptr();
+    <span class="macro">ptr::addr_of_mut!</span>((<span class="kw-2">*</span>ptr).vector).write(<span class="macro">vec!</span>[<span class="number">0</span>]);
+    <span class="macro">ptr::addr_of_mut!</span>((<span class="kw-2">*</span>ptr).string).write(<span class="string">"init"</span>.to_owned());
+    Box::from_raw(Box::leak(foo_uninit).as_mut_ptr())
+};
+<span class="macro">assert_eq!</span>(foo.vector, [<span class="number">0</span>]);
+<span class="macro">assert_eq!</span>(foo.string, <span class="string">"init"</span>);</code></pre></div>
+<p>レイアウトに関して、<code>T</code> と <code>MaybeUninit&lt;T&gt;</code> は同様の size および alignment を持つことは保証されている (<a href="https://doc.rust-lang.org/nightly/core/mem/union.MaybeUninit.html#layout-1">ref</a>)。
+<code>T</code> を含む型と <code>MaybeUninit&lt;T&gt;</code> を含む型が同様のレイアウトを持つとは限らないが、一旦は忘れておく。</p>
+<p>未初期化な領域を含む状態で参照 <code>&amp;mut T</code> を取得すると未定義動作となる。<code>ptr::addr_of_mut!</code>
+などを用いて回避する必要がある。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{mem::MaybeUninit, ptr};
+
+<span class="kw">struct </span>Foo {
+    vector: Vec&lt;i32&gt;,
+    string: String,
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>foo = <span class="kw">unsafe </span>{
+    <span class="kw">let </span><span class="kw-2">mut </span>foo_uninit = MaybeUninit::&lt;Foo&gt;::uninit();
+    <span class="kw">let </span>ptr = foo_uninit.as_mut_ptr();
+    <span class="comment">// (*ptr).vector = vec![0]; // UB
+    </span><span class="macro">ptr::addr_of_mut!</span>((<span class="kw-2">*</span>ptr).vector).write(<span class="macro">vec!</span>[<span class="number">0</span>]);
+    <span class="comment">// (*ptr).string = "init".to_owned(); // UB
+    </span><span class="macro">ptr::addr_of_mut!</span>((<span class="kw-2">*</span>ptr).string).write(<span class="string">"init"</span>.to_owned());
+    (<span class="kw-2">*</span>ptr).string = <span class="string">"re-init"</span>.to_owned(); <span class="comment">// OK
+     
+    </span>foo_uninit.assume_init()
+};</code></pre></div>
+<p>初期化済みの領域に <code>.write()</code> するとメモリリークが起きる。
+あるいは、未初期化の領域を <code>=</code> で書き込もうとすると、<code>*mut T</code> の dereference なり
+<code>&amp;mut T</code> の取得なりをする必要があるため未定義動作となる。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::mem::MaybeUninit;
+
+<span class="kw">struct </span>Foo(MaybeUninit&lt;String&gt;);
+
+<span class="kw">let </span><span class="kw-2">mut </span>foo = Foo(MaybeUninit::uninit());
+<span class="comment">// unsafe { *foo.0.as_mut_ptr() = "init".to_owned() } // UB
+// unsafe { *foo.0.assume_init_mut() = "init".to_owned() } // UB
+</span>foo.<span class="number">0</span>.write(<span class="string">"init once"</span>.to_owned());
+
+<span class="kw">unsafe </span>{ <span class="kw-2">*</span>foo.<span class="number">0</span>.as_mut_ptr() = <span class="string">"init twice"</span>.to_owned() } <span class="comment">// OK
+</span><span class="kw">unsafe </span>{ <span class="kw-2">*</span>foo.<span class="number">0</span>.assume_init_mut() = <span class="string">"init thrice"</span>.to_owned() } <span class="comment">// OK
+// foo.0.write("init".to_owned()); // memory leak
+
+</span><span class="kw">unsafe </span>{ foo.<span class="number">0</span>.assume_init_drop() }</code></pre></div>
+<p><code>*mut ()</code> であれば、未初期化 (dangling) の領域を dereference しても大丈夫。</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::mem::MaybeUninit;
+
+<span class="kw">let </span>unit_uninit = MaybeUninit::&lt;()&gt;::uninit();
+<span class="kw">unsafe </span>{
+    <span class="macro">assert_eq!</span>(unit_uninit.assume_init(), ());
+}</code></pre></div>
 </div></details></section></div></main></body></html>
