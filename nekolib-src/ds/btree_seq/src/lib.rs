@@ -647,17 +647,19 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     }
 
     #[must_use]
-    fn resolve_underfull(self) -> NodeRef<marker::Mut<'a>, T, marker::Leaf> {
+    fn resolve_underfull(
+        mut self,
+    ) -> NodeRef<marker::Mut<'a>, T, marker::Leaf> {
         // Returns the new `NodeRef`, say `res`, to the node which
         // contains elements of `self`. The parent of `res` may be
         // underfull. The children of `res` are repaired, but `res`
         // should be repaired by the caller.
         debug_assert!(self.is_underfull() && self.is_leaf() && !self.is_root());
-        if let Some(left_sibling) = self.left_shareable() {
-            left_sibling.share(self);
+        if let Some(mut left_sibling) = self.left_shareable() {
+            left_sibling.share(&mut self);
             self
-        } else if let Some(right_sibling) = self.right_shareable() {
-            self.share(right_sibling);
+        } else if let Some(mut right_sibling) = self.right_shareable() {
+            self.share(&mut right_sibling);
             self
         } else if let Some(left_sibling) = self.left_mergeable() {
             left_sibling.merge(self)
@@ -683,19 +685,46 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             let parent_idx = parent_idx as usize;
             let parent_elt = (*parent).buf[parent_idx].assume_init_read();
             if leftlen_old < rightlen_old {
+                // [A, B, C] ++ [D] ++ [E, F, G, H, I, J]
                 (*left).buf[leftlen_old].write(parent_elt);
+                // [A, B, C, D] ++ [_] ++ [E, F, G, H, I, J]
                 let dst = ptr::addr_of_mut!((*left).buf[leftlen_old + 1]);
                 let src = ptr::addr_of!((*right).buf[0]);
                 let count = leftlen_new - leftlen_old - 1;
                 ptr::copy_nonoverlapping(src, dst, count);
+                // [A, B, C, D, E] ++ [_] ++ [_, F, G, H, I, J]
                 let new_parent_elt = (*right).buf[count].assume_init_read();
                 (*parent).buf[parent_idx].write(new_parent_elt);
+                // [A, B, C, D, E] ++ [F] ++ [_, _, G, H, I, J]
                 let dst = ptr::addr_of_mut!((*right).buf[0]);
                 let src = ptr::addr_of!((*right).buf[count + 1]);
                 let count = rightlen_new; // (!) check the equation
+                // (count + 1) + rightlen_new == rightlen_old
+                // (leftlen_new - leftlen_old - 1 + 1) + rightlen_new == rightlen_old
+                // leftlen_new + rightlen_new == leftlen_old + rightlen_old
                 ptr::copy(src, dst, count);
+                // [A, B, C, D, E] ++ [F] ++ [G, H, I, J]
+            } else if leftlen_old > rightlen_old {
+                // [A, B, C, D, E, F] ++ [G] ++ [H, I, J]
+                let right_off = rightlen_new - rightlen_old;
+                let dst = ptr::addr_of_mut!((*right).buf[right_off]);
+                let src = ptr::addr_of!((*right).buf[0]);
+                let count = rightlen_new - rightlen_old;
+                ptr::copy(src, dst, count);
+                // [A, B, C, D, E, F] ++ [G] ++ [_, _, H, I, J]
+                (*right).buf[right_off - 1].write(parent_elt);
+                // [A, B, C, D, E, F] ++ [_] ++ [_, G, H, I, J]
+                let dst = ptr::addr_of_mut!((*right).buf[0]);
+                let src = ptr::addr_of!((*left).buf[leftlen_new + 1]);
+                let count = right_off - 1;
+                ptr::copy_nonoverlapping(src, dst, count);
+                // [A, B, C, D, E] ++ [_] ++ [F, G, H, I, J]
+                let new_parent_elt =
+                    (*left).buf[leftlen_new].assume_init_read();
+                (*parent).buf[parent_idx].write(new_parent_elt);
+                // [A, B, C, D] ++ [E] ++ [F, G, H, I, J]
             } else {
-                todo!();
+                unreachable!()
             }
             (*left).buflen = leftlen_new as _;
             (*right).buflen = rightlen_new as _;
