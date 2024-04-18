@@ -390,6 +390,39 @@ impl<T> DyingNodeRef<T> {
 
 impl<'a, T> ImmutNodeRef<'a, T> {
     #[cfg(test)]
+    fn assert_invariant(self) {
+        fn dfs<'a, T>(node_ref: ImmutNodeRef<'a, T>) {
+            let init_len = unsafe { (*node_ref.node.as_ptr()).buflen as usize };
+            let height = node_ref.height;
+            if !node_ref.is_root() {
+                assert!(!node_ref.is_underfull(), "non-root is underfull");
+            }
+
+            if height > 0 {
+                let actual = (0..=init_len)
+                    .map(|i| node_ref.select_child(i).unwrap().treelen())
+                    .sum::<usize>()
+                    + init_len;
+                let expected = node_ref.treelen();
+                assert_eq!(actual, expected, "treelen is inconsistent");
+
+                for i in 0..=init_len {
+                    let child = node_ref.select_child(i).unwrap();
+                    let actual = child.parent_with_index().unwrap().1 as usize;
+                    assert_eq!(actual, i, "parent_idx is inconsistent");
+                }
+
+                for i in 0..=init_len {
+                    let child = node_ref.select_child(i).unwrap();
+                    dfs(child);
+                }
+            }
+        }
+
+        dfs(self);
+    }
+
+    #[cfg(test)]
     fn visualize(self)
     where
         T: std::fmt::Debug,
@@ -884,6 +917,11 @@ impl<T> RootNode<T> {
     {
         unsafe { (*root.as_ptr()).borrow().visualize() }
     }
+
+    #[cfg(test)]
+    fn assert_invariant(root: NonNull<RootNode<T>>) {
+        unsafe { (*root.as_ptr()).borrow().assert_invariant() }
+    }
 }
 
 impl<T> BTreeSeq<T> {
@@ -962,6 +1000,13 @@ impl<T> BTreeSeq<T> {
             RootNode::visualize(root);
         } else {
             eprintln!(".");
+        }
+    }
+
+    #[cfg(test)]
+    pub fn assert_invariant(&self) {
+        if let Some(root) = self.root {
+            RootNode::assert_invariant(root);
         }
     }
 }
@@ -1177,6 +1222,7 @@ mod tests {
         }
         eprintln!();
         a.visualize();
+        a.assert_invariant();
     }
 
     #[test]
@@ -1189,6 +1235,7 @@ mod tests {
         }
         eprintln!();
         a.visualize();
+        a.assert_invariant();
     }
 
     #[test]
