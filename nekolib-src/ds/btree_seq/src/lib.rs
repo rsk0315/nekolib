@@ -4,7 +4,8 @@ use std::{
     ptr::{self, NonNull},
 };
 
-use marker::LeafOrInternal;
+use array_insertion::{array_insert, array_splice};
+use array_rotation::{array_rotate_2, array_rotate_3};
 
 const B: usize = 4;
 const CAPACITY: usize = 2 * B - 1;
@@ -67,10 +68,13 @@ impl<'a, T, NodeType> Clone for NodeRef<marker::Immut<'a>, T, NodeType> {
     fn clone(&self) -> Self { unsafe { self.cast() } }
 }
 
-type OwnedNodeRef<T> = NodeRef<marker::Owned, T, LeafOrInternal>;
-type MutNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, LeafOrInternal>;
-type ImmutNodeRef<'a, T> = NodeRef<marker::Immut<'a>, T, LeafOrInternal>;
-type DyingNodeRef<T> = NodeRef<marker::Dying, T, LeafOrInternal>;
+type OwnedNodeRef<T> = NodeRef<marker::Owned, T, marker::LeafOrInternal>;
+type MutNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>;
+type MutLeafNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Leaf>;
+type MutInternalNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Internal>;
+type ImmutNodeRef<'a, T> =
+    NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal>;
+type DyingNodeRef<T> = NodeRef<marker::Dying, T, marker::LeafOrInternal>;
 
 impl<T> LeafNode<T> {
     unsafe fn init(this: *mut Self) {
@@ -149,7 +153,7 @@ impl<T> NodeRef<marker::Owned, T, marker::Internal> {
     }
 }
 
-impl<BorrowType, T> NodeRef<BorrowType, T, LeafOrInternal> {
+impl<BorrowType, T> NodeRef<BorrowType, T, marker::LeafOrInternal> {
     fn from_node(node: NonNull<LeafNode<T>>, height: u8) -> Self {
         NodeRef { node, height, _marker: PhantomData }
     }
@@ -262,19 +266,122 @@ impl<T> DyingNodeRef<T> {
     }
 }
 
+struct InsertResult<'a, T> {
+    // The caller may use this to fix up the invariant of `.treelen`.
+    leaf: MutLeafNodeRef<'a, T>,
+    new_root: Option<OwnedNodeRef<T>>,
+}
+
+impl<'a, T> MutLeafNodeRef<'a, T> {
+    /// # Safety
+    /// `i <= buflen`
+    pub unsafe fn insert(&mut self, i: u8, elt: T) -> InsertResult<T> {
+        // We do not maintain the invariant of `.treelen` to keep the
+        // amortized complexity constant. This is preferable for
+        // consecutive insertions like `.collect()` or `.extend()`.
+        debug_assert!(i <= self.buflen());
+
+        use OverflowResult::*;
+        let (leaf, new_root) = match self.prepare_overflow() {
+            Intact(leaf) => (leaf, None),
+            Grown(leaf, new_root) => (leaf, Some(new_root)),
+            Cascading(cascading) => {
+                let CascadingOverflow { children, mut parent, orphan, idx } =
+                    cascading;
+                let [left, right] = children;
+                let leaf = if idx <= left.buflen() { left } else { right };
+                let new_root = parent.insert(idx, orphan);
+                (leaf, new_root)
+            }
+        };
+        unsafe {
+            let array = &mut (*leaf.node.as_ptr()).buf;
+            array_insert(array, i as _, self.buflen() as _, elt);
+            (*leaf.node.as_ptr()).buflen += 1;
+        }
+        InsertResult { leaf, new_root }
+    }
+
+    fn prepare_overflow(
+        &mut self,
+    ) -> OverflowResult<marker::Mut<'a>, T, marker::Leaf> {
+        todo!()
+    }
+}
+
+impl<'a, T> MutInternalNodeRef<'a, T> {
+    /// # Safety
+    /// `i <= buflen`
+    unsafe fn insert(
+        &mut self,
+        i: u8,
+        orphan: NodeRef<marker::Owned, T, marker::Internal>,
+    ) -> Option<OwnedNodeRef<T>> {
+        debug_assert!(i <= self.buflen());
+
+        use OverflowResult::*;
+        let (internal, new_root) = match self.prepare_overflow() {
+            Intact(internal) => (internal, None),
+            Grown(internal, new_root) => (internal, Some(new_root)),
+            Cascading(cascading) => {
+                let CascadingOverflow { children, mut parent, orphan, idx } =
+                    cascading;
+                let [left, right] = children;
+                let internal = if idx <= left.buflen() { left } else { right };
+                let new_root = parent.insert(idx, orphan);
+                (internal, new_root)
+            }
+        };
+        unsafe {
+            let buflen = self.buflen() as usize;
+            let src_ptr = orphan.as_internal_ptr();
+            let dst_ptr = internal.as_internal_ptr();
+            let src_buf = &(*src_ptr).data.buf;
+            let dst_buf = &mut (*dst_ptr).data.buf;
+            array_splice(dst_buf, i as _, buflen, src_buf, 1);
+            (*internal.node.as_ptr()).buflen += 1;
+
+            let src_children = &(*src_ptr).children;
+            let dst_children = &mut (*dst_ptr).children;
+            array_splice(dst_children, i as _, buflen + 1, src_children, 2);
+        }
+
+        todo!()
+    }
+
+    fn prepare_overflow(
+        &mut self,
+    ) -> OverflowResult<marker::Mut<'a>, T, marker::Internal> {
+        todo!()
+    }
+}
+
 // #[cfg(test)]
 mod debug;
 
-// Should `BorrowType` of `Shrunk` and `Grown` be `marker::Owned`?
-enum ResolveUnderfullResult<BorrowType, T, NodeType> {
-    Intact(NodeRef<BorrowType, T, NodeType>),
-    Rotated(NodeRef<BorrowType, T, NodeType>),
-    Shrunk(NodeRef<BorrowType, T, NodeType>),
-    Cascading([NodeRef<BorrowType, T, NodeType>; 2]), // (self, parent)
+struct CascadingUnderflow<BorrowType, T, NodeType> {
+    child: NodeRef<BorrowType, T, NodeType>,
+    parent: NodeRef<BorrowType, T, marker::Internal>,
 }
 
-enum ResolveOverfullResult<BorrowType, T, NodeType> {
-    Fit(NodeRef<BorrowType, T, NodeType>),
-    Grown(NodeRef<BorrowType, T, NodeType>),
-    Cascading(NodeRef<BorrowType, T, NodeType>, T), // (self, popped)
+enum UnderflowResult<BorrowType, T, NodeType> {
+    Intact(NodeRef<BorrowType, T, NodeType>),
+    Rotated(NodeRef<BorrowType, T, NodeType>),
+    Shrunk(NodeRef<BorrowType, T, NodeType>), // self becomes the root
+    Cascading(CascadingUnderflow<BorrowType, T, NodeType>),
+}
+
+struct CascadingOverflow<BorrowType, T, NodeType> {
+    children: [NodeRef<BorrowType, T, NodeType>; 2],
+    parent: NodeRef<BorrowType, T, marker::Internal>,
+    orphan: NodeRef<marker::Owned, T, marker::Internal>,
+    idx: u8,
+}
+
+enum OverflowResult<BorrowType, T, NodeType> {
+    Intact(NodeRef<BorrowType, T, NodeType>),
+    Cascading(CascadingOverflow<BorrowType, T, NodeType>),
+    // The newly-allocated root is known to be of `marker::Internal`,
+    // but we consider it as of `marker::LeafOrInternal`.
+    Grown(NodeRef<BorrowType, T, NodeType>, OwnedNodeRef<T>),
 }
