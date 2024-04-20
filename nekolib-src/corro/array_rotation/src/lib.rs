@@ -27,10 +27,10 @@
 //!
 //! assert_eq!(rightlen_new, 3);
 //! unsafe {
-//!     let left = &*(&left as *const [_] as *const [String]);
-//!     assert_eq!(left[..leftlen_new], ["A", "B"]);
-//!     let right = &*(&right as *const [_] as *const [String]);
-//!     assert_eq!(right[..rightlen_new], ["C", "D", "E"]);
+//!     let left = &*(&left[..leftlen_new] as *const [_] as *const [String]);
+//!     assert_eq!(left, ["A", "B"]);
+//!     let right = &*(&right[..rightlen_new] as *const [_] as *const [String]);
+//!     assert_eq!(right, ["C", "D", "E"]);
 //! }
 //!
 //! unsafe {
@@ -68,11 +68,11 @@
 //!
 //! assert_eq!(rightlen_new, 3);
 //! unsafe {
-//!     let left = &*(&left as *const [_] as *const [String]);
-//!     assert_eq!(left[..leftlen_new], ["A", "B"]);
+//!     let left = &*(&left[..leftlen_new] as *const [_] as *const [String]);
+//!     assert_eq!(left, ["A", "B"]);
 //!     assert_eq!(mid.assume_init_ref(), "C");
-//!     let right = &*(&right as *const [_] as *const [String]);
-//!     assert_eq!(right[..rightlen_new], ["D", "E", "F"]);
+//!     let right = &*(&right[..rightlen_new] as *const [_] as *const [String]);
+//!     assert_eq!(right, ["D", "E", "F"]);
 //! }
 //!
 //! unsafe {
@@ -107,29 +107,31 @@ pub unsafe fn array_rotate_2<T, const N: usize>(
     let rightlen_new = leftlen_old + rightlen_old - leftlen_new;
     debug_assert!(rightlen_new <= N);
     if leftlen_old < leftlen_new {
-        // [A, B, C] ++ [D, E, F, G, H, I]
-        let src = ptr::addr_of!(right[0]);
-        let dst = ptr::addr_of_mut!(left[leftlen_old]);
         let left_diff = leftlen_new - leftlen_old;
-        ptr::copy_nonoverlapping(src, dst, left_diff);
+        // [A, B, C] ++ [D, E, F, G, H, I]
+        let count = left_diff;
+        let src = right[..count].as_ptr();
+        let dst = left[leftlen_old..][..count].as_mut_ptr();
+        ptr::copy_nonoverlapping(src, dst, count);
         // [A, B, C, D, E] ++ [_, _, F, G, H, I]
-        let src = ptr::addr_of!(right[left_diff]);
-        let dst = ptr::addr_of_mut!(right[0]);
-        ptr::copy(src, dst, rightlen_new);
+        let count = rightlen_new;
+        let dst = right[..count].as_mut_ptr();
+        // Overlapping `src` should be after `dst` for Stacked Borrows.
+        let src = right[left_diff..][..count].as_ptr();
+        ptr::copy(src, dst, count);
         // [A, B, C, D, E] ++ [F, G, H, I]
     } else if leftlen_old > leftlen_new {
-        // [A, B, C, D, E, F] ++ [G, H, I]
         let right_diff = rightlen_new - rightlen_old;
-        let src = ptr::addr_of!(right[0]);
-        let dst = ptr::addr_of_mut!(right[right_diff]);
-        eprintln!("right_diff: {right_diff}");
-        eprintln!("copy({src:?}, {dst:?}, {rightlen_old})");
-        ptr::copy(src, dst, rightlen_old);
+        // [A, B, C, D, E, F] ++ [G, H, I]
+        let count = rightlen_old;
+        let dst = right[right_diff..][..count].as_mut_ptr();
+        let src = right[..count].as_ptr();
+        ptr::copy(src, dst, count);
         // [A, B, C, D, E, F] ++ [_, _, G, H, I]
-        let src = ptr::addr_of!(left[leftlen_new]);
-        let dst = ptr::addr_of_mut!(right[0]);
-        eprintln!("copy_nonoverlapping({src:?}, {dst:?}, {right_diff})");
-        ptr::copy_nonoverlapping(src, dst, right_diff);
+        let count = right_diff;
+        let src = left[leftlen_new..][..count].as_ptr();
+        let dst = right[..count].as_mut_ptr();
+        ptr::copy_nonoverlapping(src, dst, count);
         // [A, B, C, D] ++ [E, F, G, H, I]
     }
     rightlen_new
@@ -162,31 +164,35 @@ pub unsafe fn array_rotate_3<T, const N: usize>(
         // [A, B, C] ++ [D] ++ [E, F, G, H, I, J, K, L]
         left[leftlen_old].write(mid_elt);
         // [A, B, C, D] ++ [_] ++ [E, F, G, H, I, J, K, L]
-        let src = ptr::addr_of!(right[0]);
-        let dst = ptr::addr_of_mut!(left[leftlen_old + 1]);
         let left_diff = leftlen_new - leftlen_old;
-        ptr::copy_nonoverlapping(src, dst, left_diff - 1);
+        let count = left_diff - 1;
+        let src = right[..count].as_ptr();
+        let dst = left[leftlen_old + 1..][..count].as_mut_ptr();
+        ptr::copy_nonoverlapping(src, dst, count);
         // [A, B, C, D, E, F] ++ [_] ++ [_, _, G, H, I, J, K, L]
         let new_mid_elt = unsafe { right[left_diff - 1].assume_init_read() };
         mid.write(new_mid_elt);
         // [A, B, C, D, E, F] ++ [G] ++ [_, _, _, H, I, J, K, L]
-        let src = ptr::addr_of!(right[left_diff]);
-        let dst = ptr::addr_of_mut!(right[0]);
-        ptr::copy(src, dst, rightlen_new);
+        let count = rightlen_new;
+        let dst = right[..count].as_mut_ptr();
+        let src = right[left_diff..][..count].as_ptr();
+        ptr::copy(src, dst, count);
         // [A, B, C, D, E, F] ++ [G] ++ [H, I, J, K, L]
     } else if leftlen_old > leftlen_new {
         let mid_elt = unsafe { mid.assume_init_read() };
         // [A, B, C, D, E, F, G, H] ++ [I] ++ [J, K, L]
         let right_diff = rightlen_new - rightlen_old;
-        let src = ptr::addr_of!(right[0]);
-        let dst = ptr::addr_of_mut!(right[right_diff]);
-        ptr::copy(src, dst, rightlen_old);
+        let count = rightlen_old;
+        let dst = right[right_diff..][..count].as_mut_ptr();
+        let src = right[..count].as_ptr();
+        ptr::copy(src, dst, count);
         // [A, B, C, D, E, F, G, H] ++ [I] ++ [_, _, _, J, K, L]
         right[right_diff - 1].write(mid_elt);
         // [A, B, C, D, E, F, G, H] ++ [_] ++ [_, _, I, J, K, L]
-        let src = ptr::addr_of!(left[leftlen_new + 1]);
-        let dst = ptr::addr_of_mut!(right[0]);
-        ptr::copy_nonoverlapping(src, dst, right_diff - 1);
+        let count = right_diff - 1;
+        let src = left[leftlen_new + 1..][..count].as_ptr();
+        let dst = right[..count].as_mut_ptr();
+        ptr::copy_nonoverlapping(src, dst, count);
         // [A, B, C, D, E, F] ++ [_] ++ [G, H, I, J, K, L]
         let new_mid_elt = unsafe { left[leftlen_new].assume_init_read() };
         mid.write(new_mid_elt);
