@@ -404,7 +404,50 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         orphan: NodeRef<marker::Owned, T, marker::Internal>,
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         debug_assert!(i <= self.buflen());
+
+        if (self.buflen() as usize) < CAPACITY {
+            self.insert_fit(i, orphan);
+            None
+        } else {
+            let orphan = self.purge_and_insert(i, orphan);
+            if let Some((mut parent, par_i)) = self.parent() {
+                parent.insert(par_i, orphan)
+            } else {
+                Some(orphan)
+            }
+        }
+    }
+
+    fn purge_and_insert(
+        &mut self,
+        i: u8,
+        orphan: NodeRef<marker::Owned, T, marker::Internal>,
+    ) -> NodeRef<marker::Owned, T, marker::Internal> {
         todo!()
+    }
+
+    fn insert_fit(
+        &mut self,
+        i: u8,
+        orphan: NodeRef<marker::Owned, T, marker::Internal>,
+    ) {
+        let orphan_ptr = orphan.as_internal_ptr();
+        let this = self.as_internal_ptr();
+        let i = i as usize;
+        // As `orphan` is purged from the subtree, we do not have to
+        // update the `.treelen`. Note that adding one to leaf-to-root
+        // is the job for the caller.
+        unsafe {
+            let buflen = (*this).data.buflen as usize;
+            let elt = (*orphan_ptr).data.buf[0].assume_init_read();
+            let left = (*orphan_ptr).children[0].assume_init_read();
+            let right = (*orphan_ptr).children[1].assume_init_read();
+            array_insert(&mut (*this).data.buf, i, buflen, elt);
+            (*this).children[i].write(left);
+            array_insert(&mut (*this).children, i + 1, buflen + 1, right);
+            (*this).data.buflen += 1;
+            drop(Box::from_raw(orphan_ptr));
+        }
     }
 }
 
