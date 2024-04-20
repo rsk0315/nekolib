@@ -84,6 +84,14 @@ pub unsafe fn array_insert<T, const N: usize>(
     array[i].write(elt);
 }
 
+/// Insert elements into the array from the other array.
+///
+/// # Safety
+/// - `dst[..dst_len]` is initialized,
+/// - `dst[dst_len..]` is uninitialized,
+/// - `src[..src_len]` is initialized,
+/// - `dst_len + src_len <= N`, and
+/// - `i <= dst_len`.
 pub unsafe fn array_splice<T, const N: usize>(
     dst: &mut [MaybeUninit<T>; N],
     i: usize,
