@@ -76,8 +76,6 @@ type ImmutNodeRef<'a, T> =
     NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal>;
 type DyingNodeRef<T> = NodeRef<marker::Dying, T, marker::LeafOrInternal>;
 
-enum Todo {}
-
 impl<T> LeafNode<T> {
     unsafe fn init(this: *mut Self) {
         unsafe {
@@ -207,7 +205,7 @@ impl<BorrowType, T> NodeRef<BorrowType, T, marker::Internal> {
 }
 
 impl<T, NodeType> NodeRef<marker::Owned, T, NodeType> {
-    fn borrow_mut<'a>(&'a mut self) -> NodeRef<marker::Mut<'a>, T, NodeType> {
+    fn borrow_mut(&mut self) -> NodeRef<marker::Mut<'_>, T, NodeType> {
         unsafe { self.cast() }
     }
 }
@@ -329,66 +327,70 @@ struct InsertResult<'a, T> {
 impl<'a, T> MutLeafNodeRef<'a, T> {
     /// # Safety
     /// `i <= buflen`
-    pub unsafe fn insert(&mut self, i: u8, elt: T) -> Todo {
+    pub unsafe fn insert(
+        &mut self,
+        i: u8,
+        elt: T,
+    ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         // We do not maintain the invariant of `.treelen` to keep the
         // amortized complexity constant. This is preferable for
         // consecutive insertions like `.collect()` or `.extend()`.
         debug_assert!(i <= self.buflen());
 
         if (self.buflen() as usize) < CAPACITY {
-            // Fit case: we do not have to return something.
             self.insert_fit(i, elt);
+            None
         } else {
-            let (par_elt, orphan) = self.purge();
-            let mut left = self.reborrow_mut();
-            let mut right = orphan;
-            let (mut leaf, i) = if i <= self.buflen() {
-                (left.reborrow_mut(), i)
-            } else {
-                (right.borrow_mut(), i - self.buflen())
-            };
-            leaf.insert_fit(i, elt);
+            let orphan = self.purge_and_insert(i, elt);
             if let Some((mut parent, par_i)) = self.parent() {
-                // recurse
-                let _: Todo = parent.insert(
-                    par_i,
-                    par_elt,
-                    left.reborrow_mut().forget_type(),
-                    right.borrow_mut().forget_type(),
-                );
+                parent.insert(par_i, orphan)
             } else {
-                // Grow case: we have to allocate/initialize the new
-                // root and return it. In addition, for letting the
-                // caller to maintain invariants, we have to return one
-                // of siblings which is inserted `elt` into.
-                let root = NodeRef::new_single_internal(
-                    par_elt,
-                    left.reborrow_mut().forget_type(),
-                    right.borrow_mut().forget_type(),
-                );
+                Some(orphan)
             }
         }
-        todo!()
     }
 
-    fn purge(&mut self) -> (T, NodeRef<marker::Owned, T, marker::Leaf>) {
+    fn purge_and_insert(
+        &mut self,
+        i: u8,
+        elt: T,
+    ) -> NodeRef<marker::Owned, T, marker::Internal> {
         let mut orphan = NodeRef::new_leaf();
+        let i = i as usize;
         unsafe {
-            let left_ptr = self.node.as_ptr();
-            let right_ptr = orphan.node.as_ptr();
-            let mut left = &mut (*left_ptr).buf;
-            let mut right = &mut (*right_ptr).buf;
-            array_rotate_2(left, right, CAPACITY, 0, B);
-            let pop = left[B - 1].assume_init_read();
-            (*left_ptr).buflen = (B - 1) as _;
-            (*right_ptr).buflen = (B - 1) as _;
-            (pop, orphan)
+            let (left, right, leftlen, rightlen) = if i <= B {
+                (self.reborrow_mut(), orphan.borrow_mut(), CAPACITY, 0)
+            } else {
+                (orphan.borrow_mut(), self.reborrow_mut(), 0, CAPACITY)
+            };
+            let left_ptr = left.node.as_ptr();
+            let right_ptr = right.node.as_ptr();
+            let left_buf = &mut (*left_ptr).buf;
+            let right_buf = &mut (*right_ptr).buf;
+            array_rotate_2(left_buf, right_buf, leftlen, rightlen, B);
+            let par_elt = left_buf[B - 1].assume_init_read();
+            if i <= B {
+                array_insert(left_buf, i, B - 1, elt);
+                (*left_ptr).buflen = B as _;
+                (*right_ptr).buflen = (B - 1) as _;
+            } else {
+                array_insert(right_buf, i - B, B - 1, elt);
+                (*left_ptr).buflen = (B - 1) as _;
+                (*right_ptr).buflen = B as _;
+            }
+            NodeRef::new_single_internal(
+                par_elt,
+                left.forget_type(),
+                right.forget_type(),
+            )
         }
     }
+
     fn insert_fit(&mut self, i: u8, elt: T) {
         let ptr = self.node.as_ptr();
         unsafe {
             array_insert(&mut (*ptr).buf, i as _, (*ptr).buflen as _, elt);
+            (*ptr).buflen += 1;
         }
     }
 }
@@ -399,14 +401,12 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     unsafe fn insert(
         &mut self,
         i: u8,
-        elt: T,
-        left: NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>,
-        right: NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>,
-    ) -> Todo {
+        orphan: NodeRef<marker::Owned, T, marker::Internal>,
+    ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         debug_assert!(i <= self.buflen());
         todo!()
     }
 }
 
-// #[cfg(test)]
+#[cfg(test)]
 mod debug;
