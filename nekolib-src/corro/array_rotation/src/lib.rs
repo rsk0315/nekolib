@@ -4,7 +4,7 @@
 //! ```
 //! use std::mem::MaybeUninit;
 //!
-//! use array_rotation::rotate_2;
+//! use array_rotation::array_rotate_2;
 //!
 //! fn uninit_array<T, const N: usize>() -> [MaybeUninit<T>; N] {
 //!     unsafe { MaybeUninit::<[MaybeUninit<T>; N]>::uninit().assume_init() }
@@ -22,7 +22,7 @@
 //! let rightlen_old = 1;
 //! let leftlen_new = 2;
 //! let rightlen_new = unsafe {
-//!     rotate_2(&mut left, &mut right, leftlen_old, rightlen_old, leftlen_new)
+//!     array_rotate_2(&mut left, &mut right, leftlen_old, rightlen_old, leftlen_new)
 //! };
 //!
 //! assert_eq!(rightlen_new, 3);
@@ -34,7 +34,7 @@
 //! }
 //!
 //! unsafe {
-//!     rotate_2(&mut left, &mut right, leftlen_new, rightlen_new, 0);
+//!     array_rotate_2(&mut left, &mut right, leftlen_new, rightlen_new, 0);
 //!     for e in &mut right[..leftlen_new + rightlen_new] {
 //!         e.assume_init_drop();
 //!     }
@@ -44,7 +44,7 @@
 //! ```
 //! use std::mem::MaybeUninit;
 //!
-//! use array_rotation::rotate_3;
+//! use array_rotation::array_rotate_3;
 //!
 //! fn uninit_array<T, const N: usize>() -> [MaybeUninit<T>; N] {
 //!     unsafe { MaybeUninit::<[MaybeUninit<T>; N]>::uninit().assume_init() }
@@ -63,7 +63,7 @@
 //! let rightlen_old = 1;
 //! let leftlen_new = 2;
 //! let rightlen_new = unsafe {
-//!     rotate_3(&mut left, &mut mid, &mut right, leftlen_old, rightlen_old, leftlen_new)
+//!     array_rotate_3(&mut left, &mut mid, &mut right, leftlen_old, rightlen_old, leftlen_new)
 //! };
 //!
 //! assert_eq!(rightlen_new, 3);
@@ -76,7 +76,7 @@
 //! }
 //!
 //! unsafe {
-//!     rotate_3(&mut left, &mut mid, &mut right, leftlen_new, rightlen_new, 0);
+//!     array_rotate_3(&mut left, &mut mid, &mut right, leftlen_new, rightlen_new, 0);
 //!     mid.assume_init_drop();
 //!     for e in &mut right[..leftlen_new + rightlen_new] {
 //!         e.assume_init_drop();
@@ -94,7 +94,7 @@ use std::{mem::MaybeUninit, ptr};
 /// - `left[leftlen_old..]` is uninitialized,
 /// - `right[..rightlen_old]` is initialized, and
 /// - `right[rightlen_old..]` is uninitialized.
-pub unsafe fn rotate_2<T, const N: usize>(
+pub unsafe fn array_rotate_2<T, const N: usize>(
     left: &mut [MaybeUninit<T>; N],
     right: &mut [MaybeUninit<T>; N],
     leftlen_old: usize,
@@ -144,7 +144,7 @@ pub unsafe fn rotate_2<T, const N: usize>(
 /// - `right[..rightlen_old]` is initialized,
 /// - `right[rightlen_old..]` is uninitialized, and
 /// - `mid` is initialized.
-pub unsafe fn rotate_3<T, const N: usize>(
+pub unsafe fn array_rotate_3<T, const N: usize>(
     left: &mut [MaybeUninit<T>; N],
     mid: &mut MaybeUninit<T>,
     right: &mut [MaybeUninit<T>; N],
@@ -242,7 +242,7 @@ mod tests {
         let (mut leftlen_old, mut rightlen_old) = (leftlen_old, rightlen_old);
         for &leftlen_new in &[3, 7, 9, 0, 2, 1, 5, 5, 8, 6] {
             let rightlen_new = unsafe {
-                rotate_2(
+                array_rotate_2(
                     &mut left,
                     &mut right,
                     leftlen_old,
@@ -306,7 +306,7 @@ mod tests {
         let (mut leftlen_old, mut rightlen_old) = (leftlen_old, rightlen_old);
         for &leftlen_new in &[5, 9, 7, 8, 6, 8, 8] {
             let rightlen_new = unsafe {
-                rotate_2(
+                array_rotate_2(
                     &mut left,
                     &mut right,
                     leftlen_old,
@@ -363,7 +363,7 @@ mod tests {
         let (mut leftlen_old, mut rightlen_old) = (leftlen_old, rightlen_old);
         for &leftlen_new in &[3, 7, 9, 0, 2, 1, 5, 5, 8, 6] {
             let rightlen_new = unsafe {
-                rotate_3(
+                array_rotate_3(
                     &mut left,
                     &mut mid,
                     &mut right,
@@ -432,7 +432,7 @@ mod tests {
         let (mut leftlen_old, mut rightlen_old) = (leftlen_old, rightlen_old);
         for &leftlen_new in &[7, 9, 9, 8, 7, 8, 6, 8] {
             let rightlen_new = unsafe {
-                rotate_3(
+                array_rotate_3(
                     &mut left,
                     &mut mid,
                     &mut right,
