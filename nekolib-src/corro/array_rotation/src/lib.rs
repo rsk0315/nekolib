@@ -4,7 +4,7 @@
 //! ```
 //! use std::mem::MaybeUninit;
 //!
-//! use slice_rotation::rotate_2;
+//! use array_rotation::rotate_2;
 //!
 //! fn uninit_array<T, const N: usize>() -> [MaybeUninit<T>; N] {
 //!     unsafe { MaybeUninit::<[MaybeUninit<T>; N]>::uninit().assume_init() }
@@ -44,7 +44,7 @@
 //! ```
 //! use std::mem::MaybeUninit;
 //!
-//! use slice_rotation::rotate_3;
+//! use array_rotation::rotate_3;
 //!
 //! fn uninit_array<T, const N: usize>() -> [MaybeUninit<T>; N] {
 //!     unsafe { MaybeUninit::<[MaybeUninit<T>; N]>::uninit().assume_init() }

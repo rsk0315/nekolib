@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 borrow = { path = "borrow" }
-slice_rotation = { path = "slice_rotation" }
+array_rotation = { path = "array_rotation" }

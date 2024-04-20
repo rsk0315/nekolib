@@ -1,5 +1,5 @@
 [package]
-name = "slice_rotation"
+name = "array_rotation"
 version = "0.1.0"
 edition = "2021"
 
