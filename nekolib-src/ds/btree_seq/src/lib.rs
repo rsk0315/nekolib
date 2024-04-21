@@ -283,7 +283,7 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
         // TBD: When we split nodes and correct the invariant of their
         // links, other invariants may be messed up if we update
         // `.treelen` (probably). If the caller of this function does
-        // `.buflen -= 1` properly, then are we happy?
+        // `.buflen -= 1` properly, then are we happy? Maybe NO.
         //
         // Note that this function invalidates some references if any.
     }
