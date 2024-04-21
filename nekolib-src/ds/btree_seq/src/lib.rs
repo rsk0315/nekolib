@@ -153,10 +153,10 @@ impl<T> NodeRef<marker::Owned, T, marker::Internal> {
     }
     /// # Safety
     /// `left.height == right.height`
-    unsafe fn new_single_internal(
+    unsafe fn new_single_internal<NodeType>(
         elt: T,
-        left: MutNodeRef<T>,
-        right: MutNodeRef<T>,
+        left: NodeRef<marker::Mut<'_>, T, NodeType>,
+        right: NodeRef<marker::Mut<'_>, T, NodeType>,
     ) -> Self {
         debug_assert_eq!(left.height, right.height);
         let height = left.height;
@@ -164,11 +164,19 @@ impl<T> NodeRef<marker::Owned, T, marker::Internal> {
         node.data.buf[0].write(elt);
         node.children[0].write(left.node);
         node.children[1].write(right.node);
+        node.data.buflen = 1;
         let node = NonNull::from(Box::leak(node)).cast();
         let mut this =
             NodeRef { height: height + 1, node, _marker: PhantomData };
         this.borrow_mut().correct_parent_children_invariant();
         this
+    }
+    /// # Safety
+    /// The caller has to guarantee the unemptiness.
+    unsafe fn new_empty_internal(height: u8) -> Self {
+        let node =
+            NonNull::from(Box::leak(unsafe { InternalNode::<T>::new() }));
+        NodeRef { height, node: node.cast(), _marker: PhantomData }
     }
 }
 
@@ -205,6 +213,9 @@ impl<BorrowType, T> NodeRef<BorrowType, T, marker::Internal> {
 }
 
 impl<T, NodeType> NodeRef<marker::Owned, T, NodeType> {
+    fn borrow(&self) -> NodeRef<marker::Immut<'_>, T, NodeType> {
+        unsafe { self.cast() }
+    }
     fn borrow_mut(&mut self) -> NodeRef<marker::Mut<'_>, T, NodeType> {
         unsafe { self.cast() }
     }
@@ -258,16 +269,20 @@ impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
 impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
     fn correct_parent_children_invariant(&mut self) {
         let init_len = self.buflen() as usize;
-        let mut treelen = init_len;
+        // let mut treelen = init_len;
         let children_ref = self.children_ref();
         let ptr = self.node.cast();
         for i in 0..=init_len {
             let child = children_ref[i];
             unsafe { (*child.as_ptr()).parent = Some((ptr, i as _)) }
             let child_ref = MutNodeRef::from_node(child, self.height - 1);
-            treelen += child_ref.treelen();
+            // treelen += child_ref.treelen();
         }
-        unsafe { (*ptr.as_ptr()).treelen = treelen }
+        // unsafe { (*ptr.as_ptr()).treelen = treelen }
+
+        // TBD: When we split nodes and correct the invariant of their
+        // links, other invariants may be messed up if we update
+        // `.treelen` (probably).
     }
 }
 
@@ -341,8 +356,8 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             self.insert_fit(i, elt);
             None
         } else {
-            let orphan = self.purge_and_insert(i, elt);
-            if let Some((mut parent, par_i)) = self.parent() {
+            let (orphan, new_parent) = self.purge_and_insert(i, elt);
+            if let Some((mut parent, par_i)) = new_parent {
                 parent.insert(par_i, orphan)
             } else {
                 Some(orphan)
@@ -354,8 +369,12 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         &mut self,
         i: u8,
         elt: T,
-    ) -> NodeRef<marker::Owned, T, marker::Internal> {
+    ) -> (
+        NodeRef<marker::Owned, T, marker::Internal>,
+        Option<(NodeRef<marker::Mut<'_>, T, marker::Internal>, u8)>,
+    ) {
         let mut orphan = NodeRef::new_leaf();
+        let parent = self.parent();
         let i = i as usize;
         unsafe {
             let (left, right, leftlen, rightlen) = if i <= B {
@@ -378,11 +397,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 (*left_ptr).buflen = (B - 1) as _;
                 (*right_ptr).buflen = B as _;
             }
-            NodeRef::new_single_internal(
-                par_elt,
-                left.forget_type(),
-                right.forget_type(),
-            )
+            (NodeRef::new_single_internal(par_elt, left, right), parent)
         }
     }
 
@@ -409,8 +424,9 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             self.insert_fit(i, orphan);
             None
         } else {
-            let orphan = self.purge_and_insert(i, orphan);
-            if let Some((mut parent, par_i)) = self.parent() {
+            let (orphan, new_parent) = self.purge_and_insert(i, orphan);
+
+            if let Some((mut parent, par_i)) = new_parent {
                 parent.insert(par_i, orphan)
             } else {
                 Some(orphan)
@@ -421,9 +437,58 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     fn purge_and_insert(
         &mut self,
         i: u8,
-        orphan: NodeRef<marker::Owned, T, marker::Internal>,
-    ) -> NodeRef<marker::Owned, T, marker::Internal> {
-        todo!()
+        node: NodeRef<marker::Owned, T, marker::Internal>,
+    ) -> (
+        NodeRef<marker::Owned, T, marker::Internal>,
+        Option<(NodeRef<marker::Mut<'_>, T, marker::Internal>, u8)>,
+    ) {
+        let i = i as usize;
+        let parent = self.parent();
+        let node_ptr = node.as_internal_ptr();
+        unsafe {
+            let mut orphan = NodeRef::new_empty_internal(self.height);
+            let elt = (*node_ptr).data.buf[0].assume_init_read();
+            let left_child = (*node_ptr).children[0].assume_init_read();
+            let right_child = (*node_ptr).children[1].assume_init_read();
+            let (mut left, mut right, par_elt) = if i <= B {
+                let left_ptr = self.as_internal_ptr();
+                let right_ptr = orphan.as_internal_ptr();
+                let left_buf = &mut (*left_ptr).data.buf;
+                let right_buf = &mut (*right_ptr).data.buf;
+                array_rotate_2(left_buf, right_buf, CAPACITY, 0, B);
+                let left_children = &mut (*left_ptr).children;
+                let right_children = &mut (*right_ptr).children;
+                array_rotate_2(left_children, right_children, 2 * B, 0, B);
+                let par_elt = left_buf[B - 1].assume_init_read();
+                array_insert(left_buf, i, B - 1, elt);
+                left_children[i].write(left_child);
+                array_insert(left_children, i + 1, B, right_child);
+                (*left_ptr).data.buflen = B as _;
+                (*right_ptr).data.buflen = (B - 1) as _;
+                (self.reborrow_mut(), orphan.borrow_mut(), par_elt)
+            } else {
+                let left_ptr = orphan.as_internal_ptr();
+                let right_ptr = self.as_internal_ptr();
+                let left_buf = &mut (*left_ptr).data.buf;
+                let right_buf = &mut (*right_ptr).data.buf;
+                array_rotate_2(left_buf, right_buf, 0, CAPACITY, B);
+                let left_children = &mut (*left_ptr).children;
+                let right_children = &mut (*right_ptr).children;
+                array_rotate_2(left_children, right_children, 0, 2 * B, B);
+                let par_elt = left_buf[B - 1].assume_init_read();
+                array_insert(right_buf, i - B, B - 1, elt);
+                right_children[i - B].write(left_child);
+                array_insert(right_children, i + 1 - B, B, right_child);
+                (*left_ptr).data.buflen = (B - 1) as _;
+                (*right_ptr).data.buflen = B as _;
+                (orphan.borrow_mut(), self.reborrow_mut(), par_elt)
+            };
+            left.correct_parent_children_invariant();
+            right.correct_parent_children_invariant();
+
+            drop(Box::from_raw(node.as_internal_ptr()));
+            (NodeRef::new_single_internal(par_elt, left, right), parent)
+        }
     }
 
     fn insert_fit(
@@ -448,8 +513,58 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             (*this).data.buflen += 1;
             drop(Box::from_raw(orphan_ptr));
         }
+        self.correct_parent_children_invariant();
     }
 }
 
 #[cfg(test)]
 mod debug;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn push_front() {
+        let mut root = NodeRef::new_leaf();
+        let mut mut_node = root.borrow_mut();
+        let mut trace_root = None;
+
+        let start = 0;
+        let end = 300;
+        unsafe {
+            for i in (start..end).rev() {
+                if let Some(new_root) = mut_node.insert(0, i) {
+                    trace_root.insert(new_root);
+                }
+            }
+        }
+
+        let mut root = trace_root
+            .map(|r| r.forget_type())
+            .unwrap_or_else(|| root.forget_type());
+        unsafe { root.drop_subtree() }
+    }
+    #[test]
+    fn push_back() {
+        let mut root = NodeRef::new_leaf();
+        let mut mut_node = root.borrow_mut();
+        let mut trace_root = None;
+
+        let start = 0;
+        let end = 300;
+        unsafe {
+            for i in start..end {
+                if let Some(new_root) = mut_node.insert(mut_node.buflen(), i) {
+                    trace_root.insert(new_root);
+                }
+            }
+        }
+
+        let mut root = trace_root
+            .map(|r| r.forget_type())
+            .unwrap_or_else(|| root.forget_type());
+
+        unsafe { root.drop_subtree() }
+    }
+}
