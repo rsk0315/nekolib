@@ -397,12 +397,20 @@ impl<T> OwnedNodeRef<T> {
             if ((left.buflen() + right.buflen() + 1) as usize) <= CAPACITY {
                 // Note that `left` and `right` are roots, so it is not
                 // necessarily true that |left| == |right| == B - 1.
-                // Anyway, we do not have to allocate a new node.
-                todo!()
+                // Anyway, we do not have to allocate a new node. We
+                // merge them into one of them and deallocate the other.
+                left.append(right);
+                unsafe { left.promote() }
             } else {
                 // At most one of them may be underfull, but we can
                 // resolve it by rotate properly.
-                todo!()
+                let mut node =
+                    unsafe { NodeRef::new_single_internal(med, left, right) };
+                let mut node_mut = node.borrow_mut();
+                let mut left = node_mut.child(0).unwrap();
+                let mut right = node_mut.child(1).unwrap();
+                left.rotate(&mut right);
+                node.forget_type()
             }
         }
     }
@@ -462,11 +470,36 @@ impl<'a, T> MutNodeRef<'a, T> {
     fn underflow(
         &mut self,
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
+        use ForceResult::*;
         unsafe {
             match self.force() {
-                ForceResult::Leaf(mut leaf) => leaf.underflow(),
-                ForceResult::Internal(mut internal) => internal.underflow(),
+                Leaf(mut leaf) => leaf.underflow(),
+                Internal(mut internal) => internal.underflow(),
             }
+        }
+    }
+    fn rotate(&mut self, other: &mut Self) {
+        use ForceResult::*;
+        unsafe {
+            match (self.force(), other.force()) {
+                (Leaf(mut left), Leaf(mut right)) => left.rotate(&mut right),
+                (Internal(mut left), Internal(mut right)) => {
+                    left.rotate(&mut right);
+                }
+                _ => unreachable!(),
+            };
+        }
+    }
+    fn append(&mut self, other: Self) {
+        use ForceResult::*;
+        unsafe {
+            match (self.force(), other.force()) {
+                (Leaf(mut left), Leaf(mut right)) => left.append(right),
+                (Internal(mut left), Internal(mut right)) => {
+                    left.append(right);
+                }
+                _ => unreachable!(),
+            };
         }
     }
 }
@@ -587,8 +620,24 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         }
     }
 
-    fn rotate(&mut self, other: &mut Self) { todo!() }
+    fn rotate(&mut self, other: &mut Self) {
+        let (parent, idx) =
+            if let Some(o) = self.parent() { o } else { return };
+        let left_ptr = self.node.as_ptr();
+        let right_ptr = other.node.as_ptr();
+        let parent_ptr = parent.as_internal_ptr();
+        unsafe {
+            let left_buf = &mut (*left_ptr).buf;
+            let right_buf = &mut (*right_ptr).buf;
+            let med = &mut (*parent_ptr).data.buf[idx as usize];
+            todo!() // array_rotate_3(left_buf, mid, right_buf, ..);
+        }
+    }
     fn merge(&mut self, other: &mut Self, self_left: bool) { todo!() }
+    fn append(&mut self, mut other: Self) {
+        todo!();
+        unsafe { drop(Box::from_raw(other.node.as_ptr())) }
+    }
 }
 
 impl<'a, T> MutInternalNodeRef<'a, T> {
@@ -739,6 +788,10 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
 
     fn rotate(&mut self, other: &mut Self) { todo!() }
     fn merge(&mut self, other: &mut Self, self_left: bool) { todo!() }
+    fn append(&mut self, mut other: Self) {
+        todo!();
+        unsafe { drop(Box::from_raw(other.as_internal_ptr())) }
+    }
 }
 
 #[cfg(test)]
