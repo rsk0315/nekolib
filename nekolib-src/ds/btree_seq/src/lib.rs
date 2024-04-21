@@ -269,20 +269,23 @@ impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
 impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
     fn correct_parent_children_invariant(&mut self) {
         let init_len = self.buflen() as usize;
-        // let mut treelen = init_len;
+        let mut treelen = init_len;
         let children_ref = self.children_ref();
         let ptr = self.node.cast();
         for i in 0..=init_len {
             let child = children_ref[i];
             unsafe { (*child.as_ptr()).parent = Some((ptr, i as _)) }
             let child_ref = MutNodeRef::from_node(child, self.height - 1);
-            // treelen += child_ref.treelen();
+            treelen += child_ref.treelen();
         }
-        // unsafe { (*ptr.as_ptr()).treelen = treelen }
+        unsafe { (*ptr.as_ptr()).treelen = treelen }
 
         // TBD: When we split nodes and correct the invariant of their
         // links, other invariants may be messed up if we update
-        // `.treelen` (probably).
+        // `.treelen` (probably). If the caller of this function does
+        // `.buflen -= 1` properly, then are we happy?
+        //
+        // Note that this function invalidates some references if any.
     }
 }
 
@@ -558,12 +561,20 @@ mod tests {
                 if let Some(new_root) = mut_node.insert(mut_node.buflen(), i) {
                     trace_root.insert(new_root);
                 }
+
+                // if let Some(r) = trace_root.as_ref() {
+                //     eprintln!();
+                //     debug::visualize(r.borrow().forget_type());
+                // }
             }
         }
 
         let mut root = trace_root
             .map(|r| r.forget_type())
             .unwrap_or_else(|| root.forget_type());
+
+        eprintln!();
+        debug::visualize(root.borrow());
 
         unsafe { root.drop_subtree() }
     }

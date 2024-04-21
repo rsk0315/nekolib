@@ -17,7 +17,7 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
         path: Vec<Kind>,
     }
     impl State {
-        fn display<T: std::fmt::Debug>(&self, elt: &T) {
+        fn display<T: std::fmt::Debug>(&self, elt: &T, treelen: Option<usize>) {
             let mut prefix = "".to_owned();
             for i in 0..self.path.len() - 1 {
                 let k0 = self.path[i];
@@ -49,7 +49,11 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
                     (_, IntSgl) => unreachable!(),
                 };
             }
-            eprintln!("{prefix}{elt:?}");
+            eprint!("{prefix}{elt:?}");
+            if let Some(treelen) = treelen {
+                eprint!(" ({treelen})");
+            }
+            eprintln!();
         }
         fn push(&mut self, k: Kind) { self.path.push(k); }
         fn pop(&mut self) { self.path.pop(); }
@@ -87,7 +91,8 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
                     } else {
                         state.push(IntMid);
                     }
-                    state.display((*ptr).data.buf[i].assume_init_ref());
+                    let elt = (*ptr).data.buf[i].assume_init_ref();
+                    state.display(elt, Some((*ptr).treelen));
                     dfs(child(i + 1), state);
                     state.pop();
                 }
@@ -100,7 +105,8 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
                     } else {
                         state.push(LeafMid);
                     }
-                    state.display((*ptr).buf[i].assume_init_ref());
+                    let elt = (*ptr).buf[i].assume_init_ref();
+                    state.display(elt, None);
                     state.pop();
                 }
             }
