@@ -193,7 +193,32 @@ impl<BorrowType, T> NodeRef<BorrowType, T, marker::LeafOrInternal> {
     }
 }
 
+impl<BorrowType: Traversable, T>
+    NodeRef<BorrowType, T, marker::LeafOrInternal>
+{
+    fn first_child(&self) -> Option<Self> {
+        self.force().internal().map(|internal| unsafe {
+            let ptr = internal.as_internal_ptr();
+            let node = (*ptr).children[0].assume_init();
+            NodeRef::from_node(node, self.height - 1)
+        })
+    }
+    fn last_child(&self) -> Option<Self> {
+        self.force().internal().map(|internal| unsafe {
+            let ptr = internal.as_internal_ptr();
+            let node =
+                (*ptr).children[(*ptr).data.buflen as usize].assume_init();
+            NodeRef::from_node(node, self.height - 1)
+        })
+    }
+}
+
 impl<BorrowType, T> NodeRef<BorrowType, T, marker::Leaf> {
+    /// # Safety
+    /// `node` points to an actual leaf.
+    unsafe fn from_leaf(node: NonNull<LeafNode<T>>) -> Self {
+        NodeRef { node, height: 0, _marker: PhantomData }
+    }
     fn forget_type(self) -> NodeRef<BorrowType, T, marker::LeafOrInternal> {
         unsafe { self.cast() }
     }
@@ -203,7 +228,12 @@ impl<BorrowType, T> NodeRef<BorrowType, T, marker::Internal> {
     fn as_internal_ptr(&self) -> *mut InternalNode<T> {
         self.node.as_ptr() as *mut InternalNode<T>
     }
-    fn from_internal(node: NonNull<InternalNode<T>>, height: u8) -> Self {
+    /// # Safety
+    /// `height > 0`
+    unsafe fn from_internal(
+        node: NonNull<InternalNode<T>>,
+        height: u8,
+    ) -> Self {
         debug_assert!(height > 0);
         NodeRef { node: node.cast(), height, _marker: PhantomData }
     }
@@ -223,6 +253,9 @@ impl<T, NodeType> NodeRef<marker::Owned, T, NodeType> {
 
 impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
     fn reborrow_mut(&mut self) -> NodeRef<marker::Mut<'a>, T, NodeType> {
+        unsafe { self.cast() }
+    }
+    unsafe fn promote(&mut self) -> NodeRef<marker::Owned, T, NodeType> {
         unsafe { self.cast() }
     }
 }
@@ -247,12 +280,55 @@ impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Internal> {
                 as *const [NonNull<LeafNode<T>>])
         }
     }
-    fn children_mut(&mut self) -> &mut [NonNull<LeafNode<T>>] {
-        let init_len = self.buflen() as usize;
-        unsafe {
-            &mut *(&mut (*self.as_internal_ptr()).children[..=init_len]
-                as *mut [MaybeUninit<_>]
-                as *mut [NonNull<LeafNode<T>>])
+    fn child(
+        &self,
+        i: u8,
+    ) -> Option<NodeRef<BorrowType, T, marker::LeafOrInternal>> {
+        let init_len = self.buflen();
+        let ptr = self.as_internal_ptr();
+        let node = (i <= init_len)
+            .then(|| unsafe { (*ptr).children[i as usize].assume_init() })?;
+        let height = self.height;
+        Some(NodeRef::from_node(node, height - 1))
+    }
+    fn neighbors(
+        &self,
+    ) -> [Option<NodeRef<BorrowType, T, marker::Internal>>; 2] {
+        if let Some((parent, idx)) = self.parent() {
+            let idx = idx as usize;
+            let height = self.height;
+            let parent_ptr = parent.as_internal_ptr();
+            unsafe {
+                let len = (*parent_ptr).data.buflen as usize;
+                let left = (idx > 0)
+                    .then(|| (*parent_ptr).children[idx - 1].assume_init());
+                let right = (idx < len)
+                    .then(|| (*parent_ptr).children[idx + 1].assume_init());
+                [left, right].map(|o| {
+                    o.map(|node| NodeRef::from_internal(node.cast(), height))
+                })
+            }
+        } else {
+            [None, None]
+        }
+    }
+}
+
+impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Leaf> {
+    fn neighbors(&self) -> [Option<NodeRef<BorrowType, T, marker::Leaf>>; 2] {
+        if let Some((parent, idx)) = self.parent() {
+            let idx = idx as usize;
+            let parent_ptr = parent.as_internal_ptr();
+            unsafe {
+                let len = (*parent_ptr).data.buflen as usize;
+                let left = (idx > 0)
+                    .then(|| (*parent_ptr).children[idx - 1].assume_init());
+                let right = (idx < len)
+                    .then(|| (*parent_ptr).children[idx + 1].assume_init());
+                [left, right].map(|o| o.map(|node| NodeRef::from_leaf(node)))
+            }
+        } else {
+            [None, None]
         }
     }
 }
@@ -260,7 +336,7 @@ impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Internal> {
 impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     fn parent(&self) -> Option<(NodeRef<BorrowType, T, marker::Internal>, u8)> {
         let height = self.height;
-        unsafe { (*self.node.as_ptr()).parent }.map(|(parent, idx)| {
+        unsafe { (*self.node.as_ptr()).parent }.map(|(parent, idx)| unsafe {
             (NodeRef::from_internal(parent, height + 1), idx)
         })
     }
@@ -290,6 +366,46 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
 }
 
 impl<T> OwnedNodeRef<T> {
+    fn adjoin(mut self, med: T, mut other: Self) -> Self {
+        let mut left = self.borrow_mut();
+        let mut right = other.borrow_mut();
+
+        if left.height < right.height {
+            while left.height < right.height {
+                // SAFETY: 0 <= left.height < right.height
+                right = right.first_child().unwrap();
+            }
+            let (mut parent, idx) = right.parent().unwrap();
+            unsafe {
+                let node = NodeRef::new_single_internal(med, left, right);
+                let root1 = parent.insert(idx, node).map(|o| o.forget_type());
+                let root2 = parent.child(idx).unwrap().underflow();
+                root2.or_else(|| root1).unwrap_or_else(|| other)
+            }
+        } else if left.height > right.height {
+            while left.height > right.height {
+                left = left.last_child().unwrap();
+            }
+            let (mut parent, idx) = left.parent().unwrap();
+            unsafe {
+                let node = NodeRef::new_single_internal(med, left, right);
+                let root1 = parent.insert(idx, node).map(|o| o.forget_type());
+                let root2 = parent.child(idx).unwrap().underflow();
+                root2.or_else(|| root1).unwrap_or_else(|| self)
+            }
+        } else {
+            if ((left.buflen() + right.buflen() + 1) as usize) <= CAPACITY {
+                // Note that `left` and `right` are roots, so it is not
+                // necessarily true that |left| == |right| == B - 1.
+                // Anyway, we do not have to allocate a new node.
+                todo!()
+            } else {
+                // At most one of them may be underfull, but we can
+                // resolve it by rotate properly.
+                todo!()
+            }
+        }
+    }
     fn drop_subtree(&mut self) {
         let dying: DyingNodeRef<_> = unsafe { self.cast() };
         dying.drop_subtree();
@@ -340,6 +456,19 @@ struct InsertResult<'a, T> {
     // The caller may use this to fix up the invariant of `.treelen`.
     leaf: MutLeafNodeRef<'a, T>,
     new_root: Option<OwnedNodeRef<T>>,
+}
+
+impl<'a, T> MutNodeRef<'a, T> {
+    fn underflow(
+        &mut self,
+    ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
+        unsafe {
+            match self.force() {
+                ForceResult::Leaf(mut leaf) => leaf.underflow(),
+                ForceResult::Internal(mut internal) => internal.underflow(),
+            }
+        }
+    }
 }
 
 impl<'a, T> MutLeafNodeRef<'a, T> {
@@ -411,6 +540,55 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             (*ptr).buflen += 1;
         }
     }
+
+    pub unsafe fn underflow(
+        &mut self,
+    ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
+        // If it does not have a parent, then it is the root and nothing
+        // has to be done.
+        let (mut parent, idx) = self.parent()?;
+        let len = self.buflen();
+        match self.neighbors() {
+            [Some(mut left), _]
+                if usize::from(left.buflen() + len) >= 2 * MIN_BUFLEN =>
+            {
+                left.rotate(self);
+                None
+            }
+            [_, Some(mut right)]
+                if usize::from(len + right.buflen()) >= 2 * MIN_BUFLEN =>
+            {
+                self.rotate(&mut right);
+                None
+            }
+            [Some(mut left), _] => {
+                // |left| + |self| + 1 < 2 * B - 1
+                // Take an element from the parent, and check it.
+                left.merge(self, false);
+                if parent.buflen() == 0 {
+                    // Now `self` is the new root, so deallocate it and
+                    // promote `self`.
+                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
+                    Some(self.promote().forget_type())
+                } else {
+                    parent.underflow()
+                }
+            }
+            [_, Some(mut right)] => {
+                self.merge(&mut right, true);
+                if parent.buflen() == 0 {
+                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
+                    Some(self.promote().forget_type())
+                } else {
+                    parent.underflow()
+                }
+            }
+            [None, None] => unreachable!(),
+        }
+    }
+
+    fn rotate(&mut self, other: &mut Self) { todo!() }
+    fn merge(&mut self, other: &mut Self, self_left: bool) { todo!() }
 }
 
 impl<'a, T> MutInternalNodeRef<'a, T> {
@@ -518,6 +696,49 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         }
         self.correct_parent_children_invariant();
     }
+
+    unsafe fn underflow(
+        &mut self,
+    ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
+        let (mut parent, idx) = self.parent()?;
+        let len = self.buflen();
+        match self.neighbors() {
+            [Some(mut left), _]
+                if usize::from(left.buflen() + len) >= 2 * MIN_BUFLEN =>
+            {
+                left.rotate(self);
+                None
+            }
+            [_, Some(mut right)]
+                if usize::from(len + right.buflen()) >= 2 * MIN_BUFLEN =>
+            {
+                self.rotate(&mut right);
+                None
+            }
+            [Some(mut left), _] => {
+                left.merge(self, false);
+                if parent.buflen() == 0 {
+                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
+                    Some(self.promote().forget_type())
+                } else {
+                    parent.underflow()
+                }
+            }
+            [_, Some(mut right)] => {
+                self.merge(&mut right, true);
+                if parent.buflen() == 0 {
+                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
+                    Some(self.promote().forget_type())
+                } else {
+                    parent.underflow()
+                }
+            }
+            [None, None] => unreachable!(),
+        }
+    }
+
+    fn rotate(&mut self, other: &mut Self) { todo!() }
+    fn merge(&mut self, other: &mut Self, self_left: bool) { todo!() }
 }
 
 #[cfg(test)]
