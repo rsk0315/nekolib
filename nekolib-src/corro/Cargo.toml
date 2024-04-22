@@ -10,3 +10,4 @@ inner = { path = "../inner" }
 borrow = { path = "borrow" }
 array_rotation = { path = "array_rotation" }
 array_insertion = { path = "array_insertion" }
+array_removal = { path = "array_removal" }
