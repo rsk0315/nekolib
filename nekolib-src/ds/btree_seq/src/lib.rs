@@ -5,6 +5,7 @@ use std::{
 };
 
 use array_insertion::{array_insert, array_splice};
+use array_removal::array_remove;
 use array_rotation::{array_rotate_2, array_rotate_3};
 
 const B: usize = 4;
@@ -623,20 +624,86 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     fn rotate(&mut self, other: &mut Self) {
         let (parent, idx) =
             if let Some(o) = self.parent() { o } else { return };
+        let idx = idx as usize;
         let left_ptr = self.node.as_ptr();
         let right_ptr = other.node.as_ptr();
         let parent_ptr = parent.as_internal_ptr();
         unsafe {
             let left_buf = &mut (*left_ptr).buf;
             let right_buf = &mut (*right_ptr).buf;
-            let med = &mut (*parent_ptr).data.buf[idx as usize];
-            todo!() // array_rotate_3(left_buf, mid, right_buf, ..);
+            let mid = &mut (*parent_ptr).data.buf[idx];
+            let leftlen = (*left_ptr).buflen as usize;
+            let rightlen = (*right_ptr).buflen as usize;
+            debug_assert!(leftlen + rightlen >= 2 * MIN_BUFLEN);
+            let rightlen_new = array_rotate_3(
+                left_buf, mid, right_buf, leftlen, rightlen, MIN_BUFLEN,
+            );
+            (*left_ptr).buflen = MIN_BUFLEN as _;
+            (*right_ptr).buflen = rightlen_new as _;
         }
     }
-    fn merge(&mut self, other: &mut Self, self_left: bool) { todo!() }
+    fn merge(&mut self, other: &mut Self, self_left: bool) {
+        debug_assert!(self.parent().is_none());
+        if self_left {
+            let left_ptr = self.node.as_ptr();
+            let right_ptr = other.node.as_ptr();
+            unsafe {
+                let (parent, idx) = (*left_ptr).parent.unwrap();
+                let idx = idx as usize;
+                let parent_buf = &mut (*parent.as_ptr()).data.buf;
+                let parent_len = (*parent.as_ptr()).data.buflen as usize;
+                let par_elt = array_remove(parent_buf, idx, parent_len);
+                let parent_children = &mut (*parent.as_ptr()).children;
+                let _ = array_remove(parent_children, idx + 1, parent_len + 1);
+                (*parent.as_ptr()).data.buflen -= 1;
+                let left_buf = &mut (*left_ptr).buf;
+                let right_buf = &(*right_ptr).buf;
+                let leftlen = (*left_ptr).buflen as usize;
+                let rightlen = (*right_ptr).buflen as usize;
+                left_buf[leftlen].write(par_elt);
+                let leftlen = leftlen + 1;
+                array_splice(left_buf, leftlen, leftlen, right_buf, rightlen);
+                (*left_ptr).buflen = (leftlen + rightlen) as _;
+                drop(Box::from_raw(right_ptr));
+            }
+        } else {
+            let left_ptr = other.node.as_ptr();
+            let right_ptr = self.node.as_ptr();
+            unsafe {
+                let (parent, idx) = (*left_ptr).parent.unwrap();
+                let idx = idx as usize;
+                let parent_buf = &mut (*parent.as_ptr()).data.buf;
+                let parent_len = (*parent.as_ptr()).data.buflen as usize;
+                let par_elt = array_remove(parent_buf, idx, parent_len);
+                let parent_children = &mut (*parent.as_ptr()).children;
+                let _ = array_remove(parent_children, idx + 1, parent_len + 1);
+                (*parent.as_ptr()).data.buflen -= 1;
+                let left_buf = &(*left_ptr).buf;
+                let right_buf = &mut (*right_ptr).buf;
+                let leftlen = (*left_ptr).buflen as usize;
+                let rightlen = (*right_ptr).buflen as usize;
+                array_insert(right_buf, 0, rightlen, par_elt);
+                let rightlen = rightlen + 1;
+                array_splice(right_buf, 0, rightlen, left_buf, leftlen);
+                (*right_ptr).buflen = (leftlen + rightlen) as _;
+                drop(Box::from_raw(left_ptr));
+            }
+        }
+    }
     fn append(&mut self, mut other: Self) {
-        todo!();
-        unsafe { drop(Box::from_raw(other.node.as_ptr())) }
+        let left_ptr = self.node.as_ptr();
+        let right_ptr = other.node.as_ptr();
+        unsafe {
+            let left_buf = &mut (*left_ptr).buf;
+            let right_buf = &(*right_ptr).buf;
+            let leftlen = (*left_ptr).buflen as usize;
+            let rightlen = (*right_ptr).buflen as usize;
+            let newlen = leftlen + rightlen;
+            debug_assert!(leftlen + rightlen <= CAPACITY);
+            array_splice(left_buf, leftlen, leftlen, right_buf, rightlen);
+            (*left_ptr).buflen = newlen as _;
+            drop(Box::from_raw(other.node.as_ptr()))
+        }
     }
 }
 
