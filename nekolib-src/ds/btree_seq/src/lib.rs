@@ -689,6 +689,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 drop(Box::from_raw(left_ptr));
             }
         }
+        // Note that `.treelen` of the parent should be repaired.
     }
     fn append(&mut self, mut other: Self) {
         let left_ptr = self.node.as_ptr();
