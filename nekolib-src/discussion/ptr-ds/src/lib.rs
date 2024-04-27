@@ -2,24 +2,18 @@
 //!
 //! ## Contents
 //!
-//! 説明書き：
-//!
 //! - [生ポインタ](rawptr/index.html)
+//! - [未初期化の値](maybe_uninit/index.html)
 //! - [variance](variance/index.html)
-//! - TODO: [Stacked Borrows](sb/index.html)
-//!
-//! サンプル：
-//!
-//! - [handle](sample_handle/index.html)
-//! - TODO: [node-ref](sample_noderef/index.html)
+//! - [エイリアスモデル](alias_model/index.html)
 
+pub mod alias_model;
 pub mod maybe_uninit;
 pub mod rawptr;
-pub mod sb;
 pub mod variance;
 
-pub mod sample_handle;
-pub mod sample_list;
-pub mod sample_noderef;
+mod sample_handle;
+mod sample_list;
+mod sample_noderef;
 
-pub mod draft;
+mod draft;
