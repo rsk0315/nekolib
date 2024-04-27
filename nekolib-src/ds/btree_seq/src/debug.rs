@@ -1,4 +1,4 @@
-use crate::{ImmutNodeRef, InternalNode, NodeRef};
+use crate::{ImmutNodeRef, InternalNode, NodeRef, MIN_BUFLEN};
 
 pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
     #[derive(Clone, Copy, Eq, PartialEq)]
@@ -50,9 +50,9 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
                 };
             }
             eprint!("{prefix}{elt:?}");
-            if let Some(treelen) = treelen {
-                eprint!(" ({treelen})");
-            }
+            // if let Some(treelen) = treelen {
+            //     eprint!(" ({treelen})");
+            // }
             eprintln!();
         }
         fn push(&mut self, k: Kind) { self.path.push(k); }
@@ -119,11 +119,41 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
 
 pub fn assert_invariants<T>(node: ImmutNodeRef<'_, T>) {
     fn dfs<T>(node_ref: ImmutNodeRef<'_, T>) {
+        let buflen = node_ref.buflen() as usize;
+        let height = node_ref.height;
+
         // root or non-underfull
+        if node_ref.parent().is_some() {
+            assert!(
+                buflen >= MIN_BUFLEN,
+                "every non-root node must have at least {} nodes; but has only {}.",
+                MIN_BUFLEN,
+                buflen
+            );
+        }
 
         // `.treelen` consistency
 
-        // `.parent` consistency
+        if height > 0 {
+            for i in 0..=buflen {
+                let child = node_ref.get_child(i).unwrap();
+
+                // `.parent` consistency
+                let (child_par, idx) = child.parent().unwrap();
+                assert_eq!(
+                    child_par.node, node_ref.node,
+                    "every child node must have a link to the correct parent node"
+                );
+                assert_eq!(
+                    idx as usize, i,
+                    "every child node must remember the correct sibling index; expected: {}, actual: {}",
+                    i, idx
+                );
+
+                // recurse
+                dfs(child);
+            }
+        }
     }
 
     dfs(node);

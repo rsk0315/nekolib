@@ -212,6 +212,15 @@ impl<BorrowType: Traversable, T>
             NodeRef::from_node(node, self.height - 1)
         })
     }
+    fn get_child(&self, i: usize) -> Option<Self> {
+        self.force().internal().and_then(|internal| unsafe {
+            let ptr = internal.as_internal_ptr();
+            (i <= ((*ptr).data.buflen as usize)).then(|| {
+                let node = (*ptr).children[i].assume_init();
+                NodeRef::from_node(node, self.height - 1)
+            })
+        })
+    }
 }
 
 impl<BorrowType, T> NodeRef<BorrowType, T, marker::Leaf> {
@@ -263,6 +272,7 @@ impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
 
 impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     fn buflen(&self) -> u8 { unsafe { (*self.node.as_ptr()).buflen } }
+    fn is_underfull(&self) -> bool { usize::from(self.buflen()) < MIN_BUFLEN }
     fn treelen(&self) -> usize {
         if self.height > 0 {
             unsafe { (*self.node.cast::<InternalNode<T>>().as_ptr()).treelen }
@@ -367,7 +377,7 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
 }
 
 impl<T> OwnedNodeRef<T> {
-    fn adjoin(mut self, med: T, mut other: Self) -> Self {
+    fn adjoin(mut self, mid: T, mut other: Self) -> Self {
         let mut left = self.borrow_mut();
         let mut right = other.borrow_mut();
 
@@ -378,9 +388,12 @@ impl<T> OwnedNodeRef<T> {
             }
             let (mut parent, idx) = right.parent().unwrap();
             unsafe {
-                let node = NodeRef::new_single_internal(med, left, right);
+                let node = NodeRef::new_single_internal(mid, left, right);
                 let root1 = parent.insert(idx, node).map(|o| o.forget_type());
-                let root2 = parent.child(idx).unwrap().underflow();
+                let root2 = (0..=parent.buflen())
+                    .map(|i| parent.child(i).unwrap())
+                    .find(|node| node.is_underfull())
+                    .and_then(|mut node| node.underflow());
                 root2.or_else(|| root1).unwrap_or_else(|| other)
             }
         } else if left.height > right.height {
@@ -389,9 +402,12 @@ impl<T> OwnedNodeRef<T> {
             }
             let (mut parent, idx) = left.parent().unwrap();
             unsafe {
-                let node = NodeRef::new_single_internal(med, left, right);
+                let node = NodeRef::new_single_internal(mid, left, right);
                 let root1 = parent.insert(idx, node).map(|o| o.forget_type());
-                let root2 = parent.child(idx).unwrap().underflow();
+                let root2 = (0..=parent.buflen())
+                    .map(|i| parent.child(i).unwrap())
+                    .find(|node| node.is_underfull())
+                    .and_then(|mut node| node.underflow());
                 root2.or_else(|| root1).unwrap_or_else(|| self)
             }
         } else {
@@ -400,14 +416,14 @@ impl<T> OwnedNodeRef<T> {
                 // necessarily true that |left| == |right| == B - 1.
                 // Anyway, we do not have to allocate a new node. We
                 // merge them into one of them and deallocate the other.
-                left.append(right);
+                left.append(mid, right);
                 unsafe { left.promote() }
             } else {
                 // At most one of them may be underfull, but we can
                 // resolve it by rotate properly.
                 let mut node =
-                    unsafe { NodeRef::new_single_internal(med, left, right) };
-                let mut node_mut = node.borrow_mut();
+                    unsafe { NodeRef::new_single_internal(mid, left, right) };
+                let node_mut = node.borrow_mut();
                 let mut left = node_mut.child(0).unwrap();
                 let mut right = node_mut.child(1).unwrap();
                 left.rotate(&mut right);
@@ -481,26 +497,22 @@ impl<'a, T> MutNodeRef<'a, T> {
     }
     fn rotate(&mut self, other: &mut Self) {
         use ForceResult::*;
-        unsafe {
-            match (self.force(), other.force()) {
-                (Leaf(mut left), Leaf(mut right)) => left.rotate(&mut right),
-                (Internal(mut left), Internal(mut right)) => {
-                    left.rotate(&mut right);
-                }
-                _ => unreachable!(),
-            };
+
+        match (self.force(), other.force()) {
+            (Leaf(mut left), Leaf(mut right)) => left.rotate(&mut right),
+            (Internal(mut left), Internal(mut right)) => {
+                left.rotate(&mut right);
+            }
+            _ => unreachable!(),
         }
     }
-    fn append(&mut self, other: Self) {
+    fn append(&mut self, mid: T, other: Self) {
         use ForceResult::*;
-        unsafe {
-            match (self.force(), other.force()) {
-                (Leaf(mut left), Leaf(mut right)) => left.append(right),
-                (Internal(mut left), Internal(mut right)) => {
-                    left.append(right);
-                }
-                _ => unreachable!(),
-            };
+
+        match (self.force(), other.force()) {
+            (Leaf(mut left), Leaf(right)) => left.append(mid, right),
+            (Internal(mut left), Internal(right)) => left.append(mid, right),
+            _ => unreachable!(),
         }
     }
 }
@@ -580,7 +592,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
         // If it does not have a parent, then it is the root and nothing
         // has to be done.
-        let (mut parent, idx) = self.parent()?;
+        let (mut parent, _) = self.parent()?;
         let len = self.buflen();
         match self.neighbors() {
             [Some(mut left), _]
@@ -622,88 +634,112 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     }
 
     fn rotate(&mut self, other: &mut Self) {
-        let (parent, idx) =
-            if let Some(o) = self.parent() { o } else { return };
-        let idx = idx as usize;
-        let left_ptr = self.node.as_ptr();
-        let right_ptr = other.node.as_ptr();
-        let parent_ptr = parent.as_internal_ptr();
+        if !self.is_underfull() && !other.is_underfull() {
+            return;
+        }
+        let (mut parent, idx) = self.parent().unwrap();
+        Self::rotate_leaf(
+            self.node.as_ptr(),
+            (parent.as_internal_ptr(), idx as _),
+            other.node.as_ptr(),
+        );
+        parent.correct_parent_children_invariant();
+    }
+    fn merge(&mut self, other: &mut Self, self_left: bool) {
+        let (mut parent, idx) = self.parent().unwrap();
+        if self_left {
+            Self::merge_leaf(
+                self.node.as_ptr(),
+                (parent.as_internal_ptr(), idx as _),
+                other.node.as_ptr(),
+            );
+        } else {
+            Self::merge_leaf(
+                other.node.as_ptr(),
+                (parent.as_internal_ptr(), (idx - 1) as _),
+                self.node.as_ptr(),
+            );
+            std::mem::swap(&mut self.node, &mut other.node);
+        }
+        parent.correct_parent_children_invariant();
+        unsafe { drop(Box::from_raw(other.node.as_ptr())) }
+    }
+    fn append(&mut self, elt: T, other: Self) {
+        Self::append_leaf(self.node.as_ptr(), elt, other.node.as_ptr());
+        unsafe { drop(Box::from_raw(other.node.as_ptr())) }
+    }
+
+    fn rotate_leaf(
+        left_ptr: *mut LeafNode<T>,
+        (parent_ptr, idx): (*mut InternalNode<T>, usize),
+        right_ptr: *mut LeafNode<T>,
+    ) {
+        // left: [A, B, C, D, E], parent: [.., F, ..], right: [G, H]
+        // left: [A, B, C], parent: [.., D, ..], right: [E, F, G, H]
         unsafe {
-            let left_buf = &mut (*left_ptr).buf;
-            let right_buf = &mut (*right_ptr).buf;
-            let mid = &mut (*parent_ptr).data.buf[idx];
+            let left = &mut (*left_ptr).buf;
             let leftlen = (*left_ptr).buflen as usize;
+            let mid = &mut (*parent_ptr).data.buf[idx];
+            let right = &mut (*right_ptr).buf;
             let rightlen = (*right_ptr).buflen as usize;
             debug_assert!(leftlen + rightlen >= 2 * MIN_BUFLEN);
-            let rightlen_new = array_rotate_3(
-                left_buf, mid, right_buf, leftlen, rightlen, MIN_BUFLEN,
-            );
+            let rightlen_new =
+                array_rotate_3(left, mid, right, leftlen, rightlen, MIN_BUFLEN);
             (*left_ptr).buflen = MIN_BUFLEN as _;
             (*right_ptr).buflen = rightlen_new as _;
         }
     }
-    fn merge(&mut self, other: &mut Self, self_left: bool) {
-        debug_assert!(self.parent().is_none());
-        if self_left {
-            let left_ptr = self.node.as_ptr();
-            let right_ptr = other.node.as_ptr();
-            unsafe {
-                let (parent, idx) = (*left_ptr).parent.unwrap();
-                let idx = idx as usize;
-                let parent_buf = &mut (*parent.as_ptr()).data.buf;
-                let parent_len = (*parent.as_ptr()).data.buflen as usize;
-                let par_elt = array_remove(parent_buf, idx, parent_len);
-                let parent_children = &mut (*parent.as_ptr()).children;
-                let _ = array_remove(parent_children, idx + 1, parent_len + 1);
-                (*parent.as_ptr()).data.buflen -= 1;
-                let left_buf = &mut (*left_ptr).buf;
-                let right_buf = &(*right_ptr).buf;
-                let leftlen = (*left_ptr).buflen as usize;
-                let rightlen = (*right_ptr).buflen as usize;
-                left_buf[leftlen].write(par_elt);
-                let leftlen = leftlen + 1;
-                array_splice(left_buf, leftlen, leftlen, right_buf, rightlen);
-                (*left_ptr).buflen = (leftlen + rightlen) as _;
-                drop(Box::from_raw(right_ptr));
-            }
-        } else {
-            let left_ptr = other.node.as_ptr();
-            let right_ptr = self.node.as_ptr();
-            unsafe {
-                let (parent, idx) = (*left_ptr).parent.unwrap();
-                let idx = idx as usize;
-                let parent_buf = &mut (*parent.as_ptr()).data.buf;
-                let parent_len = (*parent.as_ptr()).data.buflen as usize;
-                let par_elt = array_remove(parent_buf, idx, parent_len);
-                let parent_children = &mut (*parent.as_ptr()).children;
-                let _ = array_remove(parent_children, idx + 1, parent_len + 1);
-                (*parent.as_ptr()).data.buflen -= 1;
-                let left_buf = &(*left_ptr).buf;
-                let right_buf = &mut (*right_ptr).buf;
-                let leftlen = (*left_ptr).buflen as usize;
-                let rightlen = (*right_ptr).buflen as usize;
-                array_insert(right_buf, 0, rightlen, par_elt);
-                let rightlen = rightlen + 1;
-                array_splice(right_buf, 0, rightlen, left_buf, leftlen);
-                (*right_ptr).buflen = (leftlen + rightlen) as _;
-                drop(Box::from_raw(left_ptr));
-            }
-        }
-        // Note that `.treelen` of the parent remains correct.
-    }
-    fn append(&mut self, mut other: Self) {
-        let left_ptr = self.node.as_ptr();
-        let right_ptr = other.node.as_ptr();
+
+    fn merge_leaf(
+        left_ptr: *mut LeafNode<T>,
+        (parent_ptr, idx): (*mut InternalNode<T>, usize),
+        right_ptr: *mut LeafNode<T>,
+    ) {
+        // left: [A, B, C, D, E], parent: [.., F, ..], right: [G, H]
+        // left: [A, B, C, E, F, G], parent: [.., ..]
         unsafe {
-            let left_buf = &mut (*left_ptr).buf;
-            let right_buf = &(*right_ptr).buf;
+            let left = &mut (*left_ptr).buf;
             let leftlen = (*left_ptr).buflen as usize;
+            let mid = {
+                let buf = &mut (*parent_ptr).data.buf;
+                let len = (*parent_ptr).data.buflen as usize;
+                let _ =
+                    array_remove(&mut (*parent_ptr).children, idx + 1, len + 1);
+                array_remove(buf, idx, len)
+            };
+            left[leftlen].write(mid);
+            let leftlen = leftlen + 1;
+
+            let right = &(*right_ptr).buf;
             let rightlen = (*right_ptr).buflen as usize;
-            let newlen = leftlen + rightlen;
-            debug_assert!(leftlen + rightlen <= CAPACITY);
-            array_splice(left_buf, leftlen, leftlen, right_buf, rightlen);
+            array_splice(left, leftlen, leftlen, right, rightlen);
+
+            (*left_ptr).buflen += 1 + rightlen as u8;
+            (*parent_ptr).data.buflen -= 1;
+        }
+    }
+
+    fn append_leaf(
+        left_ptr: *mut LeafNode<T>,
+        elt: T,
+        right_ptr: *mut LeafNode<T>,
+    ) {
+        // left: [A, B, C, D], right: [E, F, G]
+        // left: [A, B, C, D, elt, E, F, G]
+        unsafe {
+            debug_assert!((*left_ptr).parent.is_none());
+            debug_assert!((*right_ptr).parent.is_none());
+            let left = &mut (*left_ptr).buf;
+            let leftlen = (*left_ptr).buflen as usize;
+            let right = &(*right_ptr).buf;
+            let rightlen = (*right_ptr).buflen as usize;
+            let newlen = leftlen + rightlen + 1;
+            debug_assert!(newlen <= CAPACITY);
+            left[leftlen].write(elt);
+            let leftlen = leftlen + 1;
+
+            array_splice(left, leftlen, leftlen, right, rightlen);
             (*left_ptr).buflen = newlen as _;
-            drop(Box::from_raw(other.node.as_ptr()))
         }
     }
 }
@@ -817,7 +853,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     unsafe fn underflow(
         &mut self,
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
-        let (mut parent, idx) = self.parent()?;
+        let (mut parent, _) = self.parent()?;
         let len = self.buflen();
         match self.neighbors() {
             [Some(mut left), _]
@@ -854,11 +890,101 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         }
     }
 
-    fn rotate(&mut self, other: &mut Self) { todo!() }
-    fn merge(&mut self, other: &mut Self, self_left: bool) { todo!() }
-    fn append(&mut self, mut other: Self) {
-        todo!();
+    fn rotate(&mut self, other: &mut Self) {
+        if !self.is_underfull() && !other.is_underfull() {
+            return;
+        }
+        let (mut parent, idx) = self.parent().unwrap();
+        Self::rotate_internal(
+            self.as_internal_ptr(),
+            (parent.as_internal_ptr(), idx as _),
+            other.as_internal_ptr(),
+        );
+        self.correct_parent_children_invariant();
+        other.correct_parent_children_invariant();
+        parent.correct_parent_children_invariant();
+    }
+    fn merge(&mut self, other: &mut Self, self_left: bool) {
+        let (mut parent, idx) = self.parent().unwrap();
+        if self_left {
+            Self::merge_internal(
+                self.as_internal_ptr(),
+                (parent.as_internal_ptr(), idx as _),
+                other.as_internal_ptr(),
+            );
+        } else {
+            Self::merge_internal(
+                other.as_internal_ptr(),
+                (parent.as_internal_ptr(), (idx - 1) as _),
+                self.as_internal_ptr(),
+            );
+            std::mem::swap(&mut self.node, &mut other.node);
+        }
+        self.correct_parent_children_invariant();
+        parent.correct_parent_children_invariant();
         unsafe { drop(Box::from_raw(other.as_internal_ptr())) }
+    }
+    fn append(&mut self, elt: T, other: Self) {
+        Self::append_internal(
+            self.as_internal_ptr(),
+            elt,
+            other.as_internal_ptr(),
+        );
+        self.correct_parent_children_invariant();
+        unsafe { drop(Box::from_raw(other.as_internal_ptr())) }
+    }
+
+    fn rotate_internal(
+        left_ptr: *mut InternalNode<T>,
+        (parent_ptr, idx): (*mut InternalNode<T>, usize),
+        right_ptr: *mut InternalNode<T>,
+    ) {
+        unsafe {
+            let left = &mut (*left_ptr).children;
+            let leftlen = (*left_ptr).data.buflen as usize + 1;
+            let right = &mut (*right_ptr).children;
+            let rightlen = (*right_ptr).data.buflen as usize + 1;
+            array_rotate_2(left, right, leftlen, rightlen, MIN_BUFLEN + 1);
+        }
+        MutLeafNodeRef::<T>::rotate_leaf(
+            left_ptr.cast(),
+            (parent_ptr, idx),
+            right_ptr.cast(),
+        );
+    }
+
+    fn merge_internal(
+        left_ptr: *mut InternalNode<T>,
+        (parent_ptr, idx): (*mut InternalNode<T>, usize),
+        right_ptr: *mut InternalNode<T>,
+    ) {
+        unsafe {
+            let left = &mut (*left_ptr).children;
+            let leftlen = (*left_ptr).data.buflen as usize + 1;
+            let right = &(*right_ptr).children;
+            let rightlen = (*right_ptr).data.buflen as usize + 1;
+            array_splice(left, leftlen, leftlen, right, rightlen);
+        }
+        MutLeafNodeRef::<T>::merge_leaf(
+            left_ptr.cast(),
+            (parent_ptr, idx),
+            right_ptr.cast(),
+        );
+    }
+
+    fn append_internal(
+        left_ptr: *mut InternalNode<T>,
+        mid: T,
+        right_ptr: *mut InternalNode<T>,
+    ) {
+        unsafe {
+            let left = &mut (*left_ptr).children;
+            let leftlen = (*left_ptr).data.buflen as usize + 1;
+            let right = &(*right_ptr).children;
+            let rightlen = (*right_ptr).data.buflen as usize + 1;
+            array_splice(left, leftlen, leftlen, right, rightlen);
+        }
+        NodeRef::append_leaf(left_ptr.cast(), mid, right_ptr.cast());
     }
 }
 
@@ -880,7 +1006,7 @@ mod tests {
         unsafe {
             for i in (start..end).rev() {
                 if let Some(new_root) = mut_node.insert(0, i) {
-                    trace_root.insert(new_root);
+                    let _ = trace_root.insert(new_root);
                 }
             }
         }
@@ -901,7 +1027,7 @@ mod tests {
         unsafe {
             for i in start..end {
                 if let Some(new_root) = mut_node.insert(mut_node.buflen(), i) {
-                    trace_root.insert(new_root);
+                    let _ = trace_root.insert(new_root);
                 }
 
                 // if let Some(r) = trace_root.as_ref() {
@@ -919,5 +1045,80 @@ mod tests {
         debug::visualize(root.borrow());
 
         unsafe { root.drop_subtree() }
+    }
+
+    #[cfg(test)]
+    fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> OwnedNodeRef<T> {
+        let mut root = NodeRef::new_leaf();
+        let mut mut_node = root.borrow_mut();
+        let mut trace_root = None;
+        for elt in iter {
+            if let Some(new_root) =
+                unsafe { mut_node.insert(mut_node.buflen(), elt) }
+            {
+                let _ = trace_root.insert(new_root);
+            }
+        }
+        trace_root
+            .map(|r| r.forget_type())
+            .unwrap_or_else(|| root.forget_type())
+    }
+
+    #[cfg(test)]
+    fn from_iter_rev<T, I: Iterator<Item = T> + DoubleEndedIterator>(
+        iter: impl IntoIterator<IntoIter = I>,
+    ) -> OwnedNodeRef<T> {
+        let mut root = NodeRef::new_leaf();
+        let mut mut_node = root.borrow_mut();
+        let mut trace_root = None;
+        for elt in iter.into_iter().rev() {
+            if let Some(new_root) = unsafe { mut_node.insert(0, elt) } {
+                let _ = trace_root.insert(new_root);
+            }
+        }
+        trace_root
+            .map(|r| r.forget_type())
+            .unwrap_or_else(|| root.forget_type())
+    }
+
+    #[cfg(test)]
+    fn test_adjoin(lens: &[usize]) {
+        for &leftlen in lens {
+            for &rightlen in lens {
+                let left_iter = 0..=leftlen - 1;
+                let mid_elt = leftlen;
+                let right_iter = leftlen + 1..=leftlen + rightlen;
+
+                let left = from_iter(left_iter);
+                let right = from_iter_rev(right_iter);
+                let mut root = left.adjoin(mid_elt, right);
+                debug::assert_invariants(root.borrow());
+                unsafe { root.drop_subtree() }
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(not(miri))]
+    fn adjoin_many() {
+        let lens: Vec<_> = (1..=500).collect();
+        test_adjoin(&lens);
+    }
+
+    #[test]
+    fn adjoin_corner() {
+        let lens = [
+            1,
+            B - 1,
+            B,
+            2 * B - 1,
+            2 * B,
+            (2 * B - 1) * B + (B - 1),
+            (2 * B - 1) * (B + 1),
+            (2 * B + 1) * B,
+            (2 * B - 1) * (B * B + B + 1),
+            B * (2 * B * B + B + 1),
+        ];
+        test_adjoin(&lens);
     }
 }
