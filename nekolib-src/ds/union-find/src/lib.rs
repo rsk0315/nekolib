@@ -1,5 +1,6 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, fmt};
 
+#[derive(Clone)]
 pub struct UnionFind(RefCell<Vec<usize>>, usize);
 
 impl UnionFind {
@@ -39,14 +40,46 @@ impl UnionFind {
         self.0.borrow()[repr].wrapping_neg()
     }
     pub fn partition(&self) -> Vec<Vec<usize>> {
-        let buf = self.0.borrow();
-        let mut ptn = vec![vec![]; buf.len()];
-        for i in 0..buf.len() {
+        let len = self.0.borrow().len();
+        let mut ptn = vec![vec![]; len];
+        for i in 0..len {
             ptn[self.repr(i)].push(i);
         }
         ptn
     }
     pub fn partition_len(&self) -> usize { self.1 }
+}
+
+struct AsSet<'a>(&'a Vec<usize>);
+impl fmt::Debug for AsSet<'_> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_set().entries(self.0.iter()).finish()
+    }
+}
+
+impl fmt::Debug for UnionFind {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ptn = self.partition();
+        let len = self.0.borrow().len();
+        fmt.debug_map()
+            .entries(
+                (0..len)
+                    .filter(|&i| !ptn[i].is_empty())
+                    .map(|i| (i, AsSet(&ptn[i]))),
+            )
+            .finish()
+    }
+}
+
+impl fmt::Display for UnionFind {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ptn = self.partition();
+        fmt.debug_set()
+            .entries(
+                ptn.iter().filter(|set| !set.is_empty()).map(|set| AsSet(set)),
+            )
+            .finish()
+    }
 }
 
 #[test]
@@ -72,4 +105,16 @@ fn sanity_check() {
             assert_eq!(actual.count(i), expected.count(i));
         }
     }
+}
+
+#[test]
+fn debug_fmt() {
+    let mut uf = UnionFind::new(8);
+    uf.unite(1, 5);
+    uf.unite(2, 4);
+    uf.unite(0, 2);
+    uf.unite(1, 6);
+    uf.unite(6, 7);
+    assert_eq!(format!("{uf}"), "{{0, 2, 4}, {3}, {1, 5, 6, 7}}");
+    assert_eq!(format!("{uf:?}"), "{0: {0, 2, 4}, 3: {3}, 7: {1, 5, 6, 7}}");
 }
