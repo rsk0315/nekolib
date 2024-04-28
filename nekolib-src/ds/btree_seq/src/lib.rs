@@ -567,6 +567,25 @@ impl<'a, T> MutNodeRef<'a, T> {
             _ => unreachable!(),
         }
     }
+
+    fn push_back(
+        &mut self,
+        elt: T,
+    ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
+        unsafe {
+            let Handle { mut node, idx, .. } = self.select_leaf(self.treelen());
+            node.insert(idx as _, elt)
+        }
+    }
+    fn push_front(
+        &mut self,
+        elt: T,
+    ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
+        unsafe {
+            let Handle { mut node, idx, .. } = self.select_leaf(0);
+            node.insert(idx as _, elt)
+        }
+    }
 }
 
 impl<'a, T> MutLeafNodeRef<'a, T> {
@@ -1057,8 +1076,70 @@ impl<Node, Type> Handle<Node, Type> {
     }
 }
 
+struct LeafSplit<'a, T> {
+    left: Option<OwnedNodeRef<T>>,
+    right: Option<OwnedNodeRef<T>>,
+    parent: Option<Handle<MutInternalNodeRef<'a, T>, marker::Edge>>,
+}
+
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split(self) -> [Option<OwnedNodeRef<T>>; 2] { todo!() }
+    fn split_ascend(self) -> LeafSplit<'a, T> { todo!() }
+}
+
+struct InternalSplit<'a, T> {
+    left: Option<(OwnedNodeRef<T>, T)>,
+    right: Option<(OwnedNodeRef<T>, T)>,
+    parent: Option<Handle<MutInternalNodeRef<'a, T>, marker::Edge>>,
+}
+
+impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
+    fn split_ascend(self) -> InternalSplit<'a, T> { todo!() }
+}
+
+impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
+    fn split(mut self) -> [Option<OwnedNodeRef<T>>; 2] {
+        let [mut left_inner, mut right_inner]: [Option<T>; 2] = [None, None];
+        let LeafSplit {
+            left: mut left_tree,
+            right: mut right_tree,
+            parent: mut node,
+        } = self.split_ascend();
+        while let Some(cur) = node.take() {
+            let InternalSplit { left, right, parent } = cur.split_ascend();
+            match (left_tree, left) {
+                (Some(left_lo), Some((left_hi, elt))) => {
+                    // We should maintain the `.treelen` invariant here.
+                    left_tree = Some(left_hi.adjoin(elt, left_lo));
+                }
+                (None, Some((tree, elt))) => {
+                    left_inner = Some(elt);
+                    left_tree = Some(tree);
+                }
+                (o, None) => left_tree = o,
+            }
+            match (right_tree, right) {
+                (Some(right_lo), Some((right_hi, elt))) => {
+                    right_tree = Some(right_lo.adjoin(elt, right_hi));
+                }
+                (None, Some((tree, elt))) => {
+                    right_inner = Some(elt);
+                    right_tree = Some(tree);
+                }
+                (o, None) => right_tree = o,
+            }
+        }
+        if let (Some(old), Some(elt)) = (left_tree.as_mut(), left_inner) {
+            if let Some(new) = old.borrow_mut().push_back(elt) {
+                left_tree = Some(new.forget_type());
+            }
+        }
+        if let (Some(old), Some(elt)) = (right_tree.as_mut(), right_inner) {
+            if let Some(new) = old.borrow_mut().push_front(elt) {
+                right_tree = Some(new.forget_type());
+            }
+        }
+        [left_tree, right_tree]
+    }
 }
 
 #[cfg(test)]
