@@ -56,6 +56,9 @@ mod marker {
     pub enum Leaf {}
     pub enum Internal {}
     pub enum LeafOrInternal {}
+
+    pub enum Value {}
+    pub enum Edge {}
 }
 
 trait Traversable {}
@@ -221,6 +224,32 @@ impl<BorrowType: Traversable, T>
             })
         })
     }
+
+    /// # Safety
+    /// `idx <= self.treelen()` and the `.treelen` invariant is met.
+    unsafe fn select_leaf(
+        &self,
+        mut idx: usize,
+    ) -> Handle<NodeRef<BorrowType, T, marker::Leaf>, marker::Edge> {
+        use ForceResult::*;
+
+        debug_assert!(idx <= self.treelen());
+        match self.force() {
+            Leaf(leaf) => Handle::new(leaf, idx),
+            Internal(internal) => {
+                let init_len = self.buflen();
+                for i in 0..=init_len {
+                    let child = internal.child(i).unwrap();
+                    if idx <= child.treelen() {
+                        return child.select_leaf(idx);
+                    } else {
+                        idx -= child.treelen() + 1;
+                    }
+                }
+                unreachable!()
+            }
+        }
+    }
 }
 
 impl<BorrowType, T> NodeRef<BorrowType, T, marker::Leaf> {
@@ -376,6 +405,21 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
     }
 }
 
+impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal> {
+    fn correct_subtree_treelen_invariant(&mut self) {
+        if let Some(internal) = self.force().internal() {
+            let init_len = self.buflen();
+            let mut treelen = init_len as usize;
+            for i in 0..=init_len {
+                let mut child = internal.child(i as _).unwrap();
+                child.correct_subtree_treelen_invariant();
+                treelen += child.treelen();
+            }
+            unsafe { (*internal.as_internal_ptr()).treelen = treelen }
+        }
+    }
+}
+
 impl<T> OwnedNodeRef<T> {
     fn adjoin(mut self, mid: T, mut other: Self) -> Self {
         let mut left = self.borrow_mut();
@@ -430,6 +474,14 @@ impl<T> OwnedNodeRef<T> {
                 node.forget_type()
             }
         }
+    }
+    /// # Safety
+    /// `i <= self.treelen()`
+    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
+        debug_assert!(i <= self.treelen());
+
+        let mut node = self.borrow_mut();
+        node.select_leaf(i).split()
     }
     fn drop_subtree(&mut self) {
         let dying: DyingNodeRef<_> = unsafe { self.cast() };
@@ -986,6 +1038,27 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         }
         NodeRef::append_leaf(left_ptr.cast(), mid, right_ptr.cast());
     }
+}
+
+struct Handle<Node, Type> {
+    node: Node,
+    idx: usize,
+    _marker: PhantomData<Type>,
+}
+
+impl<Node: Copy, Type> Copy for Handle<Node, Type> {}
+impl<Node: Copy, Type> Clone for Handle<Node, Type> {
+    fn clone(&self) -> Self { *self }
+}
+
+impl<Node, Type> Handle<Node, Type> {
+    fn new(node: Node, idx: usize) -> Self {
+        Self { node, idx, _marker: PhantomData }
+    }
+}
+
+impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
+    fn split(self) -> [Option<OwnedNodeRef<T>>; 2] { todo!() }
 }
 
 #[cfg(test)]
