@@ -171,5 +171,10 @@ pub fn assert_invariants<T>(node: ImmutNodeRef<'_, T>) {
         }
     }
 
+    assert!(node.parent().is_none(), "the root node must have no parent");
+    assert!(
+        node.buflen() >= 1,
+        "the root node must have at least one children"
+    );
     dfs(node);
 }
