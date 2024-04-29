@@ -225,6 +225,32 @@ impl<BorrowType: Traversable, T>
         })
     }
 
+    fn first_leaf(
+        &self,
+    ) -> Handle<NodeRef<BorrowType, T, marker::Leaf>, marker::Edge> {
+        use ForceResult::*;
+        match self.force() {
+            Leaf(leaf) => Handle::new(leaf, 0),
+            Internal(internal) => {
+                let child = internal.child(0).unwrap();
+                child.first_leaf()
+            }
+        }
+    }
+    fn last_leaf(
+        &self,
+    ) -> Handle<NodeRef<BorrowType, T, marker::Leaf>, marker::Edge> {
+        use ForceResult::*;
+        let init_len = self.buflen();
+        match self.force() {
+            Leaf(leaf) => Handle::new(leaf, init_len as _),
+            Internal(internal) => {
+                let child = internal.child(init_len).unwrap();
+                child.last_leaf()
+            }
+        }
+    }
+
     /// # Safety
     /// `idx <= self.treelen()` and the `.treelen` invariant is met.
     unsafe fn select_leaf(
@@ -294,7 +320,10 @@ impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
     fn reborrow_mut(&mut self) -> NodeRef<marker::Mut<'a>, T, NodeType> {
         unsafe { self.cast() }
     }
+    /// # Safety
+    /// `self` has no parent.
     unsafe fn promote(&mut self) -> NodeRef<marker::Owned, T, NodeType> {
+        debug_assert!(unsafe { (*self.node.as_ptr()).parent }.is_none());
         unsafe { self.cast() }
     }
 }
@@ -482,8 +511,16 @@ impl<T> OwnedNodeRef<T> {
     }
     /// # Safety
     /// `i <= self.treelen()`
-    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
+    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2]
+    where
+        T: std::fmt::Debug,
+    {
         debug_assert!(i <= self.treelen());
+
+        eprintln!("split_off({i})");
+        {
+            debug::visualize(self.borrow());
+        }
 
         let mut node = self.borrow_mut();
         node.select_leaf(i).split()
@@ -578,7 +615,7 @@ impl<'a, T> MutNodeRef<'a, T> {
         elt: T,
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         unsafe {
-            let Handle { mut node, idx, .. } = self.select_leaf(self.treelen());
+            let Handle { mut node, idx, .. } = self.last_leaf();
             node.insert(idx, elt)
         }
     }
@@ -587,7 +624,7 @@ impl<'a, T> MutNodeRef<'a, T> {
         elt: T,
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         unsafe {
-            let Handle { mut node, idx, .. } = self.select_leaf(0);
+            let Handle { mut node, idx, .. } = self.first_leaf();
             node.insert(idx, elt)
         }
     }
@@ -693,8 +730,11 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 if parent.buflen() == 0 {
                     // Now `self` is the new root, so deallocate it and
                     // promote `self`.
-                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
-                    Some(self.promote().forget_type())
+                    unsafe {
+                        let _ = (*self.node.as_ptr()).parent.take();
+                        drop(Box::from_raw(parent.as_internal_ptr()));
+                        Some(self.promote().forget_type())
+                    }
                 } else {
                     parent.underflow()
                 }
@@ -702,8 +742,11 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             [_, Some(mut right)] => {
                 self.merge(&mut right, true);
                 if parent.buflen() == 0 {
-                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
-                    Some(self.promote().forget_type())
+                    unsafe {
+                        let _ = (*self.node.as_ptr()).parent.take();
+                        drop(Box::from_raw(parent.as_internal_ptr()));
+                        Some(self.promote().forget_type())
+                    }
                 } else {
                     parent.underflow()
                 }
@@ -952,8 +995,11 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             [Some(mut left), _] => {
                 left.merge(self, false);
                 if parent.buflen() == 0 {
-                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
-                    Some(self.promote().forget_type())
+                    unsafe {
+                        let _ = (*self.node.as_ptr()).parent.take();
+                        drop(Box::from_raw(parent.as_internal_ptr()));
+                        Some(self.promote().forget_type())
+                    }
                 } else {
                     parent.underflow()
                 }
@@ -961,8 +1007,11 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             [_, Some(mut right)] => {
                 self.merge(&mut right, true);
                 if parent.buflen() == 0 {
-                    unsafe { drop(Box::from_raw(parent.as_internal_ptr())) }
-                    Some(self.promote().forget_type())
+                    unsafe {
+                        let _ = (*self.node.as_ptr()).parent.take();
+                        drop(Box::from_raw(parent.as_internal_ptr()));
+                        Some(self.promote().forget_type())
+                    }
                 } else {
                     parent.underflow()
                 }
@@ -1093,7 +1142,34 @@ struct LeafSplit<'a, T> {
 }
 
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split_ascend(self) -> LeafSplit<'a, T> { todo!() }
+    fn split_ascend(self) -> LeafSplit<'a, T> {
+        // [A, B, C, D, E, F, G] => [A, B, C, D], [E, F, G]
+        let Self { mut node, idx, .. } = self;
+        let init_len = node.buflen() as usize;
+        eprintln!("leaf.ascend(): init_len: {init_len}, idx: {idx}");
+        let parent = node.parent();
+        let _ = unsafe { (*node.node.as_ptr()).parent.take() };
+        let (left, right) = if idx == 0 {
+            (None, Some(unsafe { node.promote() }))
+        } else if idx == init_len {
+            (Some(unsafe { node.promote() }), None)
+        } else {
+            let mut new = NodeRef::new_leaf();
+            let left_ptr = node.node.as_ptr();
+            let right_ptr = new.node.as_ptr();
+            unsafe {
+                let left = &mut (*left_ptr).buf;
+                let right = &mut (*right_ptr).buf;
+                let rightlen = array_rotate_2(left, right, init_len, 0, idx);
+                (*left_ptr).buflen = idx as _;
+                (*right_ptr).buflen = rightlen as _;
+                (Some(node.promote()), Some(new))
+            }
+        };
+        let left = left.map(|o| o.forget_type());
+        let right = right.map(|o| o.forget_type());
+        LeafSplit { left, right, parent }
+    }
 }
 
 struct InternalSplit<'a, T> {
@@ -1103,19 +1179,95 @@ struct InternalSplit<'a, T> {
 }
 
 impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
-    fn split_ascend(self) -> InternalSplit<'a, T> { todo!() }
+    fn split_ascend(self) -> InternalSplit<'a, T> {
+        let Self { mut node, idx, .. } = self;
+        let init_len = node.buflen() as usize;
+        eprintln!("internal.ascend(): init_len: {init_len}, idx: {idx}");
+        let parent = node.parent();
+        let _ = unsafe { (*node.node.as_ptr()).parent.take() };
+        let (left, right) = if idx == 0 {
+            unsafe {
+                let ptr = node.as_internal_ptr();
+                let buf = &mut (*ptr).data.buf;
+                let elt = array_remove(buf, 0, init_len);
+                let children = &mut (*ptr).children;
+                let _ = array_remove(children, 0, init_len + 1);
+                (*ptr).data.buflen -= 1;
+                (None, Some((node.promote(), elt)))
+            }
+        } else if idx == init_len {
+            unsafe {
+                let ptr = node.as_internal_ptr();
+                let buf = &mut (*ptr).data.buf;
+                let elt = array_remove(buf, init_len - 1, init_len);
+                let children = &mut (*ptr).children;
+                let _ = array_remove(children, init_len, init_len + 1);
+                (*ptr).data.buflen -= 1;
+                (Some((node.promote(), elt)), None)
+            }
+        } else {
+            // [A, B, C, D, |E], [F|, G, H]
+            // [A, B, C, D], (E), (F), [G, H]
+            // One of internal nodes may be only one child and no
+            // element.
+            unsafe {
+                let mut new = NodeRef::new_empty_internal(node.height);
+                let left_ptr = node.as_internal_ptr();
+                let right_ptr = new.as_internal_ptr();
+                let left_buf = &mut (*left_ptr).data.buf;
+                let right_buf = &mut (*right_ptr).data.buf;
+                let rightlen =
+                    array_rotate_2(left_buf, right_buf, init_len, 0, idx + 1);
+                let left_elt = left_buf[idx - 1].assume_init_read();
+                let right_elt = left_buf[idx].assume_init_read();
+                let left_children = &mut (*left_ptr).children;
+                let right_children = &mut (*right_ptr).children;
+                array_rotate_2(
+                    left_children,
+                    right_children,
+                    init_len + 1,
+                    0,
+                    idx + 1,
+                );
+                (*left_ptr).data.buflen = (idx - 1) as _;
+                (*right_ptr).data.buflen = rightlen as _;
+                node.correct_parent_children_invariant();
+                new.borrow_mut().correct_parent_children_invariant();
+                (Some((node.promote(), left_elt)), Some((new, right_elt)))
+            }
+        };
+        let left = left.map(|(o, e)| (o.forget_type(), e));
+        let right = right.map(|(o, e)| (o.forget_type(), e));
+        InternalSplit { left, right, parent }
+    }
 }
 
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split(mut self) -> [Option<OwnedNodeRef<T>>; 2] {
+    fn split(mut self) -> [Option<OwnedNodeRef<T>>; 2]
+    where
+        T: std::fmt::Debug,
+    {
         let [mut left_inner, mut right_inner]: [Option<T>; 2] = [None, None];
         let LeafSplit {
             left: mut left_tree,
             right: mut right_tree,
             parent: mut node,
         } = self.split_ascend();
+        eprintln!("===");
+        eprintln!("left_tree: {:?}", left_tree.as_ref().map(|_| ..));
+        left_tree.as_ref().inspect(|o| debug::visualize(o.borrow()));
+        eprintln!("right_tree: {:?}", right_tree.as_ref().map(|_| ..));
+        right_tree.as_ref().inspect(|o| debug::visualize(o.borrow()));
+
         while let Some(cur) = node.take() {
             let InternalSplit { left, right, parent } = cur.split_ascend();
+            eprintln!("===");
+            eprintln!("left: {:?}", left.as_ref().map(|_| ..));
+            left.as_ref().inspect(|o| debug::visualize(o.0.borrow()));
+            eprintln!("right: {:?}", right.as_ref().map(|_| ..));
+            right.as_ref().inspect(|o| debug::visualize(o.0.borrow()));
+            eprintln!("parent: {:?}", parent.as_ref().map(|_| ..));
+            eprintln!("===");
             match (left_tree, left) {
                 (Some(left_lo), Some((left_hi, elt))) => {
                     // We should maintain the `.treelen` invariant here.
@@ -1137,6 +1289,7 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
                 }
                 (o, None) => right_tree = o,
             }
+            node = parent;
         }
         if let (Some(old), Some(elt)) = (left_tree.as_mut(), left_inner) {
             if let Some(new) = old.borrow_mut().push_back(elt) {
@@ -1152,7 +1305,7 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
     }
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 mod debug;
 
 #[cfg(test)]
@@ -1190,7 +1343,9 @@ mod tests {
         let end = 300;
         unsafe {
             for i in start..end {
-                if let Some(new_root) = mut_node.insert(mut_node.buflen(), i) {
+                if let Some(new_root) =
+                    mut_node.insert(mut_node.buflen() as _, i)
+                {
                     let _ = trace_root.insert(new_root);
                 }
 
@@ -1218,7 +1373,7 @@ mod tests {
         let mut trace_root = None;
         for elt in iter {
             if let Some(new_root) =
-                unsafe { mut_node.insert(mut_node.buflen(), elt) }
+                unsafe { mut_node.insert(mut_node.buflen() as _, elt) }
             {
                 let _ = trace_root.insert(new_root);
             }
@@ -1284,5 +1439,20 @@ mod tests {
             B * (2 * B * B + B + 1),
         ];
         test_adjoin(&lens);
+    }
+
+    #[test]
+    fn split() {
+        let mut tree = from_iter(0..300);
+        let [mut left, mut right] =
+            unsafe { tree.split_off(60).map(|o| o.unwrap()) };
+
+        debug::visualize(left.borrow());
+        debug::visualize(right.borrow());
+
+        unsafe {
+            left.drop_subtree();
+            right.drop_subtree();
+        }
     }
 }
