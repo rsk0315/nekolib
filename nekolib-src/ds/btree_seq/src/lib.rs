@@ -1195,6 +1195,7 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
                 let children = &mut (*ptr).children;
                 let _ = array_remove(children, 0, init_len + 1);
                 (*ptr).data.buflen -= 1;
+                node.correct_parent_children_invariant();
                 (None, Some((node.promote(), elt)))
             }
         } else if idx == init_len {
@@ -1205,42 +1206,9 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
                 let children = &mut (*ptr).children;
                 let _ = array_remove(children, init_len, init_len + 1);
                 (*ptr).data.buflen -= 1;
+                node.correct_parent_children_invariant();
                 (Some((node.promote(), elt)), None)
             }
-        // } else if idx == 1 {
-        //     // (A), (B), [C, D, E, F, G]
-        //     let ptr = node.as_internal_ptr();
-        //     let mut child = node.child(0).unwrap();
-        //     unsafe {
-        //         let buf = &mut (*ptr).data.buf;
-        //         let children = &mut (*ptr).children;
-        //         let _ = array_remove(children, 1, init_len + 1);
-        //         let _ = array_remove(children, 0, init_len);
-        //         let right_elt = array_remove(buf, 1, init_len);
-        //         let left_elt = array_remove(buf, 0, init_len - 1);
-        //         let _ = (*child.node.as_ptr()).parent.take();
-        //         (*ptr).data.buflen -= 2;
-        //         node.correct_parent_children_invariant();
-        //         let left = child.promote();
-        //         let right = node.promote().forget_type();
-        //         (Some((left, left_elt)), Some((right, right_elt)))
-        //     }
-        // } else if idx == init_len - 1 {
-        //     // [A, B, C, D, E], (F), (G)
-        //     let ptr = node.as_internal_ptr();
-        //     let mut child = node.child(node.buflen()).unwrap();
-        //     unsafe {
-        //         let buf = &mut (*ptr).data.buf;
-        //         let children = &mut (*ptr).children;
-        //         let left_elt = buf[idx - 1].assume_init_read();
-        //         let right_elt = buf[idx].assume_init_read();
-        //         let _ = (*child.node.as_ptr()).parent.take();
-        //         (*ptr).data.buflen -= 2;
-        //         node.correct_parent_children_invariant();
-        //         let left = node.promote().forget_type();
-        //         let right = child.promote();
-        //         (Some((left, left_elt)), Some((right, right_elt)))
-        //     }
         } else {
             // [A, B, C, D, |E], [F|, G, H]
             // [A, B, C, D], (E), (F), [G, H]
@@ -1523,9 +1491,9 @@ mod tests {
 
     #[test]
     fn split() {
-        let mut tree = from_iter(0..40);
+        let mut tree = from_iter(0..300);
         let [mut left, mut right] =
-            unsafe { tree.split_off(10).map(|o| o.unwrap()) };
+            unsafe { tree.split_off(99).map(|o| o.unwrap()) };
 
         debug::visualize(left.borrow());
         debug::visualize(right.borrow());
