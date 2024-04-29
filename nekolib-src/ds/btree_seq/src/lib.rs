@@ -334,8 +334,7 @@ impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Internal> {
     fn neighbors(
         &self,
     ) -> [Option<NodeRef<BorrowType, T, marker::Internal>>; 2] {
-        if let Some((parent, idx)) = self.parent() {
-            let idx = idx as usize;
+        if let Some(Handle { node: parent, idx, .. }) = self.parent() {
             let height = self.height;
             let parent_ptr = parent.as_internal_ptr();
             unsafe {
@@ -356,8 +355,7 @@ impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Internal> {
 
 impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Leaf> {
     fn neighbors(&self) -> [Option<NodeRef<BorrowType, T, marker::Leaf>>; 2] {
-        if let Some((parent, idx)) = self.parent() {
-            let idx = idx as usize;
+        if let Some(Handle { node: parent, idx, .. }) = self.parent() {
             let parent_ptr = parent.as_internal_ptr();
             unsafe {
                 let len = (*parent_ptr).data.buflen as usize;
@@ -374,10 +372,17 @@ impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Leaf> {
 }
 
 impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
-    fn parent(&self) -> Option<(NodeRef<BorrowType, T, marker::Internal>, u8)> {
+    fn parent(
+        &self,
+    ) -> Option<Handle<NodeRef<BorrowType, T, marker::Internal>, marker::Edge>>
+    {
         let height = self.height;
         unsafe { (*self.node.as_ptr()).parent }.map(|(parent, idx)| unsafe {
-            (NodeRef::from_internal(parent, height + 1), idx)
+            Handle {
+                node: NodeRef::from_internal(parent, height + 1),
+                idx: idx as _,
+                _marker: PhantomData,
+            }
         })
     }
 }
@@ -430,7 +435,7 @@ impl<T> OwnedNodeRef<T> {
                 // SAFETY: 0 <= left.height < right.height
                 right = right.first_child().unwrap();
             }
-            let (mut parent, idx) = right.parent().unwrap();
+            let Handle { node: mut parent, idx, .. } = right.parent().unwrap();
             unsafe {
                 let node = NodeRef::new_single_internal(mid, left, right);
                 let root1 = parent.insert(idx, node).map(|o| o.forget_type());
@@ -444,7 +449,7 @@ impl<T> OwnedNodeRef<T> {
             while left.height > right.height {
                 left = left.last_child().unwrap();
             }
-            let (mut parent, idx) = left.parent().unwrap();
+            let Handle { node: mut parent, idx, .. } = left.parent().unwrap();
             unsafe {
                 let node = NodeRef::new_single_internal(mid, left, right);
                 let root1 = parent.insert(idx, node).map(|o| o.forget_type());
@@ -574,7 +579,7 @@ impl<'a, T> MutNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         unsafe {
             let Handle { mut node, idx, .. } = self.select_leaf(self.treelen());
-            node.insert(idx as _, elt)
+            node.insert(idx, elt)
         }
     }
     fn push_front(
@@ -583,7 +588,7 @@ impl<'a, T> MutNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         unsafe {
             let Handle { mut node, idx, .. } = self.select_leaf(0);
-            node.insert(idx as _, elt)
+            node.insert(idx, elt)
         }
     }
 }
@@ -593,20 +598,22 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     /// `i <= buflen`
     pub unsafe fn insert(
         &mut self,
-        i: u8,
+        i: usize,
         elt: T,
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         // We do not maintain the invariant of `.treelen` to keep the
         // amortized complexity constant. This is preferable for
         // consecutive insertions like `.collect()` or `.extend()`.
-        debug_assert!(i <= self.buflen());
+        debug_assert!(i <= usize::from(self.buflen()));
 
         if (self.buflen() as usize) < CAPACITY {
             self.insert_fit(i, elt);
             None
         } else {
             let (orphan, new_parent) = self.purge_and_insert(i, elt);
-            if let Some((mut parent, par_i)) = new_parent {
+            if let Some(Handle { node: mut parent, idx: par_i, .. }) =
+                new_parent
+            {
                 parent.insert(par_i, orphan)
             } else {
                 Some(orphan)
@@ -616,15 +623,16 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
 
     fn purge_and_insert(
         &mut self,
-        i: u8,
+        i: usize,
         elt: T,
     ) -> (
         NodeRef<marker::Owned, T, marker::Internal>,
-        Option<(NodeRef<marker::Mut<'_>, T, marker::Internal>, u8)>,
+        Option<
+            Handle<NodeRef<marker::Mut<'_>, T, marker::Internal>, marker::Edge>,
+        >,
     ) {
         let mut orphan = NodeRef::new_leaf();
         let parent = self.parent();
-        let i = i as usize;
         unsafe {
             let (left, right, leftlen, rightlen) = if i <= B {
                 (self.reborrow_mut(), orphan.borrow_mut(), CAPACITY, 0)
@@ -650,10 +658,10 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         }
     }
 
-    fn insert_fit(&mut self, i: u8, elt: T) {
+    fn insert_fit(&mut self, i: usize, elt: T) {
         let ptr = self.node.as_ptr();
         unsafe {
-            array_insert(&mut (*ptr).buf, i as _, (*ptr).buflen as _, elt);
+            array_insert(&mut (*ptr).buf, i, (*ptr).buflen as _, elt);
             (*ptr).buflen += 1;
         }
     }
@@ -663,7 +671,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
         // If it does not have a parent, then it is the root and nothing
         // has to be done.
-        let (mut parent, _) = self.parent()?;
+        let Handle { node: mut parent, .. } = self.parent()?;
         let len = self.buflen();
         match self.neighbors() {
             [Some(mut left), _]
@@ -708,26 +716,26 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         if !self.is_underfull() && !other.is_underfull() {
             return;
         }
-        let (mut parent, idx) = self.parent().unwrap();
+        let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
         Self::rotate_leaf(
             self.node.as_ptr(),
-            (parent.as_internal_ptr(), idx as _),
+            (parent.as_internal_ptr(), idx),
             other.node.as_ptr(),
         );
         parent.correct_parent_children_invariant();
     }
     fn merge(&mut self, other: &mut Self, self_left: bool) {
-        let (mut parent, idx) = self.parent().unwrap();
+        let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
         if self_left {
             Self::merge_leaf(
                 self.node.as_ptr(),
-                (parent.as_internal_ptr(), idx as _),
+                (parent.as_internal_ptr(), idx),
                 other.node.as_ptr(),
             );
         } else {
             Self::merge_leaf(
                 other.node.as_ptr(),
-                (parent.as_internal_ptr(), (idx - 1) as _),
+                (parent.as_internal_ptr(), (idx - 1)),
                 self.node.as_ptr(),
             );
             std::mem::swap(&mut self.node, &mut other.node);
@@ -820,10 +828,10 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     /// `i <= buflen`
     unsafe fn insert(
         &mut self,
-        i: u8,
+        i: usize,
         orphan: NodeRef<marker::Owned, T, marker::Internal>,
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
-        debug_assert!(i <= self.buflen());
+        debug_assert!(i <= usize::from(self.buflen()));
 
         if (self.buflen() as usize) < CAPACITY {
             self.insert_fit(i, orphan);
@@ -831,7 +839,9 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         } else {
             let (orphan, new_parent) = self.purge_and_insert(i, orphan);
 
-            if let Some((mut parent, par_i)) = new_parent {
+            if let Some(Handle { node: mut parent, idx: par_i, .. }) =
+                new_parent
+            {
                 parent.insert(par_i, orphan)
             } else {
                 Some(orphan)
@@ -841,13 +851,14 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
 
     fn purge_and_insert(
         &mut self,
-        i: u8,
+        i: usize,
         node: NodeRef<marker::Owned, T, marker::Internal>,
     ) -> (
         NodeRef<marker::Owned, T, marker::Internal>,
-        Option<(NodeRef<marker::Mut<'_>, T, marker::Internal>, u8)>,
+        Option<
+            Handle<NodeRef<marker::Mut<'_>, T, marker::Internal>, marker::Edge>,
+        >,
     ) {
-        let i = i as usize;
         let parent = self.parent();
         let node_ptr = node.as_internal_ptr();
         unsafe {
@@ -898,12 +909,11 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
 
     fn insert_fit(
         &mut self,
-        i: u8,
+        i: usize,
         orphan: NodeRef<marker::Owned, T, marker::Internal>,
     ) {
         let orphan_ptr = orphan.as_internal_ptr();
         let this = self.as_internal_ptr();
-        let i = i as usize;
         // As `orphan` is purged from the subtree, we do not have to
         // update the `.treelen`. Note that adding one to leaf-to-root
         // is the job for the caller.
@@ -924,7 +934,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     unsafe fn underflow(
         &mut self,
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
-        let (mut parent, _) = self.parent()?;
+        let Handle { node: mut parent, .. } = self.parent()?;
         let len = self.buflen();
         match self.neighbors() {
             [Some(mut left), _]
@@ -965,10 +975,10 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         if !self.is_underfull() && !other.is_underfull() {
             return;
         }
-        let (mut parent, idx) = self.parent().unwrap();
+        let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
         Self::rotate_internal(
             self.as_internal_ptr(),
-            (parent.as_internal_ptr(), idx as _),
+            (parent.as_internal_ptr(), idx),
             other.as_internal_ptr(),
         );
         self.correct_parent_children_invariant();
@@ -976,17 +986,17 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         parent.correct_parent_children_invariant();
     }
     fn merge(&mut self, other: &mut Self, self_left: bool) {
-        let (mut parent, idx) = self.parent().unwrap();
+        let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
         if self_left {
             Self::merge_internal(
                 self.as_internal_ptr(),
-                (parent.as_internal_ptr(), idx as _),
+                (parent.as_internal_ptr(), idx),
                 other.as_internal_ptr(),
             );
         } else {
             Self::merge_internal(
                 other.as_internal_ptr(),
-                (parent.as_internal_ptr(), (idx - 1) as _),
+                (parent.as_internal_ptr(), (idx - 1)),
                 self.as_internal_ptr(),
             );
             std::mem::swap(&mut self.node, &mut other.node);
