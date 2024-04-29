@@ -1,6 +1,14 @@
-use crate::{ImmutNodeRef, InternalNode, NodeRef, MIN_BUFLEN};
+use crate::{Handle, ImmutNodeRef, InternalNode, NodeRef, MIN_BUFLEN};
 
 pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
+    visualize_with(node, |elt| format!("{elt:?}"));
+}
+
+pub fn visualize_with<T, F, D>(node: ImmutNodeRef<'_, T>, fmt: F)
+where
+    F: Fn(&T) -> D,
+    D: AsRef<str>,
+{
     #[derive(Clone, Copy, Eq, PartialEq)]
     enum Kind {
         IntPre,
@@ -13,11 +21,16 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
         LeafLst,
     }
     use Kind::*;
-    struct State {
+    struct State<F> {
         path: Vec<Kind>,
+        fmt: F,
     }
-    impl State {
-        fn display<T: std::fmt::Debug>(&self, elt: &T, treelen: Option<usize>) {
+    impl<F> State<F> {
+        fn display<T, D>(&self, elt: &T, treelen: Option<usize>)
+        where
+            F: Fn(&T) -> D,
+            D: AsRef<str>,
+        {
             let mut prefix = "".to_owned();
             for i in 0..self.path.len() - 1 {
                 let k0 = self.path[i];
@@ -49,7 +62,7 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
                     (_, IntSgl) => unreachable!(),
                 };
             }
-            eprint!("{prefix}{elt:?}");
+            eprint!("{prefix}{}", (self.fmt)(&elt).as_ref());
             // if let Some(treelen) = treelen {
             //     eprint!(" ({treelen})");
             // }
@@ -59,10 +72,11 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
         fn pop(&mut self) { self.path.pop(); }
     }
 
-    fn dfs<T: std::fmt::Debug>(
-        node_ref: ImmutNodeRef<'_, T>,
-        state: &mut State,
-    ) {
+    fn dfs<T, F, D>(node_ref: ImmutNodeRef<'_, T>, state: &mut State<F>)
+    where
+        F: Fn(&T) -> D,
+        D: AsRef<str>,
+    {
         unsafe {
             let ptr = node_ref.node.as_ptr();
             let init_len = (*ptr).buflen as usize;
@@ -113,7 +127,7 @@ pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
         }
     }
 
-    let mut state = State { path: vec![] };
+    let mut state = State { path: vec![], fmt };
     dfs(node, &mut state);
 }
 
@@ -139,7 +153,8 @@ pub fn assert_invariants<T>(node: ImmutNodeRef<'_, T>) {
                 let child = node_ref.get_child(i).unwrap();
 
                 // `.parent` consistency
-                let (child_par, idx) = child.parent().unwrap();
+                let Handle { node: child_par, idx, .. } =
+                    child.parent().unwrap();
                 assert_eq!(
                     child_par.node, node_ref.node,
                     "every child node must have a link to the correct parent node"
