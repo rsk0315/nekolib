@@ -521,8 +521,7 @@ impl<T> OwnedNodeRef<T> {
     /// `i <= self.treelen()`
     unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
         debug_assert!(i <= self.treelen());
-        let mut node = self.borrow_mut();
-        node.select_leaf(i).split()
+        self.borrow_mut().select_leaf(i).split()
     }
     fn drop_subtree(&mut self) {
         let dying: DyingNodeRef<_> = unsafe { self.cast() };
@@ -1176,7 +1175,7 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
         } else if idx == init_len {
             (Some(unsafe { node.promote() }), None)
         } else {
-            let mut new = NodeRef::new_leaf();
+            let new = NodeRef::new_leaf();
             let left_ptr = node.node.as_ptr();
             let right_ptr = new.node.as_ptr();
             unsafe {
@@ -1295,7 +1294,7 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
 }
 
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split(mut self) -> [Option<OwnedNodeRef<T>>; 2] {
+    fn split(self) -> [Option<OwnedNodeRef<T>>; 2] {
         let [mut left_inner, mut right_inner]: [Option<T>; 2] = [None, None];
         let LeafSplit {
             left: mut left_tree,
@@ -1349,7 +1348,7 @@ impl<BorrowType: Traversable, T>
         use ForceResult::*;
         let Self { node, idx, .. } = self;
         match node.force() {
-            Leaf(leaf) => {
+            Leaf(_) => {
                 let buflen = node.buflen() as usize;
                 *idx += 1;
                 if *idx < buflen {
@@ -1379,8 +1378,7 @@ impl<BorrowType: Traversable, T>
         use ForceResult::*;
         let Self { node, idx, .. } = self;
         match node.force() {
-            Leaf(leaf) => {
-                let buflen = node.buflen() as usize;
+            Leaf(_) => {
                 *idx -= 1;
                 if *idx > 0 {
                     return;
@@ -1550,7 +1548,6 @@ mod tests {
         unsafe { root.drop_subtree() }
     }
 
-    #[cfg(test)]
     fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> OwnedNodeRef<T> {
         let mut root = NodeRef::new_leaf();
         let mut mut_node = root.borrow_mut();
@@ -1567,7 +1564,6 @@ mod tests {
             .unwrap_or_else(|| root.forget_type())
     }
 
-    #[cfg(test)]
     fn from_iter_rev<T, I: Iterator<Item = T> + DoubleEndedIterator>(
         iter: impl IntoIterator<IntoIter = I>,
     ) -> OwnedNodeRef<T> {
@@ -1584,7 +1580,6 @@ mod tests {
             .unwrap_or_else(|| root.forget_type())
     }
 
-    #[cfg(test)]
     fn test_adjoin(lens: &[usize]) {
         for &leftlen in lens {
             for &rightlen in lens {
@@ -1626,19 +1621,6 @@ mod tests {
     }
 
     #[test]
-    fn adjoin_bug() {
-        let left = from_iter(0..=7);
-        let right = from_iter(Some(1000));
-        debug::visualize(left.borrow());
-        eprintln!("---");
-        debug::visualize(right.borrow());
-        eprintln!("---");
-        let mut tree = left.adjoin(100, right);
-        debug::visualize(tree.borrow());
-        unsafe { tree.drop_subtree() }
-    }
-
-    #[test]
     fn split() {
         let mut tree = from_iter(0..300);
         let [mut left, mut right] =
@@ -1655,17 +1637,25 @@ mod tests {
         }
     }
 
+    fn test_iter(n: usize) {
+        let tree = from_iter(0..n);
+
+        assert!(tree.borrow().iter().copied().eq(0..n));
+        assert!(tree.borrow().iter().copied().rev().eq((0..n).rev()));
+
+        let mut tree = tree;
+        unsafe { tree.drop_subtree() }
+    }
+
+    #[test]
+    fn iter_once() { test_iter(300); }
+
     #[test]
     #[cfg(not(miri))]
-    fn iter() {
+    fn iter_many() {
         for n in 1..=5000 {
-            let tree = from_iter(0..n);
-
-            assert!(tree.borrow().iter().copied().eq(0..n));
-            assert!(tree.borrow().iter().copied().rev().eq((0..n).rev()));
-
-            let mut tree = tree;
-            unsafe { tree.drop_subtree() }
+            test_iter(n);
         }
+        test_iter(1_000_000);
     }
 }

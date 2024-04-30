@@ -1,4 +1,6 @@
-use crate::{Handle, ImmutNodeRef, InternalNode, NodeRef, MIN_BUFLEN};
+use crate::{
+    ForceResult, Handle, ImmutNodeRef, InternalNode, NodeRef, MIN_BUFLEN,
+};
 
 pub fn visualize<T: std::fmt::Debug>(node: ImmutNodeRef<'_, T>) {
     visualize_with(node, |elt| format!("{elt:?}"));
@@ -26,7 +28,7 @@ where
         fmt: F,
     }
     impl<F> State<F> {
-        fn display<T, D>(&self, elt: &T, treelen: Option<usize>)
+        fn display<T, D>(&self, elt: &T, _treelen: Option<usize>)
         where
             F: Fn(&T) -> D,
             D: AsRef<str>,
@@ -140,13 +142,24 @@ pub fn assert_invariants<T>(node: ImmutNodeRef<'_, T>) {
         if node_ref.parent().is_some() {
             assert!(
                 buflen >= MIN_BUFLEN,
-                "every non-root node must have at least {} nodes; but has only {}.",
+                "every non-root node must have at least {} nodes; but has only {}",
                 MIN_BUFLEN,
                 buflen
             );
         }
 
         // `.treelen` consistency
+        if let ForceResult::Internal(internal) = node_ref.force() {
+            let children: usize = (0..=buflen)
+                .map(|i| internal.child(i as _).unwrap().treelen())
+                .sum();
+            let expected = buflen + children;
+            assert_eq!(
+                internal.treelen(),
+                expected,
+                "the subtree size is inconsistent"
+            );
+        }
 
         if height > 0 {
             for i in 0..=buflen {
