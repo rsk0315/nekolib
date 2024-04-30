@@ -519,17 +519,8 @@ impl<T> OwnedNodeRef<T> {
     }
     /// # Safety
     /// `i <= self.treelen()`
-    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2]
-    where
-        T: std::fmt::Debug,
-    {
+    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
         debug_assert!(i <= self.treelen());
-
-        eprintln!("split_off({i})");
-        {
-            debug::visualize(self.borrow());
-        }
-
         let mut node = self.borrow_mut();
         node.select_leaf(i).split()
     }
@@ -827,7 +818,6 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     ) {
         // left: [A, B, C, D, E], parent: [.., F, ..], right: [G, H]
         // left: [A, B, C, D, E, F, G, H], parent: [.., ..]
-        eprintln!("merge_leaf(), idx: {idx}");
         unsafe {
             let left = &mut (*left_ptr).buf;
             let leftlen = (*left_ptr).buflen as usize;
@@ -1179,7 +1169,6 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
         // [A, B, C, D, E, F, G] => [A, B, C, D], [E, F, G]
         let Self { mut node, idx, .. } = self;
         let init_len = node.buflen() as usize;
-        eprintln!("leaf.ascend(): init_len: {init_len}, idx: {idx}");
         let parent = node.parent();
         let _ = unsafe { (*node.node.as_ptr()).parent.take() };
         let (left, right) = if idx == 0 {
@@ -1215,7 +1204,6 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
     fn split_ascend(self) -> InternalSplit<'a, T> {
         let Self { mut node, idx, .. } = self;
         let init_len = node.buflen() as usize;
-        eprintln!("internal.ascend(): init_len: {init_len}, idx: {idx}");
         let parent = node.parent();
         let _ = unsafe { (*node.node.as_ptr()).parent.take() };
         let (left, right) = if idx == 0 {
@@ -1307,36 +1295,20 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
 }
 
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split(mut self) -> [Option<OwnedNodeRef<T>>; 2]
-    where
-        T: std::fmt::Debug,
-    {
+    fn split(mut self) -> [Option<OwnedNodeRef<T>>; 2] {
         let [mut left_inner, mut right_inner]: [Option<T>; 2] = [None, None];
         let LeafSplit {
             left: mut left_tree,
             right: mut right_tree,
             parent: mut node,
         } = self.split_ascend();
-        eprintln!("===");
-        eprintln!("left_tree: {:?}", left_tree.as_ref().map(|_| ..));
-        left_tree.as_ref().inspect(|o| debug::visualize(o.borrow()));
-        eprintln!("right_tree: {:?}", right_tree.as_ref().map(|_| ..));
-        right_tree.as_ref().inspect(|o| debug::visualize(o.borrow()));
 
         while let Some(cur) = node.take() {
             let InternalSplit { left, right, parent } = cur.split_ascend();
-            eprintln!("===");
-            eprintln!("left: {:?}", left.as_ref().map(|_| ..));
-            left.as_ref().inspect(|o| debug::visualize(o.0.borrow()));
-            eprintln!("right: {:?}", right.as_ref().map(|_| ..));
-            right.as_ref().inspect(|o| debug::visualize(o.0.borrow()));
-            eprintln!("parent: {:?}", parent.as_ref().map(|_| ..));
-            eprintln!("===");
             match (left_tree, left) {
                 (Some(left_lo), Some((left_hi, elt))) => {
                     // We should maintain the `.treelen` invariant here.
                     left_tree = Some(left_hi.adjoin(elt, left_lo));
-                    debug::visualize(left_tree.as_ref().unwrap().borrow());
                 }
                 (None, Some((tree, elt))) => {
                     left_inner = Some(elt);
@@ -1346,9 +1318,7 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
             }
             match (right_tree, right) {
                 (Some(right_lo), Some((right_hi, elt))) => {
-                    eprintln!("right: joining with {elt:?}");
                     right_tree = Some(right_lo.adjoin(elt, right_hi));
-                    debug::visualize(right_tree.as_ref().unwrap().borrow());
                 }
                 (None, Some((tree, elt))) => {
                     right_inner = Some(elt);
