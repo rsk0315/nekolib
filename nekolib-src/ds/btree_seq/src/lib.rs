@@ -1,4 +1,5 @@
 use std::{
+    borrow::BorrowMut,
     marker::PhantomData,
     mem::MaybeUninit,
     ptr::{self, NonNull},
@@ -427,23 +428,25 @@ impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
 impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
     fn correct_parent_children_invariant(&mut self) {
         let init_len = self.buflen() as usize;
-        let mut treelen = init_len;
         let children_ref = self.children_ref();
         let ptr = self.node.cast();
         for i in 0..=init_len {
             let child = children_ref[i];
             unsafe { (*child.as_ptr()).parent = Some((ptr, i as _)) }
-            let child_ref = MutNodeRef::from_node(child, self.height - 1);
+        }
+        self.correct_treelen_invarant();
+    }
+
+    fn correct_treelen_invarant(&mut self) {
+        let init_len = self.buflen() as usize;
+        let mut treelen = init_len;
+        let children_ref = self.children_ref();
+        for i in 0..=init_len {
+            let child = children_ref[i];
+            let child_ref = ImmutNodeRef::from_node(child, self.height - 1);
             treelen += child_ref.treelen();
         }
-        unsafe { (*ptr.as_ptr()).treelen = treelen }
-
-        // TBD: When we split nodes and correct the invariant of their
-        // links, other invariants may be messed up if we update
-        // `.treelen` (probably). If the caller of this function does
-        // `.buflen -= 1` properly, then are we happy? Maybe NO.
-        //
-        // Note that this function invalidates some references if any.
+        unsafe { (*self.as_internal_ptr()).treelen = treelen }
     }
 }
 
@@ -467,7 +470,7 @@ impl<T> OwnedNodeRef<T> {
         let mut left = self.borrow_mut();
         let mut right = other.borrow_mut();
 
-        if left.height < right.height {
+        let mut root = if left.height < right.height {
             while left.height < right.height {
                 // SAFETY: 0 <= left.height < right.height
                 right = right.first_child().unwrap();
@@ -515,7 +518,12 @@ impl<T> OwnedNodeRef<T> {
                 left.rotate(&mut right);
                 node.forget_type()
             }
-        }
+        };
+        root.borrow_mut()
+            .force()
+            .internal()
+            .map(|mut internal| internal.correct_treelen_invarant());
+        root
     }
     /// # Safety
     /// `i <= self.treelen()`
@@ -1306,7 +1314,6 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
             let InternalSplit { left, right, parent } = cur.split_ascend();
             match (left_tree, left) {
                 (Some(left_lo), Some((left_hi, elt))) => {
-                    // We should maintain the `.treelen` invariant here.
                     left_tree = Some(left_hi.adjoin(elt, left_lo));
                 }
                 (None, Some((tree, elt))) => {
