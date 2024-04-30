@@ -328,6 +328,14 @@ impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
     }
 }
 
+impl<'a, T> NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal> {
+    fn iter(&self) -> Iter<'a, T> {
+        let left = self.first_leaf().forget_node_type();
+        let right = self.last_leaf().forget_node_type();
+        Iter::new(left, right)
+    }
+}
+
 impl<BorrowType, T, NodeType> NodeRef<BorrowType, T, NodeType> {
     fn buflen(&self) -> u8 { unsafe { (*self.node.as_ptr()).buflen } }
     fn is_underfull(&self) -> bool { usize::from(self.buflen()) < MIN_BUFLEN }
@@ -1135,6 +1143,30 @@ impl<Node, Type> Handle<Node, Type> {
         Self { node, idx, _marker: PhantomData }
     }
 }
+impl<BorrowType, T, Type> Handle<NodeRef<BorrowType, T, marker::Leaf>, Type> {
+    fn forget_node_type(
+        self,
+    ) -> Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, Type> {
+        Handle {
+            node: self.node.forget_type(),
+            idx: self.idx,
+            _marker: PhantomData,
+        }
+    }
+}
+impl<BorrowType, T, Type>
+    Handle<NodeRef<BorrowType, T, marker::Internal>, Type>
+{
+    fn forget_node_type(
+        self,
+    ) -> Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, Type> {
+        Handle {
+            node: self.node.forget_type(),
+            idx: self.idx,
+            _marker: PhantomData,
+        }
+    }
+}
 
 struct LeafSplit<'a, T> {
     left: Option<OwnedNodeRef<T>>,
@@ -1340,6 +1372,153 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
     }
 }
 
+impl<BorrowType: Traversable, T>
+    Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, marker::Edge>
+{
+    fn next(&mut self) {
+        use ForceResult::*;
+        let Self { node, idx, .. } = self;
+        match node.force() {
+            Leaf(leaf) => {
+                let buflen = node.buflen() as usize;
+                *idx += 1;
+                if *idx < buflen {
+                    return;
+                }
+                let mut parent = node.parent();
+                while let Some(handle) = parent.as_ref() {
+                    if handle.idx < usize::from(handle.node.buflen()) {
+                        self.node.node = handle.node.node;
+                        self.node.height = handle.node.height;
+                        self.idx = handle.idx;
+                        return;
+                    }
+                    parent = handle.node.parent();
+                }
+                // We have reached the last edge; nothing can be done.
+            }
+            Internal(internal) => {
+                debug_assert!(*idx < usize::from(internal.buflen()));
+                *idx += 1;
+                let leaf = internal.child(*idx as _).unwrap().first_leaf();
+                *self = leaf.forget_node_type();
+            }
+        }
+    }
+    fn next_back(&mut self) {
+        use ForceResult::*;
+        let Self { node, idx, .. } = self;
+        match node.force() {
+            Leaf(leaf) => {
+                let buflen = node.buflen() as usize;
+                *idx -= 1;
+                if *idx > 0 {
+                    return;
+                }
+                let mut parent = node.parent();
+                while let Some(handle) = parent.as_ref() {
+                    if handle.idx > 0 {
+                        self.node.node = handle.node.node;
+                        self.node.height = handle.node.height;
+                        self.idx = handle.idx;
+                        return;
+                    }
+                    parent = handle.node.parent();
+                }
+                // We have reached the first edge; nothing can be done.
+            }
+            Internal(internal) => {
+                debug_assert!(*idx > 0);
+                *idx -= 1;
+                let leaf = internal.child(*idx as _).unwrap().last_leaf();
+                *self = leaf.forget_node_type();
+            }
+        }
+    }
+    fn eq(&self, other: &Self) -> bool {
+        self.node.node == other.node.node && self.idx == other.idx
+    }
+}
+
+impl<T>
+    Handle<NodeRef<marker::Dying, T, marker::LeafOrInternal>, marker::Edge>
+{
+    /// # Safety
+    /// The element must not be taken twice.
+    unsafe fn take_next(&self) -> T {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe { (*ptr).buf[*idx].assume_init_read() }
+    }
+    unsafe fn take_prev(&self) -> T {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe { (*ptr).buf[idx - 1].assume_init_read() }
+    }
+}
+impl<'a, T>
+    Handle<NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal>, marker::Edge>
+{
+    fn get_next(&self) -> &'a T {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe { (*ptr).buf[*idx].assume_init_ref() }
+    }
+    fn get_prev(&self) -> &'a T {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe { (*ptr).buf[idx - 1].assume_init_ref() }
+    }
+}
+impl<'a, T>
+    Handle<NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>, marker::Edge>
+{
+    fn get_mut_next(&self) -> &'a mut T {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe { (*ptr).buf[*idx].assume_init_mut() }
+    }
+    fn get_mut_prev(&self) -> &'a mut T {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe { (*ptr).buf[idx - 1].assume_init_mut() }
+    }
+}
+
+pub struct Iter<'a, T> {
+    left: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
+    right: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
+}
+
+impl<'a, T> Iter<'a, T> {
+    fn new(
+        left: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
+        right: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
+    ) -> Self {
+        Self { left, right }
+    }
+}
+
+impl<'a, T: 'a> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        (!self.left.eq(&self.right)).then(|| {
+            let res = self.left.get_next();
+            self.left.next();
+            res
+        })
+    }
+}
+impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        (!self.left.eq(&self.right)).then(|| {
+            let res = self.right.get_prev();
+            self.right.next_back();
+            res
+        })
+    }
+}
+
 // #[cfg(test)]
 mod debug;
 
@@ -1503,6 +1682,20 @@ mod tests {
         unsafe {
             left.drop_subtree();
             right.drop_subtree();
+        }
+    }
+
+    #[test]
+    #[cfg(not(miri))]
+    fn iter() {
+        for n in 1..=5000 {
+            let tree = from_iter(0..n);
+
+            assert!(tree.borrow().iter().copied().eq(0..n));
+            assert!(tree.borrow().iter().copied().rev().eq((0..n).rev()));
+
+            let mut tree = tree;
+            unsafe { tree.drop_subtree() }
         }
     }
 }
