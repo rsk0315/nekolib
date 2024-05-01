@@ -1,5 +1,4 @@
 use std::{
-    borrow::BorrowMut,
     marker::PhantomData,
     mem::MaybeUninit,
     ptr::{self, NonNull},
@@ -454,11 +453,9 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
         let init_len = self.buflen() as usize;
         let mut treelen = init_len;
         let children_ref = self.children_ref();
-        // eprintln!("init_len: {init_len}");
         for i in 0..=init_len {
             let child = children_ref[i];
             let child_ref = ImmutNodeRef::from_node(child, self.height - 1);
-            // eprintln!("treelen += {}", child_ref.treelen());
             treelen += child_ref.treelen();
         }
         unsafe { (*self.as_internal_ptr()).treelen = treelen }
@@ -491,19 +488,9 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal> {
 
 impl<T> OwnedNodeRef<T> {
     fn adjoin(mut self, mid: T, mut other: Self) -> Self {
-        // eprintln!("joining:");
-        // debug::visualize_with(self.borrow(), |_| "*");
-        // eprintln!("and");
-        // debug::visualize_with(other.borrow(), |_| "*");
-        // eprintln!("---");
-
         let mut left = self.borrow_mut();
         let mut right = other.borrow_mut();
-
-        // eprintln!("height: {:?}", (left.height, right.height));
-
         let mut root = if left.height != right.height {
-            // eprintln!("adjoin A");
             let Handle { node: mut parent, idx, .. } =
                 if left.height < right.height {
                     while left.height < right.height {
@@ -525,40 +512,20 @@ impl<T> OwnedNodeRef<T> {
                     .map(|i| parent.child(i).unwrap())
                     .find(|node| node.is_underfull())
                 {
-                    // eprintln!("adjoin A-1");
-                    if let Some(tmp) = node.underflow() {
-                        // eprintln!("adjoin A-1a");
-                        tmp
-                    } else {
-                        // eprintln!("adjoin A-1b");
-                        let root = node.root().reborrow();
-                        // eprintln!("root height: {}", root.height);
-                        // eprintln!("root buflen: {}", root.buflen());
-                        // eprintln!("root treelen: {}", root.treelen());
-                        node.root().promote()
-                    }
-
-                    // node.underflow().unwrap_or_else(|| node.root().promote())
+                    node.underflow().unwrap_or_else(|| node.root().promote())
                 } else {
-                    // eprintln!("adjoin A-2");
                     parent.root().promote()
                 }
             }
         } else {
             if ((left.buflen() + right.buflen() + 1) as usize) <= CAPACITY {
-                // eprintln!("adjoin B-1");
                 // Note that `left` and `right` are roots, so it is not
                 // necessarily true that |left| == |right| == B - 1.
                 // Anyway, we do not have to allocate a new node. We
                 // merge them into one of them and deallocate the other.
                 left.append(mid, right);
-                let root = unsafe { left.promote() };
-                // eprintln!("L{}", line!());
-                // debug::assert_invariants(root.borrow());
-                // eprintln!("L{}", line!());
-                root
+                unsafe { left.promote() }
             } else {
-                // eprintln!("adjoin B-2");
                 // At most one of them may be underfull, but we can
                 // resolve it by rotate properly.
                 let mut node =
@@ -567,17 +534,9 @@ impl<T> OwnedNodeRef<T> {
                 let mut left = node_mut.child(0).unwrap();
                 let mut right = node_mut.child(1).unwrap();
                 left.rotate(&mut right);
-                // eprintln!("L{}", line!());
-                // debug::assert_invariants(node.borrow().forget_type());
-                // eprintln!("L{}", line!());
                 node.forget_type()
             }
         };
-        // eprintln!("? L{}", line!());
-        let _accessibility = root.buflen();
-        // eprintln!("root height: {}", root.height);
-        // debug::visualize_with(root.borrow(), |_| "*");
-        // eprintln!("---");
         root.borrow_mut()
             .force()
             .internal()
@@ -586,10 +545,7 @@ impl<T> OwnedNodeRef<T> {
     }
     /// # Safety
     /// `i <= self.treelen()`
-    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2]
-    where
-        T: std::fmt::Debug,
-    {
+    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
         debug_assert!(i <= self.treelen());
         self.borrow_mut().select_leaf(i).split()
     }
@@ -650,16 +606,12 @@ impl<'a, T> MutNodeRef<'a, T> {
         &mut self,
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
         use ForceResult::*;
-        let res = unsafe {
+        unsafe {
             match self.force() {
                 Leaf(mut leaf) => leaf.underflow(),
                 Internal(mut internal) => internal.underflow(),
             }
-        };
-        unsafe {
-            let _accessiblity = (*self.node.as_ptr()).buflen;
         }
-        res
     }
     fn rotate(&mut self, other: &mut Self) {
         use ForceResult::*;
@@ -788,25 +740,22 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
         // has to be done.
         let Handle { node: mut parent, .. } = self.parent()?;
         let len = self.buflen();
-        let res = match self.neighbors() {
+        match self.neighbors() {
             [Some(mut left), _]
                 if usize::from(left.buflen() + len) >= 2 * MIN_BUFLEN =>
             {
-                // eprintln!("L{}", line!());
                 left.rotate(self);
                 None
             }
             [_, Some(mut right)]
                 if usize::from(len + right.buflen()) >= 2 * MIN_BUFLEN =>
             {
-                // eprintln!("L{}", line!());
                 self.rotate(&mut right);
                 None
             }
             [Some(left), _] => {
                 // |left| + |self| + 1 < 2 * B - 1
                 // Take an element from the parent, and check it.
-                // eprintln!("L{}", line!());
                 self.merge(left, false);
                 if parent.buflen() == 0 {
                     // Now `self` is the new root, so deallocate it and
@@ -821,7 +770,6 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 }
             }
             [_, Some(right)] => {
-                // eprintln!("L{}", line!());
                 self.merge(right, true);
                 if parent.buflen() == 0 {
                     unsafe {
@@ -834,24 +782,21 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 }
             }
             [None, None] => unreachable!(),
-        };
-        let _accessiblity = unsafe { (*self.node.as_ptr()).buflen };
-        res
+        }
     }
 
     fn rotate(&mut self, other: &mut Self) {
         if !self.is_underfull() && !other.is_underfull() {
             return;
         }
-        let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
+        let Handle { node: parent, idx, .. } = self.parent().unwrap();
         Self::rotate_leaf(
             self.node.as_ptr(),
             (parent.as_internal_ptr(), idx),
             other.node.as_ptr(),
         );
-        parent.correct_parent_children_invariant();
     }
-    fn merge(&mut self, mut other: Self, self_left: bool) {
+    fn merge(&mut self, other: Self, self_left: bool) {
         let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
         if self_left {
             Self::merge_leaf(
@@ -860,7 +805,6 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 other.node.as_ptr(),
             );
         } else {
-            // eprintln!("merge_leaf(_, {}, _)", idx - 1);
             Self::merge_leaf(
                 other.node.as_ptr(),
                 (parent.as_internal_ptr(), idx - 1),
@@ -870,11 +814,8 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                 ptr::swap(self.node.as_ptr(), other.node.as_ptr());
                 (*parent.as_internal_ptr()).children[idx - 1].write(self.node);
             }
-
-            // eprintln!("self.buflen() as L{}: {}", line!(), self.buflen());
         }
         parent.correct_parent_children_invariant();
-        // eprintln!("parent.buflen() as L{}: {}", line!(), parent.buflen());
         unsafe { drop(Box::from_raw(other.node.as_ptr())) }
     }
     fn append(&mut self, elt: T, other: Self) {
@@ -910,13 +851,6 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
     ) {
         // left: [A, B, C, D, E], parent: [.., F, ..], right: [G, H]
         // left: [A, B, C, D, E, F, G, H], parent: [.., ..]
-        // unsafe {
-        //     eprintln!(
-        //         "buflen at L{}: {:?}",
-        //         line!(),
-        //         ((*left_ptr).buflen, (*right_ptr).buflen)
-        //     );
-        // }
         unsafe {
             let left = &mut (*left_ptr).buf;
             let leftlen = (*left_ptr).buflen as usize;
@@ -937,9 +871,6 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             (*left_ptr).buflen += 1 + rightlen as u8;
             (*parent_ptr).data.buflen -= 1;
         }
-        // unsafe {
-        //     eprintln!("buflen at L{}: {}", line!(), (*left_ptr).buflen);
-        // }
     }
 
     fn append_leaf(
@@ -977,9 +908,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         debug_assert!(i <= usize::from(self.buflen()));
 
-        // eprintln!("self.buflen(): {}", self.buflen());
         if (self.buflen() as usize) < CAPACITY {
-            // eprintln!("L{}", line!());
             self.insert_fit(i, orphan);
             None
         } else {
@@ -1063,7 +992,6 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         // As `orphan` is purged from the subtree, we do not have to
         // update the `.treelen`. Note that adding one to leaf-to-root
         // is the job for the caller.
-        // eprintln!("L{}", line!());
         unsafe {
             let buflen = (*this).data.buflen as usize;
             let elt = (*orphan_ptr).data.buf[0].assume_init_read();
@@ -1075,10 +1003,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             (*this).data.buflen += 1;
             drop(Box::from_raw(orphan_ptr));
         }
-        // eprintln!("self.buflen(): {}", self.buflen());
-        // eprintln!("self.treelen(): {}", self.treelen());
         self.correct_parent_children_invariant();
-        // eprintln!("-> self.treelen(): {}", self.treelen());
     }
 
     unsafe fn underflow(
@@ -1086,62 +1011,52 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::LeafOrInternal>> {
         let Handle { node: mut parent, .. } = self.parent()?;
         let len = self.buflen();
-        let res = match self.neighbors() {
+        match self.neighbors() {
             [Some(mut left), _]
                 if usize::from(left.buflen() + len) >= 2 * MIN_BUFLEN =>
             {
-                // eprintln!("underflow L{}", line!());
                 left.rotate(self);
                 None
             }
             [_, Some(mut right)]
                 if usize::from(len + right.buflen()) >= 2 * MIN_BUFLEN =>
             {
-                // eprintln!("underflow L{}", line!());
                 self.rotate(&mut right);
                 None
             }
             [Some(left), _] => {
-                // eprintln!("underflow L{}", line!());
                 self.merge(left, false);
                 if parent.buflen() == 0 {
-                    // eprintln!("underflow L{}", line!());
                     unsafe {
                         let _ = (*self.node.as_ptr()).parent.take();
                         drop(Box::from_raw(parent.as_internal_ptr()));
                         Some(self.promote().forget_type())
                     }
                 } else {
-                    // eprintln!("underflow L{}", line!());
                     parent.underflow()
                 }
             }
             [_, Some(right)] => {
                 self.merge(right, true);
-                // eprintln!("underflow L{}", line!());
                 if parent.buflen() == 0 {
-                    // eprintln!("underflow L{}", line!());
                     unsafe {
                         let _ = (*self.node.as_ptr()).parent.take();
                         drop(Box::from_raw(parent.as_internal_ptr()));
                         Some(self.promote().forget_type())
                     }
                 } else {
-                    // eprintln!("underflow L{}", line!());
                     parent.underflow()
                 }
             }
             [None, None] => unreachable!(),
-        };
-        let _accessiblity = unsafe { (*self.node.as_ptr()).buflen };
-        res
+        }
     }
 
     fn rotate(&mut self, other: &mut Self) {
         if !self.is_underfull() && !other.is_underfull() {
             return;
         }
-        let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
+        let Handle { node: parent, idx, .. } = self.parent().unwrap();
         Self::rotate_internal(
             self.as_internal_ptr(),
             (parent.as_internal_ptr(), idx),
@@ -1149,9 +1064,8 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         );
         self.correct_parent_children_invariant();
         other.correct_parent_children_invariant();
-        parent.correct_parent_children_invariant(); // ?
     }
-    fn merge(&mut self, mut other: Self, self_left: bool) {
+    fn merge(&mut self, other: Self, self_left: bool) {
         let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
         if self_left {
             Self::merge_internal(
@@ -1416,10 +1330,7 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
 }
 
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split(self) -> [Option<OwnedNodeRef<T>>; 2]
-    where
-        T: std::fmt::Debug,
-    {
+    fn split(self) -> [Option<OwnedNodeRef<T>>; 2] {
         let [mut left_inner, mut right_inner]: [Option<T>; 2] = [None, None];
         let LeafSplit {
             left: mut left_tree,
@@ -1427,41 +1338,8 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
             parent: mut node,
         } = self.split_ascend();
 
-        // eprintln!("===");
-        // if let Some(left) = left_tree.as_ref() {
-        //     eprintln!("left:");
-        //     debug::visualize(left.borrow());
-        //     eprintln!("L{}", line!());
-        //     debug::assert_invariants(left.borrow());
-        //     eprintln!("L{}", line!());
-        // }
-        // if let Some(right) = right_tree.as_ref() {
-        //     eprintln!("right:");
-        //     debug::visualize(right.borrow());
-        //     eprintln!("L{}", line!());
-        //     debug::assert_invariants(right.borrow());
-        //     eprintln!("L{}", line!());
-        // }
-
         while let Some(cur) = node.take() {
             let InternalSplit { left, right, parent } = cur.split_ascend();
-
-            // eprintln!("===");
-            // if let Some((left, _)) = left.as_ref() {
-            //     eprintln!("left:");
-            //     debug::visualize(left.borrow());
-            //     eprintln!("L{}", line!());
-            //     debug::assert_invariants(left.borrow());
-            //     eprintln!("L{}", line!());
-            // }
-            // if let Some((right, _)) = right.as_ref() {
-            //     eprintln!("right:");
-            //     debug::visualize(right.borrow());
-            //     eprintln!("L{}", line!());
-            //     debug::assert_invariants(right.borrow());
-            //     eprintln!("L{}", line!());
-            // }
-
             match (left_tree, left) {
                 (Some(left_lo), Some((left_hi, elt))) => {
                     left_tree = Some(left_hi.adjoin(elt, left_lo));
@@ -1644,7 +1522,7 @@ impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
-// #[cfg(test)]
+#[cfg(test)]
 mod debug;
 
 #[cfg(test)]
