@@ -1867,6 +1867,44 @@ impl<T> BTreeSeq<T> {
             )
         })
     }
+
+    pub fn insert(&mut self, at: usize, elt: T) {
+        #[cold]
+        fn assert_failed(at: usize, len: usize) -> ! {
+            panic!("`at` insert index (is {at}) should be <= len (is {len})");
+        }
+        if at > self.len() {
+            assert_failed(at, self.len());
+        }
+        let tmp = self.split_off(at);
+        self.adjoin(elt, tmp);
+    }
+    pub fn remove(&mut self, at: usize) -> T {
+        #[cold]
+        fn assert_failed(at: usize, len: usize) -> ! {
+            panic!("`at` remove index (is {at}) should be < len (is {len})");
+        }
+        if at >= self.len() {
+            assert_failed(at, self.len());
+        }
+        let tmp = self.split_off(at + 1);
+        let rm = self.pop_back().unwrap();
+        self.append(tmp);
+        rm
+    }
+    pub fn rotate(&mut self, new_first: usize) {
+        #[cold]
+        fn assert_failed(at: usize, len: usize) -> ! {
+            panic!("`at` rotate index (is {at}) should be < len (is {len})");
+        }
+        if new_first >= self.len() {
+            assert_failed(new_first, self.len());
+        }
+        let mut new_left = self.split_off(new_first);
+        let new_right = self.split_off(0);
+        new_left.append(new_right);
+        self.root = new_left.root.take();
+    }
 }
 
 impl<T> Default for BTreeSeq<T> {
