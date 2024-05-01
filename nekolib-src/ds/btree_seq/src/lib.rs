@@ -423,6 +423,16 @@ impl<BorrowType: Traversable, T, NodeType> NodeRef<BorrowType, T, NodeType> {
             }
         })
     }
+    fn root(&self) -> NodeRef<BorrowType, T, marker::LeafOrInternal> {
+        let mut cur = match self.parent() {
+            Some(o) => o.node,
+            None => return unsafe { self.cast() },
+        };
+        while let Some(Handle { node, .. }) = cur.parent() {
+            cur = node;
+        }
+        cur.forget_type()
+    }
 }
 
 impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
@@ -448,16 +458,25 @@ impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::Internal> {
         }
         unsafe { (*self.as_internal_ptr()).treelen = treelen }
     }
+
+    fn correct_treelen_invarant_to_root(&mut self) {
+        self.correct_treelen_invarant();
+        let mut cur = self.parent();
+        while let Some(mut handle) = cur {
+            handle.node.correct_treelen_invarant();
+            cur = handle.node.parent();
+        }
+    }
 }
 
 impl<'a, T> NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal> {
-    fn correct_subtree_treelen_invariant(&mut self) {
+    fn correct_treelen_invariant_subtree(&mut self) {
         if let Some(internal) = self.force().internal() {
             let init_len = self.buflen();
             let mut treelen = init_len as usize;
             for i in 0..=init_len {
                 let mut child = internal.child(i as _).unwrap();
-                child.correct_subtree_treelen_invariant();
+                child.correct_treelen_invariant_subtree();
                 treelen += child.treelen();
             }
             unsafe { (*internal.as_internal_ptr()).treelen = treelen }
@@ -470,34 +489,32 @@ impl<T> OwnedNodeRef<T> {
         let mut left = self.borrow_mut();
         let mut right = other.borrow_mut();
 
-        let mut root = if left.height < right.height {
-            while left.height < right.height {
-                // SAFETY: 0 <= left.height < right.height
-                right = right.first_child().unwrap();
-            }
-            let Handle { node: mut parent, idx, .. } = right.parent().unwrap();
+        let mut root = if left.height != right.height {
+            let Handle { node: mut parent, idx, .. } =
+                if left.height < right.height {
+                    while left.height < right.height {
+                        // SAFETY: 0 <= left.height < right.height
+                        right = right.first_child().unwrap();
+                    }
+                    right.parent().unwrap()
+                } else {
+                    while left.height > right.height {
+                        left = left.last_child().unwrap();
+                    }
+                    left.parent().unwrap()
+                };
             unsafe {
                 let node = NodeRef::new_single_internal(mid, left, right);
-                let root1 = parent.insert(idx, node).map(|o| o.forget_type());
-                let root2 = (0..=parent.buflen())
+                let _ = parent.insert(idx, node);
+                parent.correct_treelen_invarant_to_root();
+                if let Some(mut node) = (0..=parent.buflen())
                     .map(|i| parent.child(i).unwrap())
                     .find(|node| node.is_underfull())
-                    .and_then(|mut node| node.underflow());
-                root2.or_else(|| root1).unwrap_or_else(|| other)
-            }
-        } else if left.height > right.height {
-            while left.height > right.height {
-                left = left.last_child().unwrap();
-            }
-            let Handle { node: mut parent, idx, .. } = left.parent().unwrap();
-            unsafe {
-                let node = NodeRef::new_single_internal(mid, left, right);
-                let root1 = parent.insert(idx, node).map(|o| o.forget_type());
-                let root2 = (0..=parent.buflen())
-                    .map(|i| parent.child(i).unwrap())
-                    .find(|node| node.is_underfull())
-                    .and_then(|mut node| node.underflow());
-                root2.or_else(|| root1).unwrap_or_else(|| self)
+                {
+                    node.underflow().unwrap_or_else(|| node.root().promote())
+                } else {
+                    parent.root().promote()
+                }
             }
         } else {
             if ((left.buflen() + right.buflen() + 1) as usize) <= CAPACITY {
@@ -506,7 +523,11 @@ impl<T> OwnedNodeRef<T> {
                 // Anyway, we do not have to allocate a new node. We
                 // merge them into one of them and deallocate the other.
                 left.append(mid, right);
-                unsafe { left.promote() }
+                let root = unsafe { left.promote() };
+                eprintln!("L{}", line!());
+                debug::assert_invariants(root.borrow());
+                eprintln!("L{}", line!());
+                root
             } else {
                 // At most one of them may be underfull, but we can
                 // resolve it by rotate properly.
@@ -516,6 +537,9 @@ impl<T> OwnedNodeRef<T> {
                 let mut left = node_mut.child(0).unwrap();
                 let mut right = node_mut.child(1).unwrap();
                 left.rotate(&mut right);
+                eprintln!("L{}", line!());
+                debug::assert_invariants(node.borrow().forget_type());
+                eprintln!("L{}", line!());
                 node.forget_type()
             }
         };
@@ -527,7 +551,10 @@ impl<T> OwnedNodeRef<T> {
     }
     /// # Safety
     /// `i <= self.treelen()`
-    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
+    unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2]
+    where
+        T: std::fmt::Debug,
+    {
         debug_assert!(i <= self.treelen());
         self.borrow_mut().select_leaf(i).split()
     }
@@ -622,7 +649,10 @@ impl<'a, T> MutNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         unsafe {
             let Handle { mut node, idx, .. } = self.last_leaf();
-            node.insert(idx, elt)
+            let root = node.insert(idx, elt);
+            node.parent()
+                .map(|mut o| o.node.correct_treelen_invarant_to_root());
+            root
         }
     }
     fn push_front(
@@ -631,7 +661,10 @@ impl<'a, T> MutNodeRef<'a, T> {
     ) -> Option<NodeRef<marker::Owned, T, marker::Internal>> {
         unsafe {
             let Handle { mut node, idx, .. } = self.first_leaf();
-            node.insert(idx, elt)
+            let root = node.insert(idx, elt);
+            node.parent()
+                .map(|mut o| o.node.correct_treelen_invarant_to_root());
+            root
         }
     }
 }
@@ -989,36 +1022,44 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             [Some(mut left), _]
                 if usize::from(left.buflen() + len) >= 2 * MIN_BUFLEN =>
             {
+                eprintln!("underflow L{}", line!());
                 left.rotate(self);
                 None
             }
             [_, Some(mut right)]
                 if usize::from(len + right.buflen()) >= 2 * MIN_BUFLEN =>
             {
+                eprintln!("underflow L{}", line!());
                 self.rotate(&mut right);
                 None
             }
             [Some(mut left), _] => {
+                eprintln!("underflow L{}", line!());
                 self.merge(&mut left, false);
                 if parent.buflen() == 0 {
+                    eprintln!("underflow L{}", line!());
                     unsafe {
                         let _ = (*self.node.as_ptr()).parent.take();
                         drop(Box::from_raw(parent.as_internal_ptr()));
                         Some(self.promote().forget_type())
                     }
                 } else {
+                    eprintln!("underflow L{}", line!());
                     parent.underflow()
                 }
             }
             [_, Some(mut right)] => {
                 self.merge(&mut right, true);
+                eprintln!("underflow L{}", line!());
                 if parent.buflen() == 0 {
+                    eprintln!("underflow L{}", line!());
                     unsafe {
                         let _ = (*self.node.as_ptr()).parent.take();
                         drop(Box::from_raw(parent.as_internal_ptr()));
                         Some(self.promote().forget_type())
                     }
                 } else {
+                    eprintln!("underflow L{}", line!());
                     parent.underflow()
                 }
             }
@@ -1038,7 +1079,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
         );
         self.correct_parent_children_invariant();
         other.correct_parent_children_invariant();
-        parent.correct_parent_children_invariant();
+        parent.correct_parent_children_invariant(); // ?
     }
     fn merge(&mut self, other: &mut Self, self_left: bool) {
         let Handle { node: mut parent, idx, .. } = self.parent().unwrap();
@@ -1302,7 +1343,10 @@ impl<'a, T> Handle<MutInternalNodeRef<'a, T>, marker::Edge> {
 }
 
 impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
-    fn split(self) -> [Option<OwnedNodeRef<T>>; 2] {
+    fn split(self) -> [Option<OwnedNodeRef<T>>; 2]
+    where
+        T: std::fmt::Debug,
+    {
         let [mut left_inner, mut right_inner]: [Option<T>; 2] = [None, None];
         let LeafSplit {
             left: mut left_tree,
@@ -1310,8 +1354,41 @@ impl<'a, T> Handle<MutLeafNodeRef<'a, T>, marker::Edge> {
             parent: mut node,
         } = self.split_ascend();
 
+        eprintln!("===");
+        if let Some(left) = left_tree.as_ref() {
+            eprintln!("left:");
+            debug::visualize(left.borrow());
+            eprintln!("L{}", line!());
+            debug::assert_invariants(left.borrow());
+            eprintln!("L{}", line!());
+        }
+        if let Some(right) = right_tree.as_ref() {
+            eprintln!("right:");
+            debug::visualize(right.borrow());
+            eprintln!("L{}", line!());
+            debug::assert_invariants(right.borrow());
+            eprintln!("L{}", line!());
+        }
+
         while let Some(cur) = node.take() {
             let InternalSplit { left, right, parent } = cur.split_ascend();
+
+            eprintln!("===");
+            if let Some((left, _)) = left.as_ref() {
+                eprintln!("left:");
+                debug::visualize(left.borrow());
+                eprintln!("L{}", line!());
+                debug::assert_invariants(left.borrow());
+                eprintln!("L{}", line!());
+            }
+            if let Some((right, _)) = right.as_ref() {
+                eprintln!("right:");
+                debug::visualize(right.borrow());
+                eprintln!("L{}", line!());
+                debug::assert_invariants(right.borrow());
+                eprintln!("L{}", line!());
+            }
+
             match (left_tree, left) {
                 (Some(left_lo), Some((left_hi, elt))) => {
                     left_tree = Some(left_hi.adjoin(elt, left_lo));
@@ -1566,9 +1643,11 @@ mod tests {
                 let _ = trace_root.insert(new_root);
             }
         }
-        trace_root
+        let mut root = trace_root
             .map(|r| r.forget_type())
-            .unwrap_or_else(|| root.forget_type())
+            .unwrap_or_else(|| root.forget_type());
+        root.borrow_mut().correct_treelen_invariant_subtree();
+        root
     }
 
     fn from_iter_rev<T, I: Iterator<Item = T> + DoubleEndedIterator>(
@@ -1582,9 +1661,11 @@ mod tests {
                 let _ = trace_root.insert(new_root);
             }
         }
-        trace_root
+        let mut root = trace_root
             .map(|r| r.forget_type())
-            .unwrap_or_else(|| root.forget_type())
+            .unwrap_or_else(|| root.forget_type());
+        root.borrow_mut().correct_treelen_invariant_subtree();
+        root
     }
 
     fn test_adjoin(lens: &[usize]) {
@@ -1664,5 +1745,30 @@ mod tests {
             test_iter(n);
         }
         test_iter(1_000_000);
+    }
+
+    #[test]
+    fn debug() {
+        let leftlen = 16;
+        let rightlen = 101;
+
+        let left_iter = 0..=leftlen - 1;
+        let mid_elt = leftlen;
+        let right_iter = leftlen + 1..=leftlen + rightlen;
+
+        let left = from_iter(left_iter);
+        let right = from_iter_rev(right_iter);
+
+        eprintln!();
+        debug::visualize(left.borrow());
+        eprintln!("---");
+        debug::visualize(right.borrow());
+        eprintln!("---");
+
+        let mut root = left.adjoin(mid_elt, right);
+
+        debug::visualize(root.borrow());
+        debug::assert_invariants(root.borrow());
+        unsafe { root.drop_subtree() }
     }
 }

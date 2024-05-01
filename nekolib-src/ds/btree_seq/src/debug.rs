@@ -28,7 +28,7 @@ where
         fmt: F,
     }
     impl<F> State<F> {
-        fn display<T, D>(&self, elt: &T, _treelen: Option<usize>)
+        fn display<T, D>(&self, elt: &T, treelen: Option<usize>)
         where
             F: Fn(&T) -> D,
             D: AsRef<str>,
@@ -65,9 +65,9 @@ where
                 };
             }
             eprint!("{prefix}{}", (self.fmt)(&elt).as_ref());
-            // if let Some(treelen) = treelen {
-            //     eprint!(" ({treelen})");
-            // }
+            if let Some(treelen) = treelen {
+                eprint!(" ({treelen})");
+            }
             eprintln!();
         }
         fn push(&mut self, k: Kind) { self.path.push(k); }
