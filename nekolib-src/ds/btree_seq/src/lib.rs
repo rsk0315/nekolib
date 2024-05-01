@@ -249,6 +249,29 @@ impl<BorrowType: Traversable, T>
             }
         }
     }
+
+    /// # Safety
+    /// `idx < self.treelen()` and the `.treelen` invariant is met.
+    unsafe fn select_value(
+        &self,
+        _idx: usize,
+    ) -> Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, marker::Value>
+    {
+        todo!()
+    }
+
+    fn bisect<F>(
+        &self,
+        _predicate: F,
+    ) -> (
+        Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, marker::Value>,
+        usize,
+    )
+    where
+        F: Fn(&T) -> bool,
+    {
+        todo!()
+    }
 }
 
 impl<BorrowType, T> NodeRef<BorrowType, T, marker::Leaf> {
@@ -1189,6 +1212,31 @@ impl<BorrowType, T, Type>
     }
 }
 
+impl<'a, T: 'a, NodeType>
+    Handle<NodeRef<marker::Immut<'a>, T, NodeType>, marker::Value>
+{
+    fn get(&self) -> Option<&'a T> {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe {
+            (*idx < usize::from((*ptr).buflen))
+                .then(|| (*ptr).buf[*idx].assume_init_ref())
+        }
+    }
+}
+impl<'a, T: 'a, NodeType>
+    Handle<NodeRef<marker::ValMut<'a>, T, NodeType>, marker::Value>
+{
+    fn get_mut(&self) -> Option<&'a mut T> {
+        let Self { node, idx, .. } = self;
+        let ptr = node.node.as_ptr();
+        unsafe {
+            (*idx < usize::from((*ptr).buflen))
+                .then(|| (*ptr).buf[*idx].assume_init_mut())
+        }
+    }
+}
+
 struct LeafSplit<'a, T> {
     left: Option<OwnedNodeRef<T>>,
     right: Option<OwnedNodeRef<T>>,
@@ -1743,6 +1791,28 @@ impl<T> BTreeSeq<T> {
     }
     pub fn into_iter(mut self) -> IntoIter<T> {
         IntoIter::new(self.root.take())
+    }
+
+    pub fn bisect<'a, F>(&'a self, predicate: F) -> (Option<&'a T>, usize)
+    where
+        F: Fn(&T) -> bool,
+    {
+        self.root.as_ref().map_or((None, 0), |root| {
+            let (handle, idx) = root.borrow().bisect(predicate);
+            (handle.get(), idx)
+        })
+    }
+    pub fn bisect_mut<'a, F>(
+        &'a mut self,
+        predicate: F,
+    ) -> (Option<&'a mut T>, usize)
+    where
+        F: Fn(&T) -> bool,
+    {
+        self.root.as_mut().map_or((None, 0), |root| {
+            let (handle, idx) = root.borrow_valmut().bisect(predicate);
+            (handle.get_mut(), idx)
+        })
     }
 }
 
