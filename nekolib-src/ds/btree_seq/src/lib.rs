@@ -650,7 +650,6 @@ impl<T> DyingNodeRef<T> {
                 let ptr = internal.as_internal_ptr();
                 unsafe {
                     for i in 0..=init_len {
-                        eprintln!("drop child {i}");
                         let child = internal.child(i as _).unwrap();
                         child.drop_subtree(elt_dropped);
                     }
