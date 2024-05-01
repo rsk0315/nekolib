@@ -271,11 +271,11 @@ impl<BorrowType: Traversable, T>
                     } else if idx == child.treelen() {
                         return Handle {
                             node: internal.forget_type(),
-                            idx,
+                            idx: i as _,
                             _marker: PhantomData,
                         };
                     } else {
-                        idx -= child.treelen();
+                        idx -= child.treelen() + 1;
                     }
                 }
                 unreachable!()
@@ -283,17 +283,41 @@ impl<BorrowType: Traversable, T>
         }
     }
 
-    fn bisect<F>(
-        &self,
-        _predicate: F,
-    ) -> (
-        Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, marker::Value>,
-        usize,
-    )
+    /// # Safety
+    /// The `.treelen` invariant is met.
+    unsafe fn bisect_index<F>(&self, predicate: F) -> usize
     where
         F: Fn(&T) -> bool,
     {
-        todo!()
+        use ForceResult::*;
+        let init_len = self.buflen() as usize;
+        match self.force() {
+            Leaf(_) => {
+                let ptr = self.node.as_ptr();
+                (0..init_len)
+                    .find(|&i| {
+                        !predicate(unsafe { (*ptr).buf[i].assume_init_ref() })
+                    })
+                    .unwrap_or(init_len)
+            }
+            Internal(internal) => {
+                let mut rank = 0;
+                let ptr = internal.as_internal_ptr();
+                for i in 0..init_len {
+                    let elt = unsafe { (*ptr).data.buf[i].assume_init_ref() };
+                    let child = internal.child(i as _).unwrap();
+                    if predicate(&elt) {
+                        rank += child.treelen() + 1;
+                    } else {
+                        return rank + child.bisect_index(predicate);
+                    }
+                }
+                rank + internal
+                    .child(init_len as _)
+                    .unwrap()
+                    .bisect_index(predicate)
+            }
+        }
     }
 }
 
@@ -590,8 +614,16 @@ impl<T> OwnedNodeRef<T> {
     /// # Safety
     /// `self.treelen() == 1`
     unsafe fn take_single(self) -> T {
+        use ForceResult::*;
         debug_assert_eq!(self.treelen(), 1);
-        unsafe { (*self.node.as_ptr()).buf[0].assume_init_read() }
+        let res = unsafe { (*self.node.as_ptr()).buf[0].assume_init_read() };
+        match self.force() {
+            Leaf(leaf) => unsafe { drop(Box::from_raw(leaf.node.as_ptr())) },
+            Internal(internal) => unsafe {
+                drop(Box::from_raw(internal.as_internal_ptr()))
+            },
+        }
+        res
     }
     fn drop_subtree(&mut self) {
         let dying: DyingNodeRef<_> = unsafe { self.cast() };
@@ -617,12 +649,9 @@ impl<T> DyingNodeRef<T> {
             ForceResult::Internal(internal) => {
                 let ptr = internal.as_internal_ptr();
                 unsafe {
-                    for e in &mut (*ptr).children[..=init_len] {
-                        let child = DyingNodeRef {
-                            node: e.assume_init(),
-                            height: self.height - 1,
-                            _marker: PhantomData,
-                        };
+                    for i in 0..=init_len {
+                        eprintln!("drop child {i}");
+                        let child = internal.child(i as _).unwrap();
                         child.drop_subtree(elt_dropped);
                     }
                     drop(Box::from_raw(ptr));
@@ -1238,25 +1267,21 @@ impl<BorrowType, T, Type>
 impl<'a, T: 'a, NodeType>
     Handle<NodeRef<marker::Immut<'a>, T, NodeType>, marker::Value>
 {
-    fn get(&self) -> Option<&'a T> {
+    unsafe fn get(&self) -> &'a T {
         let Self { node, idx, .. } = self;
         let ptr = node.node.as_ptr();
-        unsafe {
-            (*idx < usize::from((*ptr).buflen))
-                .then(|| (*ptr).buf[*idx].assume_init_ref())
-        }
+        debug_assert!(*idx < usize::from((*ptr).buflen));
+        unsafe { (*ptr).buf[*idx].assume_init_ref() }
     }
 }
 impl<'a, T: 'a, NodeType>
     Handle<NodeRef<marker::ValMut<'a>, T, NodeType>, marker::Value>
 {
-    fn get_mut(&self) -> Option<&'a mut T> {
+    unsafe fn get_mut(&self) -> &'a mut T {
         let Self { node, idx, .. } = self;
         let ptr = node.node.as_ptr();
-        unsafe {
-            (*idx < usize::from((*ptr).buflen))
-                .then(|| (*ptr).buf[*idx].assume_init_mut())
-        }
+        debug_assert!(*idx < usize::from((*ptr).buflen));
+        unsafe { (*ptr).buf[*idx].assume_init_mut() }
     }
 }
 
@@ -1820,9 +1845,10 @@ impl<T> BTreeSeq<T> {
     where
         F: Fn(&T) -> bool,
     {
-        self.root.as_ref().map_or((None, 0), |root| {
-            let (handle, idx) = root.borrow().bisect(predicate);
-            (handle.get(), idx)
+        let len = self.len();
+        self.root.as_ref().map_or((None, 0), |root| unsafe {
+            let idx = root.borrow().bisect_index(predicate);
+            ((idx < len).then(|| root.borrow().select_value(idx).get()), idx)
         })
     }
     pub fn bisect_mut<'a, F>(
@@ -1832,9 +1858,14 @@ impl<T> BTreeSeq<T> {
     where
         F: Fn(&T) -> bool,
     {
-        self.root.as_mut().map_or((None, 0), |root| {
-            let (handle, idx) = root.borrow_valmut().bisect(predicate);
-            (handle.get_mut(), idx)
+        let len = self.len();
+        self.root.as_mut().map_or((None, 0), |root| unsafe {
+            let idx = root.borrow_valmut().bisect_index(predicate);
+            (
+                (idx < len)
+                    .then(|| root.borrow_valmut().select_value(idx).get_mut()),
+                idx,
+            )
         })
     }
 }
@@ -1912,7 +1943,7 @@ impl<T> Index<usize> for BTreeSeq<T> {
         }
         debug_assert!(self.root.is_some());
         let root = self.root.as_ref().unwrap();
-        unsafe { root.borrow().select_value(index).get().unwrap() }
+        unsafe { root.borrow().select_value(index).get() }
     }
 }
 impl<T> IndexMut<usize> for BTreeSeq<T> {
@@ -1926,7 +1957,7 @@ impl<T> IndexMut<usize> for BTreeSeq<T> {
         }
         debug_assert!(self.root.is_some());
         let root = self.root.as_mut().unwrap();
-        unsafe { root.borrow_valmut().select_value(index).get_mut().unwrap() }
+        unsafe { root.borrow_valmut().select_value(index).get_mut() }
     }
 }
 
@@ -1960,7 +1991,7 @@ mod tests_node {
         let mut root = trace_root
             .map(|r| r.forget_type())
             .unwrap_or_else(|| root.forget_type());
-        unsafe { root.drop_subtree() }
+        root.drop_subtree()
     }
     #[test]
     fn push_back() {
@@ -1992,7 +2023,7 @@ mod tests_node {
         eprintln!();
         debug::visualize(root.borrow());
 
-        unsafe { root.drop_subtree() }
+        root.drop_subtree()
     }
 
     fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> OwnedNodeRef<T> {
@@ -2046,7 +2077,7 @@ mod tests_node {
                 let actual: Vec<_> = root.borrow().iter().copied().collect();
                 let expected: Vec<_> = (0..=leftlen + rightlen).collect();
                 assert_eq!(actual, expected);
-                unsafe { root.drop_subtree() }
+                root.drop_subtree()
             }
         }
     }
@@ -2092,10 +2123,8 @@ mod tests_node {
                 debug::assert_invariants(right.borrow());
 
                 let [mut left, mut right] = [left, right];
-                unsafe {
-                    left.drop_subtree();
-                    right.drop_subtree();
-                }
+                left.drop_subtree();
+                right.drop_subtree();
             }
         }
     }
@@ -2131,7 +2160,7 @@ mod tests_node {
         assert!(tree.borrow().iter().copied().rev().eq((0..n).rev()));
 
         let mut tree = tree;
-        unsafe { tree.drop_subtree() }
+        tree.drop_subtree()
     }
 
     #[test]
@@ -2169,5 +2198,10 @@ mod tests_tree {
         assert_eq!(a[0], 0);
         a[0] = 1;
         assert_eq!(a[0], 1);
+
+        a.push_front(0);
+        a.extend(2..30);
+        assert_eq!(a.len(), 30);
+        assert_eq!(a.bisect(|&x| x < 20), (Some(&20), 20));
     }
 }
