@@ -2,6 +2,7 @@ use std::{
     fmt,
     marker::PhantomData,
     mem::MaybeUninit,
+    ops::{Index, IndexMut},
     ptr::{self, NonNull},
 };
 
@@ -254,10 +255,32 @@ impl<BorrowType: Traversable, T>
     /// `idx < self.treelen()` and the `.treelen` invariant is met.
     unsafe fn select_value(
         &self,
-        _idx: usize,
+        mut idx: usize,
     ) -> Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, marker::Value>
     {
-        todo!()
+        use ForceResult::*;
+        debug_assert!(idx < self.treelen());
+        match self.force() {
+            Leaf(leaf) => Handle::new(leaf, idx).forget_node_type(),
+            Internal(internal) => {
+                let init_len = self.buflen();
+                for i in 0..=init_len {
+                    let child = internal.child(i).unwrap();
+                    if idx < child.treelen() {
+                        return child.select_value(idx);
+                    } else if idx == child.treelen() {
+                        return Handle {
+                            node: internal.forget_type(),
+                            idx,
+                            _marker: PhantomData,
+                        };
+                    } else {
+                        idx -= child.treelen();
+                    }
+                }
+                unreachable!()
+            }
+        }
     }
 
     fn bisect<F>(
@@ -1877,6 +1900,36 @@ impl<T> Extend<T> for BTreeSeq<T> {
     }
 }
 
+impl<T> Index<usize> for BTreeSeq<T> {
+    type Output = T;
+    fn index(&self, index: usize) -> &Self::Output {
+        #[cold]
+        fn assert_failed(index: usize, len: usize) -> ! {
+            panic!("`index` index (is {index}) should be < len (is {len})");
+        }
+        if index >= self.len() {
+            assert_failed(index, self.len());
+        }
+        debug_assert!(self.root.is_some());
+        let root = self.root.as_ref().unwrap();
+        unsafe { root.borrow().select_value(index).get().unwrap() }
+    }
+}
+impl<T> IndexMut<usize> for BTreeSeq<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        #[cold]
+        fn assert_failed(index: usize, len: usize) -> ! {
+            panic!("`index` index (is {index}) should be < len (is {len})");
+        }
+        if index >= self.len() {
+            assert_failed(index, self.len());
+        }
+        debug_assert!(self.root.is_some());
+        let root = self.root.as_mut().unwrap();
+        unsafe { root.borrow_valmut().select_value(index).get_mut().unwrap() }
+    }
+}
+
 impl<T> Drop for BTreeSeq<T> {
     fn drop(&mut self) { self.root.take().map(|mut root| root.drop_subtree()); }
 }
@@ -2113,5 +2166,8 @@ mod tests_tree {
         assert!(a.iter().eq(Some(&0)));
         assert_eq!(a, a);
         assert_eq!(a, a.clone());
+        assert_eq!(a[0], 0);
+        a[0] = 1;
+        assert_eq!(a[0], 1);
     }
 }
