@@ -1807,6 +1807,10 @@ impl<T> Extend<T> for BTreeSeq<T> {
     }
 }
 
+impl<T> Drop for BTreeSeq<T> {
+    fn drop(&mut self) { self.root.take().map(|mut root| root.drop_subtree()); }
+}
+
 #[cfg(test)]
 mod debug;
 
@@ -2030,6 +2034,13 @@ mod tests_tree {
         assert!(a.is_empty());
         assert_eq!(a.len(), 0);
         assert!(a.iter().eq(None::<&()>));
+        assert_eq!(a, a);
+        assert_eq!(a, a.clone());
+
+        let mut a: BTreeSeq<_> = Some(0).into_iter().collect();
+        assert!(!a.is_empty());
+        assert_eq!(a.len(), 1);
+        assert!(a.iter().eq(Some(&0)));
         assert_eq!(a, a);
         assert_eq!(a, a.clone());
     }
