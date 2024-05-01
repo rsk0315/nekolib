@@ -1998,6 +1998,22 @@ impl<T> IndexMut<usize> for BTreeSeq<T> {
     }
 }
 
+impl<'a, T> IntoIterator for &'a BTreeSeq<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter { self.iter() }
+}
+impl<'a, T> IntoIterator for &'a mut BTreeSeq<T> {
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T>;
+    fn into_iter(self) -> Self::IntoIter { self.iter_mut() }
+}
+impl<T> IntoIterator for BTreeSeq<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+    fn into_iter(self) -> Self::IntoIter { self.into_iter() }
+}
+
 impl<T> Drop for BTreeSeq<T> {
     fn drop(&mut self) { self.root.take().map(|mut root| root.drop_subtree()); }
 }
