@@ -163,7 +163,8 @@ pub fn assert_invariants<T>(node: ImmutNodeRef<'_, T>) {
 
         if height > 0 {
             for i in 0..=buflen {
-                let child = node_ref.get_child(i).unwrap();
+                let child =
+                    node_ref.force().internal().unwrap().child(i as _).unwrap();
 
                 // `.parent` consistency
                 let Handle { node: child_par, idx, .. } =

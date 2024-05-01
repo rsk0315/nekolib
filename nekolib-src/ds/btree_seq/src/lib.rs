@@ -137,23 +137,6 @@ impl<T> NodeRef<marker::Owned, T, marker::Leaf> {
 }
 
 impl<T> NodeRef<marker::Owned, T, marker::Internal> {
-    fn new_internal(child: OwnedNodeRef<T>) -> Self {
-        let mut new_node = unsafe { InternalNode::new() };
-        new_node.children[0].write(child.node);
-        unsafe { NodeRef::from_new_internal(new_node, child.height + 1) }
-    }
-    /// # Safety
-    /// `height` must be greater than zero.
-    unsafe fn from_new_internal(
-        internal: Box<InternalNode<T>>,
-        height: u8,
-    ) -> Self {
-        debug_assert!(height > 0);
-        let node = NonNull::from(Box::leak(internal)).cast();
-        let mut this = NodeRef { height, node, _marker: PhantomData };
-        this.borrow_mut().correct_parent_children_invariant();
-        this
-    }
     /// # Safety
     /// `left.height == right.height`
     unsafe fn new_single_internal<NodeType>(
@@ -212,15 +195,6 @@ impl<BorrowType: Traversable, T>
             let node =
                 (*ptr).children[(*ptr).data.buflen as usize].assume_init();
             NodeRef::from_node(node, self.height - 1)
-        })
-    }
-    fn get_child(&self, i: usize) -> Option<Self> {
-        self.force().internal().and_then(|internal| unsafe {
-            let ptr = internal.as_internal_ptr();
-            (i <= ((*ptr).data.buflen as usize)).then(|| {
-                let node = (*ptr).children[i].assume_init();
-                NodeRef::from_node(node, self.height - 1)
-            })
         })
     }
 
@@ -322,9 +296,6 @@ impl<T, NodeType> NodeRef<marker::Owned, T, NodeType> {
 }
 
 impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
-    fn reborrow(&mut self) -> NodeRef<marker::Immut<'a>, T, NodeType> {
-        unsafe { self.cast() }
-    }
     fn reborrow_mut(&mut self) -> NodeRef<marker::Mut<'a>, T, NodeType> {
         unsafe { self.cast() }
     }
@@ -616,18 +587,13 @@ impl<T> DyingNodeRef<T> {
 }
 
 impl<BorrowType, T> ForceResult<BorrowType, T> {
+    #[allow(dead_code)]
     fn leaf(self) -> Option<NodeRef<BorrowType, T, marker::Leaf>> {
         if let Self::Leaf(leaf) = self { Some(leaf) } else { None }
     }
     fn internal(self) -> Option<NodeRef<BorrowType, T, marker::Internal>> {
         if let Self::Internal(internal) = self { Some(internal) } else { None }
     }
-}
-
-struct InsertResult<'a, T> {
-    // The caller may use this to fix up the invariant of `.treelen`.
-    leaf: MutLeafNodeRef<'a, T>,
-    new_root: Option<OwnedNodeRef<T>>,
 }
 
 impl<'a, T> MutNodeRef<'a, T> {
@@ -1211,6 +1177,7 @@ impl<BorrowType, T, Type> Handle<NodeRef<BorrowType, T, marker::Leaf>, Type> {
 impl<BorrowType, T, Type>
     Handle<NodeRef<BorrowType, T, marker::Internal>, Type>
 {
+    #[allow(dead_code)]
     fn forget_node_type(
         self,
     ) -> Handle<NodeRef<BorrowType, T, marker::LeafOrInternal>, Type> {
