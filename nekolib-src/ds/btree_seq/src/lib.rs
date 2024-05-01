@@ -1744,8 +1744,6 @@ mod tests {
     fn test_adjoin(lens: &[usize]) {
         for &leftlen in lens {
             for &rightlen in lens {
-                eprintln!("testing: {:?}", (leftlen, rightlen));
-
                 let left_iter = 0..=leftlen - 1;
                 let mid_elt = leftlen;
                 let right_iter = leftlen + 1..=leftlen + rightlen;
@@ -1754,6 +1752,10 @@ mod tests {
                 let right = from_iter_rev(right_iter);
                 let mut root = left.adjoin(mid_elt, right);
                 debug::assert_invariants(root.borrow());
+
+                let actual: Vec<_> = root.borrow().iter().copied().collect();
+                let expected: Vec<_> = (0..=leftlen + rightlen).collect();
+                assert_eq!(actual, expected);
                 unsafe { root.drop_subtree() }
             }
         }
@@ -1762,8 +1764,9 @@ mod tests {
     #[test]
     #[cfg(not(miri))]
     fn adjoin_many() {
-        let lens: Vec<_> = (1..=500).collect();
+        let lens: Vec<_> = (1..=300).collect();
         test_adjoin(&lens);
+        test_adjoin(&[100_000]);
     }
 
     #[test]
@@ -1783,21 +1786,52 @@ mod tests {
         test_adjoin(&lens);
     }
 
-    #[test]
-    fn split() {
-        let mut tree = from_iter(0..300);
-        let [mut left, mut right] =
-            unsafe { tree.split_off(99).map(|o| o.unwrap()) };
+    fn test_split(lens: &[usize]) {
+        for &len in lens {
+            for i in 1..len {
+                eprintln!("testing: {:?}", (i, len));
 
-        debug::visualize(left.borrow());
-        debug::visualize(right.borrow());
-        debug::assert_invariants(left.borrow());
-        debug::assert_invariants(right.borrow());
+                let tree = from_iter(0..len);
+                let [left, right] =
+                    unsafe { tree.split_off(i).map(|o| o.unwrap()) };
 
-        unsafe {
-            left.drop_subtree();
-            right.drop_subtree();
+                assert!(left.borrow().iter().copied().eq(0..i));
+                assert!(right.borrow().iter().copied().eq(i..len));
+
+                debug::assert_invariants(left.borrow());
+                debug::assert_invariants(right.borrow());
+
+                let [mut left, mut right] = [left, right];
+                unsafe {
+                    left.drop_subtree();
+                    right.drop_subtree();
+                }
+            }
         }
+    }
+
+    #[test]
+    fn split_corner() {
+        let lens = [
+            1,
+            B - 1,
+            B,
+            2 * B - 1,
+            2 * B,
+            (2 * B - 1) * B + (B - 1),
+            (2 * B - 1) * (B + 1),
+            (2 * B + 1) * B,
+            (2 * B - 1) * (B * B + B + 1),
+            B * (2 * B * B + B + 1),
+        ];
+        test_split(&lens);
+    }
+
+    #[test]
+    #[cfg(not(miri))]
+    fn split_many() {
+        let lens: Vec<_> = (1..=300).collect();
+        test_split(&lens);
     }
 
     fn test_iter(n: usize) {
@@ -1820,30 +1854,5 @@ mod tests {
             test_iter(n);
         }
         test_iter(1_000_000);
-    }
-
-    #[test]
-    fn debug() {
-        let leftlen = 16;
-        let rightlen = 101;
-
-        let left_iter = 0..=leftlen - 1;
-        let mid_elt = leftlen;
-        let right_iter = leftlen + 1..=leftlen + rightlen;
-
-        let left = from_iter(left_iter);
-        let right = from_iter_rev(right_iter);
-
-        eprintln!();
-        debug::visualize(left.borrow());
-        eprintln!("---");
-        debug::visualize(right.borrow());
-        eprintln!("---");
-
-        let mut root = left.adjoin(mid_elt, right);
-
-        debug::visualize(root.borrow());
-        debug::assert_invariants(root.borrow());
-        unsafe { root.drop_subtree() }
     }
 }
