@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     marker::PhantomData,
     mem::MaybeUninit,
     ptr::{self, NonNull},
@@ -74,6 +75,8 @@ type MutLeafNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Leaf>;
 type MutInternalNodeRef<'a, T> = NodeRef<marker::Mut<'a>, T, marker::Internal>;
 type ImmutNodeRef<'a, T> =
     NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal>;
+type ValMutNodeRef<'a, T> =
+    NodeRef<marker::ValMut<'a>, T, marker::LeafOrInternal>;
 type DyingNodeRef<T> = NodeRef<marker::Dying, T, marker::LeafOrInternal>;
 
 impl<T> LeafNode<T> {
@@ -310,6 +313,12 @@ impl<T, NodeType> NodeRef<marker::Owned, T, NodeType> {
     fn borrow_mut(&mut self) -> NodeRef<marker::Mut<'_>, T, NodeType> {
         unsafe { self.cast() }
     }
+    fn borrow_valmut(&mut self) -> NodeRef<marker::ValMut<'_>, T, NodeType> {
+        unsafe { self.cast() }
+    }
+    fn take(self) -> NodeRef<marker::Dying, T, NodeType> {
+        unsafe { self.cast() }
+    }
 }
 
 impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
@@ -327,11 +336,27 @@ impl<'a, T, NodeType> NodeRef<marker::Mut<'a>, T, NodeType> {
     }
 }
 
-impl<'a, T> NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal> {
-    fn iter(&self) -> Iter<'a, T> {
+impl<T> DyingNodeRef<T> {
+    fn iter(self) -> IntoIterImpl<T> {
         let left = self.first_leaf().forget_node_type();
         let right = self.last_leaf().forget_node_type();
-        Iter::new(left, right)
+        IntoIterImpl::new(left, right)
+    }
+}
+
+impl<'a, T> NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal> {
+    fn iter(&self) -> IterImpl<'a, T> {
+        let left = self.first_leaf().forget_node_type();
+        let right = self.last_leaf().forget_node_type();
+        IterImpl::new(left, right)
+    }
+}
+
+impl<'a, T: 'a> NodeRef<marker::ValMut<'a>, T, marker::LeafOrInternal> {
+    fn iter(&mut self) -> IterMutImpl<'a, T> {
+        let left = self.first_leaf().forget_node_type();
+        let right = self.last_leaf().forget_node_type();
+        IterMutImpl::new(left, right)
     }
 }
 
@@ -553,17 +578,19 @@ impl<T> OwnedNodeRef<T> {
     }
     fn drop_subtree(&mut self) {
         let dying: DyingNodeRef<_> = unsafe { self.cast() };
-        dying.drop_subtree();
+        dying.drop_subtree(false);
     }
 }
 
 impl<T> DyingNodeRef<T> {
-    fn drop_subtree(self) {
+    fn drop_subtree(self, elt_dropped: bool) {
         let init_len = self.buflen() as usize;
         let ptr = self.node.as_ptr();
-        unsafe {
-            for e in &mut (*ptr).buf[..init_len] {
-                e.assume_init_drop()
+        if !elt_dropped {
+            unsafe {
+                for e in &mut (*ptr).buf[..init_len] {
+                    e.assume_init_drop()
+                }
             }
         }
         match self.force() {
@@ -579,7 +606,7 @@ impl<T> DyingNodeRef<T> {
                             height: self.height - 1,
                             _marker: PhantomData,
                         };
-                        child.drop_subtree();
+                        child.drop_subtree(elt_dropped);
                     }
                     drop(Box::from_raw(ptr));
                 }
@@ -1476,7 +1503,7 @@ impl<'a, T>
     }
 }
 impl<'a, T>
-    Handle<NodeRef<marker::Mut<'a>, T, marker::LeafOrInternal>, marker::Edge>
+    Handle<NodeRef<marker::ValMut<'a>, T, marker::LeafOrInternal>, marker::Edge>
 {
     fn get_mut_next(&self) -> &'a mut T {
         let Self { node, idx, .. } = self;
@@ -1490,12 +1517,12 @@ impl<'a, T>
     }
 }
 
-pub struct Iter<'a, T> {
+struct IterImpl<'a, T> {
     left: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
     right: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
 }
 
-impl<'a, T> Iter<'a, T> {
+impl<'a, T> IterImpl<'a, T> {
     fn new(
         left: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
         right: Handle<ImmutNodeRef<'a, T>, marker::Edge>,
@@ -1503,8 +1530,7 @@ impl<'a, T> Iter<'a, T> {
         Self { left, right }
     }
 }
-
-impl<'a, T: 'a> Iterator for Iter<'a, T> {
+impl<'a, T: 'a> Iterator for IterImpl<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         (!self.left.eq(&self.right)).then(|| {
@@ -1514,13 +1540,143 @@ impl<'a, T: 'a> Iterator for Iter<'a, T> {
         })
     }
 }
-impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
+impl<'a, T: 'a> DoubleEndedIterator for IterImpl<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         (!self.left.eq(&self.right)).then(|| {
             let res = self.right.get_prev();
             self.right.next_back();
             res
         })
+    }
+}
+
+struct IterMutImpl<'a, T> {
+    left: Handle<ValMutNodeRef<'a, T>, marker::Edge>,
+    right: Handle<ValMutNodeRef<'a, T>, marker::Edge>,
+}
+
+impl<'a, T: 'a> IterMutImpl<'a, T> {
+    fn new(
+        left: Handle<ValMutNodeRef<'a, T>, marker::Edge>,
+        right: Handle<ValMutNodeRef<'a, T>, marker::Edge>,
+    ) -> Self {
+        Self { left, right }
+    }
+}
+impl<'a, T: 'a> Iterator for IterMutImpl<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+        (!self.left.eq(&self.right)).then(|| {
+            let res = self.left.get_mut_next();
+            self.left.next();
+            res
+        })
+    }
+}
+impl<'a, T: 'a> DoubleEndedIterator for IterMutImpl<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        (!self.left.eq(&self.right)).then(|| {
+            let res = self.right.get_mut_prev();
+            self.right.next_back();
+            res
+        })
+    }
+}
+
+struct IntoIterImpl<T> {
+    left: Handle<DyingNodeRef<T>, marker::Edge>,
+    right: Handle<DyingNodeRef<T>, marker::Edge>,
+}
+
+impl<T> IntoIterImpl<T> {
+    fn new(
+        left: Handle<DyingNodeRef<T>, marker::Edge>,
+        right: Handle<DyingNodeRef<T>, marker::Edge>,
+    ) -> Self {
+        Self { left, right }
+    }
+}
+impl<T> Iterator for IntoIterImpl<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        (!self.left.eq(&self.right)).then(|| {
+            let res = unsafe { self.left.take_next() };
+            self.left.next();
+            res
+        })
+    }
+}
+impl<T> DoubleEndedIterator for IntoIterImpl<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        (!self.left.eq(&self.right)).then(|| {
+            let res = unsafe { self.right.take_prev() };
+            self.right.next_back();
+            res
+        })
+    }
+}
+
+pub struct Iter<'a, T>(Option<IterImpl<'a, T>>);
+pub struct IterMut<'a, T>(Option<IterMutImpl<'a, T>>);
+pub struct IntoIter<T>(Option<IntoIterImpl<T>>);
+
+impl<'a, T> Iter<'a, T> {
+    fn new(root: Option<&'a OwnedNodeRef<T>>) -> Self {
+        Self(root.map(|root| root.borrow().iter()))
+    }
+}
+
+impl<'a, T> IterMut<'a, T> {
+    fn new(root: Option<&'a mut OwnedNodeRef<T>>) -> Self {
+        Self(root.map(|root| root.borrow_valmut().iter()))
+    }
+}
+
+impl<T> IntoIter<T> {
+    fn new(root: Option<OwnedNodeRef<T>>) -> Self {
+        Self(root.map(|root| root.take().iter()))
+    }
+}
+impl<T> Drop for IntoIter<T> {
+    fn drop(&mut self) {
+        if let Some(mut iter) = self.0.take() {
+            while let Some(_) = iter.next() {}
+            iter.left.node.root().drop_subtree(true);
+        }
+    }
+}
+
+impl<'a, T: 'a> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next())
+    }
+}
+impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next_back())
+    }
+}
+impl<'a, T: 'a> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next())
+    }
+}
+impl<'a, T: 'a> DoubleEndedIterator for IterMut<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next_back())
+    }
+}
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next())
+    }
+}
+impl<T> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next_back())
     }
 }
 
@@ -1613,13 +1769,82 @@ impl<T> BTreeSeq<T> {
             Self { root: Some(root.forget_type()) }
         }
     }
+
+    pub fn iter<'a>(&'a self) -> Iter<'a, T> { Iter::new(self.root.as_ref()) }
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
+        IterMut::new(self.root.as_mut())
+    }
+    pub fn into_iter(mut self) -> IntoIter<T> {
+        IntoIter::new(self.root.take())
+    }
+}
+
+impl<T> Default for BTreeSeq<T> {
+    fn default() -> Self { Self::new() }
+}
+impl<T: Clone> Clone for BTreeSeq<T> {
+    fn clone(&self) -> Self { self.iter().cloned().collect() }
+}
+
+impl<T: PartialEq> PartialEq for BTreeSeq<T> {
+    fn eq(&self, other: &Self) -> bool { self.iter().eq(other.iter()) }
+}
+impl<T: Eq> Eq for BTreeSeq<T> {}
+
+impl<T: PartialOrd> PartialOrd for BTreeSeq<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+impl<T: Ord> Ord for BTreeSeq<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for BTreeSeq<T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_list().entries(self.iter()).finish()
+    }
+}
+
+impl<T> FromIterator<T> for BTreeSeq<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut root = NodeRef::new_leaf();
+        let mut mut_node = root.borrow_mut();
+        let mut trace_root = None;
+        for elt in iter {
+            if let Some(new_root) =
+                unsafe { mut_node.insert(mut_node.buflen() as _, elt) }
+            {
+                let _ = trace_root.insert(new_root);
+            }
+        }
+        let mut root = trace_root
+            .map(|node| node.forget_type())
+            .unwrap_or_else(|| root.forget_type());
+        root.borrow_mut().correct_treelen_invariant_subtree();
+
+        if root.treelen() == 0 {
+            unsafe { drop(Box::from_raw(root.node.as_ptr())) }
+            Self::new()
+        } else {
+            Self { root: Some(root) }
+        }
+    }
+}
+impl<T> Extend<T> for BTreeSeq<T> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        let tmp: BTreeSeq<T> = iter.into_iter().collect();
+        self.append(tmp);
+    }
 }
 
 #[cfg(test)]
 mod debug;
 
 #[cfg(test)]
-mod tests {
+mod tests_node {
     use super::*;
 
     #[test]
@@ -1825,5 +2050,20 @@ mod tests {
             test_iter(n);
         }
         test_iter(1_000_000);
+    }
+}
+
+#[cfg(test)]
+mod tests_tree {
+    use super::*;
+
+    #[test]
+    fn sanity_check() {
+        let a = BTreeSeq::<()>::default();
+        assert!(a.is_empty());
+        assert_eq!(a.len(), 0);
+        assert!(a.iter().eq(None::<&()>));
+        assert_eq!(a, a);
+        assert_eq!(a, a.clone());
     }
 }
