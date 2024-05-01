@@ -36,12 +36,8 @@ enum ForceResult<BorrowType, T> {
     Internal(NodeRef<BorrowType, T, marker::Internal>),
 }
 
-struct RootNode<T> {
-    node_ref: OwnedNodeRef<T>,
-}
-
 pub struct BTreeSeq<T> {
-    root: Option<NonNull<RootNode<T>>>,
+    root: Option<OwnedNodeRef<T>>,
 }
 
 mod marker {
@@ -548,6 +544,12 @@ impl<T> OwnedNodeRef<T> {
     unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
         debug_assert!(i <= self.treelen());
         self.borrow_mut().select_leaf(i).split()
+    }
+    /// # Safety
+    /// `self.treelen() == 1`
+    unsafe fn take_single(self) -> T {
+        debug_assert_eq!(self.treelen(), 1);
+        unsafe { (*self.node.as_ptr()).buf[0].assume_init_read() }
     }
     fn drop_subtree(&mut self) {
         let dying: DyingNodeRef<_> = unsafe { self.cast() };
@@ -1519,6 +1521,97 @@ impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
             self.right.next_back();
             res
         })
+    }
+}
+
+impl<T> BTreeSeq<T> {
+    pub fn new() -> Self { Self { root: None } }
+
+    pub fn len(&self) -> usize {
+        self.root.as_ref().map(|root| root.treelen()).unwrap_or(0)
+    }
+    pub fn is_empty(&self) -> bool { self.root.is_none() }
+
+    pub fn push_back(&mut self, elt: T) {
+        if let Some(root) = self.root.as_mut() {
+            root.borrow_mut().push_back(elt);
+        } else {
+            *self = Self::singleton(elt);
+        }
+    }
+    pub fn push_front(&mut self, elt: T) {
+        if let Some(root) = self.root.as_mut() {
+            root.borrow_mut().push_front(elt);
+        } else {
+            *self = Self::singleton(elt);
+        }
+    }
+
+    pub fn pop_back(&mut self) -> Option<T> {
+        let len = self.len();
+        self.root.take().map(|root| unsafe {
+            let [left, right] = root.split_off(len - 1);
+            self.root = left;
+            right.unwrap().take_single()
+        })
+    }
+    pub fn pop_front(&mut self) -> Option<T> {
+        self.root.take().map(|root| unsafe {
+            let [left, right] = root.split_off(1);
+            self.root = right;
+            left.unwrap().take_single()
+        })
+    }
+
+    pub fn adjoin(&mut self, elt: T, mut other: Self) {
+        self.root = match (self.root.take(), other.root.take()) {
+            (Some(left), Some(right)) => Some(left.adjoin(elt, right)),
+            (Some(mut left), None) => left
+                .borrow_mut()
+                .push_back(elt)
+                .map(|o| o.forget_type())
+                .or_else(|| Some(left)),
+            (None, Some(mut right)) => right
+                .borrow_mut()
+                .push_front(elt)
+                .map(|o| o.forget_type())
+                .or_else(|| Some(right)),
+            (None, None) => Self::singleton(elt).root.take(),
+        };
+    }
+    pub fn append(&mut self, mut other: Self) {
+        if let Some(elt) = other.pop_front() {
+            self.adjoin(elt, other)
+        }
+    }
+
+    pub fn split_off(&mut self, at: usize) -> Self {
+        #[cold]
+        fn assert_failed(at: usize, len: usize) -> ! {
+            panic!("`at` split index (is {at}) should be <= len (is {len})");
+        }
+        if at > self.len() {
+            assert_failed(at, self.len());
+        }
+
+        if at == 0 {
+            Self { root: self.root.take() }
+        } else if at == self.len() {
+            Self::new()
+        } else {
+            let [left, right] =
+                unsafe { self.root.take().unwrap().split_off(at) };
+            self.root = left;
+            Self { root: right }
+        }
+    }
+
+    fn singleton(elt: T) -> Self {
+        let mut root = NodeRef::new_leaf();
+        unsafe {
+            root.borrow_mut().insert(0, elt);
+            Self { root: Some(root.forget_type()) }
+        }
     }
 }
 
