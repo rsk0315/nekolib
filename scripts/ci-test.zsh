@@ -79,9 +79,9 @@ cargo_test() {
     [[ "$failed" == t ]]
 }
 
-cargo_test "$pass_lib" "$fail_lib" "$notest_lib" '--lib --release' ''
+cargo_test "$pass_lib" "$fail_lib" "$notest_lib" '--lib --release'
 (( ? == 0 )) || fail=t
-cargo_test "$pass_doc" "$fail_doc" "$notest_doc" '--doc --release' ''
+cargo_test "$pass_doc" "$fail_doc" "$notest_doc" '--doc --release'
 (( ? == 0 )) || fail=t
 cargo_test "$pass_miri" "$fail_miri" "$notest_miri" '--lib' t
 (( ? == 0 )) || fail=t
