@@ -2,13 +2,14 @@ use std::{
     fmt,
     marker::PhantomData,
     mem::MaybeUninit,
-    ops::{Index, IndexMut},
+    ops::{self, Index, IndexMut, RangeBounds},
     ptr::{self, NonNull},
 };
 
 use array_insertion::{array_insert, array_splice};
 use array_removal::array_remove;
 use array_rotation::{array_rotate_2, array_rotate_3};
+use usize_bounds::UsizeBounds;
 
 const B: usize = 4;
 const CAPACITY: usize = 2 * B - 1;
@@ -391,6 +392,18 @@ impl<'a, T> NodeRef<marker::Immut<'a>, T, marker::LeafOrInternal> {
         let right = self.last_leaf().forget_node_type();
         IterImpl::new(left, right)
     }
+    /// # Safety
+    /// The `.treelen` invariant is met and `0 <= start <= end <= treelen`
+    unsafe fn range(
+        &self,
+        ops::Range { start, end }: ops::Range<usize>,
+    ) -> IterImpl<'a, T> {
+        unsafe {
+            let left = self.select_leaf(start).forget_node_type();
+            let right = self.select_leaf(end).forget_node_type();
+            IterImpl::new(left, right)
+        }
+    }
 }
 
 impl<'a, T: 'a> NodeRef<marker::ValMut<'a>, T, marker::LeafOrInternal> {
@@ -398,6 +411,18 @@ impl<'a, T: 'a> NodeRef<marker::ValMut<'a>, T, marker::LeafOrInternal> {
         let left = self.first_leaf().forget_node_type();
         let right = self.last_leaf().forget_node_type();
         IterMutImpl::new(left, right)
+    }
+    /// # Safety
+    /// The `.treelen` invariant is met and `0 <= start <= end <= treelen`
+    unsafe fn range(
+        &mut self,
+        ops::Range { start, end }: ops::Range<usize>,
+    ) -> IterMutImpl<'a, T> {
+        unsafe {
+            let left = self.select_leaf(start).forget_node_type();
+            let right = self.select_leaf(end).forget_node_type();
+            IterMutImpl::new(left, right)
+        }
     }
 }
 
@@ -1742,6 +1767,50 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
     }
 }
 
+pub struct Range<'a, T>(Option<IterImpl<'a, T>>);
+pub struct RangeMut<'a, T>(Option<IterMutImpl<'a, T>>);
+
+impl<'a, T> Range<'a, T> {
+    fn new(
+        root: Option<&'a OwnedNodeRef<T>>,
+        range: ops::Range<usize>,
+    ) -> Self {
+        Self(root.map(|root| unsafe { root.borrow().range(range) }))
+    }
+}
+
+impl<'a, T> RangeMut<'a, T> {
+    fn new(
+        root: Option<&'a mut OwnedNodeRef<T>>,
+        range: ops::Range<usize>,
+    ) -> Self {
+        Self(root.map(|root| unsafe { root.borrow_valmut().range(range) }))
+    }
+}
+
+impl<'a, T: 'a> Iterator for Range<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next())
+    }
+}
+impl<'a, T: 'a> DoubleEndedIterator for Range<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next_back())
+    }
+}
+impl<'a, T: 'a> Iterator for RangeMut<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next())
+    }
+}
+impl<'a, T: 'a> DoubleEndedIterator for RangeMut<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.as_mut().and_then(|iter| iter.next_back())
+    }
+}
+
 impl<T> BTreeSeq<T> {
     pub fn new() -> Self { Self { root: None } }
 
@@ -1838,6 +1907,18 @@ impl<T> BTreeSeq<T> {
     }
     pub fn into_iter(mut self) -> IntoIter<T> {
         IntoIter::new(self.root.take())
+    }
+
+    pub fn range<'a>(&'a self, range: impl RangeBounds<usize>) -> Range<'a, T> {
+        let range = range.to_range(self.len());
+        Range::new(self.root.as_ref(), range)
+    }
+    pub fn range_mut<'a>(
+        &'a mut self,
+        range: impl RangeBounds<usize>,
+    ) -> RangeMut<'a, T> {
+        let range = range.to_range(self.len());
+        RangeMut::new(self.root.as_mut(), range)
     }
 
     pub fn bisect<'a, F>(&'a self, predicate: F) -> (Option<&'a T>, usize)
@@ -2256,5 +2337,6 @@ mod tests_tree {
         a.extend(2..30);
         assert_eq!(a.len(), 30);
         assert_eq!(a.bisect(|&x| x < 20), (Some(&20), 20));
+        assert!(a.range(10..15).copied().eq(10..15));
     }
 }
