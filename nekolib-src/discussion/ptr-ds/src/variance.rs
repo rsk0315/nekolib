@@ -143,6 +143,17 @@
 //! 一方、`fn() -> T` は「返す値が `T` である関数である」であり、`fn() -> S` は `fn() -> T`
 //! の制約も満たしているため、`fn() -> S <: fn() -> T` となる。
 //!
+//! ### Higher-rank trait bounds
+//!
+//! ```compile_fail
+//! type SubTy = for<'a> fn(&'a i32) -> i32;
+//! type SuperTy = fn(&'static i32) -> i32;
+//!
+//! let sub: SubTy = |&x| x;
+//! let sup: SuperTy = sub;
+//! let sub_back: SubTy = sup; // CE
+//! ```
+//!
 //! ## Notes
 //!
 //! さて、Unsafe Rust の文脈で variance がどのように重要になるのかを整理する必要がある。

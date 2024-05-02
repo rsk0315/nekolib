@@ -14,3 +14,4 @@ foldable_deque = { path = "foldable_deque" }
 rs01_dict = { path = "rs01_dict" }
 wavelet_matrix = { path = "wavelet_matrix" }
 fibonacci_heap = { path = "fibonacci_heap" }
+btree_seq = { path = "btree_seq" }
