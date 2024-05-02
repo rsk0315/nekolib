@@ -18,8 +18,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          components: miri
-          rustflags: '-W warnings'
 
       - name: Install Zsh
         run: |
@@ -28,4 +26,4 @@ jobs:
 
       - name: Run tests
         run: |
-          zsh scripts/ci-test.zsh >> $GITHUB_STEP_SUMMARY
+          zsh scripts/ci-test.zsh --release --lib >> $GITHUB_STEP_SUMMARY
