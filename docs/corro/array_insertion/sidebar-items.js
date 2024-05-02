@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["array_insert","array_splice"]};

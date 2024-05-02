@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["draft","maybe_uninit","rawptr","sample_handle","sample_list","sample_noderef","sb","variance"]};
+window.SIDEBAR_ITEMS = {"mod":["alias_model","maybe_uninit","rawptr","variance"]};

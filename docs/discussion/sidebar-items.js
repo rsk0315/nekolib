@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["decomposable","dp","draft","maybe_uninit","plane_sweep","ptr_ds","rawptr","sample_handle","sample_list","sample_noderef","sb","variance"]};
+window.SIDEBAR_ITEMS = {"mod":["alias_model","decomposable","dp","maybe_uninit","plane_sweep","ptr_ds","rawptr","variance"]};

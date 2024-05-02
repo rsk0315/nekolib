@@ -1,11 +1,15 @@
 var srcIndex = new Map(JSON.parse('[\
 ["algo",["",[],["lib.rs"]]],\
+["array_insertion",["",[],["lib.rs"]]],\
+["array_removal",["",[],["lib.rs"]]],\
+["array_rotation",["",[],["lib.rs"]]],\
 ["assoc_list",["",[],["lib.rs"]]],\
 ["bfs01",["",[],["lib.rs"]]],\
 ["bin_iter",["",[],["lib.rs"]]],\
 ["bisect",["",[],["lib.rs"]]],\
 ["bit_vector",["",[],["lib.rs"]]],\
 ["borrow",["",[],["lib.rs"]]],\
+["btree_seq",["",[],["lib.rs"]]],\
 ["bucket_sort",["",[],["lib.rs"]]],\
 ["cfg_if",["",[],["lib.rs"]]],\
 ["concat_monoid",["",[],["lib.rs"]]],\
@@ -51,7 +55,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["poc",["",[],["lib.rs"]]],\
 ["ppv_lite86",["",[["x86_64",[],["mod.rs","sse2.rs"]]],["lib.rs","soft.rs","types.rs"]]],\
 ["proconio",["",[],["lib.rs"]]],\
-["ptr_ds",["",[],["draft.rs","lib.rs","maybe_uninit.rs","rawptr.rs","sample_handle.rs","sample_list.rs","sample_noderef.rs","sb.rs","variance.rs"]]],\
+["ptr_ds",["",[],["alias_model.rs","draft.rs","lib.rs","maybe_uninit.rs","rawptr.rs","sample_handle.rs","sample_list.rs","sample_noderef.rs","variance.rs"]]],\
 ["rand",["",[["distributions",[],["bernoulli.rs","distribution.rs","float.rs","integer.rs","mod.rs","other.rs","slice.rs","uniform.rs","utils.rs","weighted.rs","weighted_index.rs"]],["rngs",[["adapter",[],["mod.rs","read.rs","reseeding.rs"]]],["mock.rs","mod.rs","std.rs","thread.rs"]],["seq",[],["index.rs","mod.rs"]]],["lib.rs","prelude.rs","rng.rs"]]],\
 ["rand_chacha",["",[],["chacha.rs","guts.rs","lib.rs"]]],\
 ["rand_core",["",[],["block.rs","error.rs","impls.rs","le.rs","lib.rs","os.rs"]]],\

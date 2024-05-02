@@ -1,0 +1,1 @@
+searchState.loadedDescShard("array_rotation", 0, "Rotate arrays and elements.\nRotate two arrays.\nRotate two arrays and one element.")

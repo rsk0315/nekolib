@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["borrow"],"struct":["DormantMutRef"]};
+window.SIDEBAR_ITEMS = {"fn":["array_insert","array_remove","array_rotate_2","array_rotate_3","array_splice"],"mod":["array_insertion","array_removal","array_rotation","borrow"],"struct":["DormantMutRef"]};
