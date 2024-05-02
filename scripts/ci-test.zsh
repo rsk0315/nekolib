@@ -5,13 +5,10 @@ which gmktemp >&/dev/null && mktemp=gmktemp || mktemp=mktemp
 
 pass_lib=$($mktemp --suffix=.md)
 pass_doc=$($mktemp --suffix=.md)
-pass_miri=$($mktemp --suffix=.md)
 fail_lib=$($mktemp --suffix=.md)
 fail_doc=$($mktemp --suffix=.md)
-fail_miri=$($mktemp --suffix=.md)
 notest_lib=$($mktemp --suffix=.md)
 notest_doc=$($mktemp --suffix=.md)
-notest_miri=$($mktemp --suffix=.md)
 
 cargo_test() {
     temp=$($mktemp --suffix=.json)
@@ -19,7 +16,6 @@ cargo_test() {
     fail="$2"
     notest="$3"
     opt="$4"
-    unsafe="$5"
     last_pass_dir=''
     last_fail_dir=''
     last_notest_dir=''
@@ -29,14 +25,8 @@ cargo_test() {
         dir="${${(s:/:)dir}[2]}"
         for toml in nekolib-src/$dir/*/Cargo.toml; do
             crate="${${(s:/:)toml}[3]}"
-
-            if [[ "$unsafe" == t ]]; then
-                if RUSTFLAGS=-Dunsafe_code cargo build --manifest-path=$toml &>/dev/null; then
-                    continue
-                fi
-            fi
     
-            cargo ${unsafe:+miri} test "${(s: :)opt}" --manifest-path=$toml --message-format=json \
+            cargo test "${(s: :)opt}" --manifest-path=$toml --message-format=json \
                   -- -Z unstable-options --format=json \
                 | jq -rs 'map(select(.event != "started") | select(.type == "test"))' >$temp
 
@@ -83,8 +73,6 @@ cargo_test "$pass_lib" "$fail_lib" "$notest_lib" '--lib --release'
 (( ? == 0 )) || fail=t
 cargo_test "$pass_doc" "$fail_doc" "$notest_doc" '--doc --release'
 (( ? == 0 )) || fail=t
-cargo_test "$pass_miri" "$fail_miri" "$notest_miri" '--lib' t
-(( ? == 0 )) || fail=t
 
 if [[ -s $fail_lib ]]; then
     echo '## :x: failed (`--lib`)'
@@ -94,11 +82,6 @@ fi
 if [[ -s $fail_doc ]]; then
     echo '## :x: failed (`--doc`)'
     cat $fail_doc
-fi
-
-if [[ -s $fail_miri ]]; then
-    echo '## :x: failed (`--lib` with Miri)'
-    cat $fail_miri
 fi
 
 if [[ -s $pass_lib ]]; then
@@ -111,11 +94,6 @@ if [[ -s $pass_doc ]]; then
     cat $pass_doc
 fi
 
-if [[ -s $pass_miri ]]; then
-    echo '## :sparkles: passed (`--lib` with Miri)'
-    cat $pass_miri
-fi
-
 if [[ -s $notest_lib ]]; then
     echo '## :smiling_face_with_tear: not tested (`--lib`)'
     cat $notest_lib
@@ -124,11 +102,6 @@ fi
 if [[ -s $notest_doc ]]; then
     echo '## :smiling_face_with_tear: not tested (`--doc`)'
     cat $notest_doc
-fi
-
-if [[ -s $notest_miri ]]; then
-    echo '## :smiling_face_with_tear: not tested (`--lib` with Miri)'
-    cat $notest_miri
 fi
 
 [[ "$failed" != t ]]
