@@ -19,7 +19,9 @@ cargo_test() {
             local crate="${${(s:/:)toml}[3]}"
 
             local test_name=(
-                $(cargo test --lib --release --manifest-path=$toml -- -Z unstable-options --format=json --list)
+                $(cargo test --lib --release --manifest-path=$toml \
+                        -- -Z unstable-options --format=json --list \
+                    | jq -rs 'map(select(.event == "discovered").name)[]')
             )
             echo "test_name: (${test_name[*]})" >&2
             local event
@@ -45,7 +47,9 @@ cargo_test() {
                 miri_test_name=()
             else
                 miri_test_name=(
-                    $(cargo miri test --lib --manifest-path=$toml -- -Z unstable-options --format=json --list)
+                    $(cargo miri test --lib --manifest-path=$toml \
+                            -- -Z unstable-options --format=json --list \
+                          | jq -rs 'map(select(.event == "discovered").name)[]')
                 )
             fi
             echo "miri_test_name: (${miri_test_name[*]})" >&2
