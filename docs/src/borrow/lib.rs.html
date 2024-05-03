@@ -735,12 +735,12 @@
                 }
                 <span class="prelude-val">Some</span>(handle) =&gt; {
                     <span class="kw">let </span>was_none = handle.is_none();
-                    <span class="kw-2">*</span>handle = <span class="prelude-val">Some</span>(value);
+                    <span class="kw">let </span>new = handle.insert(value);
                     <span class="kw">let </span>base = <span class="kw">unsafe </span>{ <span class="self">self</span>.dormant_base.awaken() };
                     <span class="kw">if </span>was_none {
                         base.len += <span class="number">1</span>;
                     }
-                    base.buf.get_mut(<span class="self">self</span>.key).unwrap().as_mut().unwrap()
+                    new
                 }
             }
         }
