@@ -402,6 +402,7 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! 生ポインタ。
 //!
 //! ## Preliminaries
@@ -544,6 +545,7 @@
 //! - [rust-lang / **miri**](https://github.com/rust-lang/miri)
 
 </span><span class="attr">#[test]
+#[ignore]
 </span><span class="kw">fn </span>invalidate() {
     <span class="kw">struct </span>Foo(u32, u32);
     <span class="kw">let </span><span class="kw-2">mut </span>foo = Foo(<span class="number">10</span>, <span class="number">20</span>);
