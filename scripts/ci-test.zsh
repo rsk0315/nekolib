@@ -42,7 +42,7 @@ cargo_test() {
             out "$dir" "$crate" "$t" doc "$event" >>$json
             
             local miri_test_name
-            if RUSTFLAGS=-Dunsafe_code cargo build --release; then
+            if RUSTFLAGS=-Dunsafe_code cargo build --release --manifest-path=$toml; then
                 # If it has no unsafety, we do not have to test against Miri.
                 miri_test_name=()
             else
