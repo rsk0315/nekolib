@@ -83,6 +83,6 @@ cargo_test "$temp"
     cat "$temp" | jq -s
     echo '```'
     echo '---'
-    cat "$temp" | python $(dirname $0)/ci-test-format.py
+    cat "$temp" | jq -s | python $(dirname $0)/ci-test-format.py
 } >>"$summary"
 ! cat "$temp" | jq -r .event | grep -q failed
