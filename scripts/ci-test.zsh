@@ -5,6 +5,10 @@ which gmktemp >&/dev/null && mktemp=gmktemp || mktemp=mktemp
 
 summary="$1"
 
+out() {
+    jq -n --arg dir "$1" --arg crate "$2" --arg test_name "$3" --arg type "$4" --arg event "$5" \
+       '{"dir": $dir, "crate": $crate, "test_name": $test_name, "type": $type, "event": $event}'
+}
 
 cargo_test() {
     json=$1
@@ -15,47 +19,50 @@ cargo_test() {
             local crate="${${(s:/:)toml}[3]}"
 
             local test_name=(
-                $(cargo test --release --manifest-path=$toml -- -Z unstable-options --format=json)
+                $(cargo test --lib --release --manifest-path=$toml -- -Z unstable-options --format=json)
             )
+            local event
             for t in ${test_name[@]}; do
-                local event
-                if cargo test --release --manifest-path=$toml --exact "$test_name"; then
+                if cargo test --release --manifest-path=$toml -- --exact "$test_name"; then
                     event=ok
                 else
                     event=failed
                 fi
-                jq -n --arg test_name "$test_name" --arg event "$event" >>$json \
-                   '{"name": $test_name, "type": "release", "event": $event}'
+                out "$dir" "$crate" "$test_name" release "$event" >>$json
             done
 
+            if cargo test --doc --manifest-path=$toml; then
+                event=ok
+            else
+                event=failed
+            fi
+            out "$dir" "$crate" "$test_name" doc "$event" >>$json
+            
             local miri_test_name
             if RUSTFLAGS=-Dunsafe_code cargo build --release; then
                 # If it has no unsafety, we do not have to test against Miri.
                 miri_test_name=()
             else
                 miri_test_name=(
-                    $(cargo miri test --manifest-path=$toml -- -Z unstable-options --format=json)
-                )                
+                    $(cargo miri test --lib --manifest-path=$toml -- -Z unstable-options --format=json)
+                )
             fi
             for t in ${test_name[@]}; do
-                local event
                 export MIRIFLAGS=
-                if cargo miri test --manifest-path=$toml --exact "$test_name"; then
+                if cargo miri test --manifest-path=$toml -- --exact "$test_name"; then
                     event=ok
                 else
                     event=failed
                 fi
-                jq -n --arg test_name "$test_name" --arg event "$event" >>$json \
-                   '{"name": $test_name, "type": "stacked-borrows", "event": $event"}'
+                out "$dir" "$crate" "$test_name" stacked-borrows "$event" >>$json
 
                 MIRIFLAGS=-Zmiri-tree-borrows
-                if cargo miri test --manifest-path=$toml --exact "$test_name"; then
+                if cargo miri test --manifest-path=$toml -- --exact "$test_name"; then
                     event=ok
                 else
                     event=failed
                 fi
-                jq -n --arg test_name "$test_name" --arg event "$event" >>$json \
-                   '{"name": $test_name, "type": "stacked-borrows", "event": $event"}'
+                out "$dir" "$crate" "$test_name" tree-borrows "$event" >>$json
             done
         done
     done
