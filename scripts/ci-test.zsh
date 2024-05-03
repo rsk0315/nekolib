@@ -19,8 +19,9 @@ cargo_test() {
             local crate="${${(s:/:)toml}[3]}"
 
             local test_name=(
-                $(cargo test --lib --release --manifest-path=$toml -- -Z unstable-options --format=json)
+                $(cargo test --lib --release --manifest-path=$toml -- -Z unstable-options --format=json --list)
             )
+            echo "test_name: (${test_name[*]})" >&2
             local event
             for t in ${test_name[@]}; do
                 if cargo test --release --manifest-path=$toml -- --exact "$test_name"; then
@@ -44,9 +45,10 @@ cargo_test() {
                 miri_test_name=()
             else
                 miri_test_name=(
-                    $(cargo miri test --lib --manifest-path=$toml -- -Z unstable-options --format=json)
+                    $(cargo miri test --lib --manifest-path=$toml -- -Z unstable-options --format=json --list)
                 )
             fi
+            echo "miri_test_name: (${miri_test_name[*]})" >&2
             for t in ${test_name[@]}; do
                 export MIRIFLAGS=
                 if cargo miri test --manifest-path=$toml -- --exact "$test_name"; then
