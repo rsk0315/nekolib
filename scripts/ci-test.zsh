@@ -3,105 +3,69 @@ setopt nullglob
 
 which gmktemp >&/dev/null && mktemp=gmktemp || mktemp=mktemp
 
-pass_lib=$($mktemp --suffix=.md)
-pass_doc=$($mktemp --suffix=.md)
-fail_lib=$($mktemp --suffix=.md)
-fail_doc=$($mktemp --suffix=.md)
-notest_lib=$($mktemp --suffix=.md)
-notest_doc=$($mktemp --suffix=.md)
+summary="$1"
+
 
 cargo_test() {
-    temp=$($mktemp --suffix=.json)
-    pass="$1"
-    fail="$2"
-    notest="$3"
-    opt="$4"
-    last_pass_dir=''
-    last_fail_dir=''
-    last_notest_dir=''
-    failed=''
+    json=$1
 
     for dir in nekolib-src/*/; do
-        dir="${${(s:/:)dir}[2]}"
+        local dir="${${(s:/:)dir}[2]}"
         for toml in nekolib-src/$dir/*/Cargo.toml; do
-            crate="${${(s:/:)toml}[3]}"
-    
-            cargo test "${(s: :)opt}" --manifest-path=$toml --message-format=json \
-                  -- -Z unstable-options --format=json \
-                | jq -rs 'map(select(.event != "started") | select(.type == "test"))' >$temp
+            local crate="${${(s:/:)toml}[3]}"
 
-            tested=''
-            if cat $temp | jq -e '.[] | select(.event == "ok")' >/dev/null; then
-                # some test passed
-                tested=t
-                if [[ $last_pass_dir != $dir ]]; then
-                    echo "### \`$dir\`" >>$pass
-                    last_pass_dir=$dir
+            local test_name=(
+                $(cargo test --release --manifest-path=$toml -- -Z unstable-options --format=json)
+            )
+            for t in ${test_name[@]}; do
+                local event
+                if cargo test --release --manifest-path=$toml --exact "$test_name"; then
+                    event=ok
+                else
+                    event=failed
                 fi
-                echo "- \`$crate\`" >>$pass
-                cat $temp \
-                    | jq -r '.[] | select(.event == "ok") | .name' \
-                    | sort | sed 's/.*/  - `&`/' >>$pass
+                jq -n --arg test_name "$test_name" --arg event "$event" >>$json \
+                   '{"name": $test_name, "type": "release", "event": $event}'
+            done
+
+            local miri_test_name
+            if RUSTFLAGS=-Dunsafe_code cargo build --release; then
+                # If it has no unsafety, we do not have to test against Miri.
+                miri_test_name=()
+            else
+                miri_test_name=(
+                    $(cargo miri test --manifest-path=$toml -- -Z unstable-options --format=json)
+                )                
             fi
-            if cat $temp | jq -e '.[] | select(.event == "failed")' >/dev/null; then
-                # some test failed
-                tested=t
-                failed=t
-                if [[ $last_fail_dir != $dir ]]; then
-                    echo "### \`$dir\`" >>$fail
-                    last_fail_dir=$dir
+            for t in ${test_name[@]}; do
+                local event
+                export MIRIFLAGS=
+                if cargo miri test --manifest-path=$toml --exact "$test_name"; then
+                    event=ok
+                else
+                    event=failed
                 fi
-                echo "- \`$crate\`" >>$fail
-                cat $temp \
-                    | jq -r '.[] | select(.event == "failed") | .name' \
-                    | sort | sed 's/.*/  - `&`/' >>$fail
-            fi
-            if [[ -z "$tested" ]]; then
-                if [[ $last_notest_dir != $dir ]]; then
-                    echo "### \`$dir\`" >>$notest
-                    last_notest_dir=$dir
+                jq -n --arg test_name "$test_name" --arg event "$event" >>$json \
+                   '{"name": $test_name, "type": "stacked-borrows", "event": $event"}'
+
+                MIRIFLAGS=-Zmiri-tree-borrows
+                if cargo miri test --manifest-path=$toml --exact "$test_name"; then
+                    event=ok
+                else
+                    event=failed
                 fi
-                echo "- \`$crate\`" >>$notest
-            fi
+                jq -n --arg test_name "$test_name" --arg event "$event" >>$json \
+                   '{"name": $test_name, "type": "stacked-borrows", "event": $event"}'
+            done
         done
     done
-
-    [[ "$failed" == t ]]
 }
 
-cargo_test "$pass_lib" "$fail_lib" "$notest_lib" '--lib --release'
-(( ? == 0 )) || fail=t
-cargo_test "$pass_doc" "$fail_doc" "$notest_doc" '--doc --release'
-(( ? == 0 )) || fail=t
-
-if [[ -s $fail_lib ]]; then
-    echo '## :x: failed (`--lib`)'
-    cat $fail_lib
-fi
-
-if [[ -s $fail_doc ]]; then
-    echo '## :x: failed (`--doc`)'
-    cat $fail_doc
-fi
-
-if [[ -s $pass_lib ]]; then
-    echo '## :sparkles: passed (`--lib`)'
-    cat $pass_lib
-fi
-
-if [[ -s $pass_doc ]]; then
-    echo '## :sparkles: passed (`--doc`)'
-    cat $pass_doc
-fi
-
-if [[ -s $notest_lib ]]; then
-    echo '## :smiling_face_with_tear: not tested (`--lib`)'
-    cat $notest_lib
-fi
-
-if [[ -s $notest_doc ]]; then
-    echo '## :smiling_face_with_tear: not tested (`--doc`)'
-    cat $notest_doc
-fi
-
-[[ "$failed" != t ]]
+temp=$($mktemp --suffix=.json)
+cargo_test "$temp"
+{
+    echo '```'
+    cat "$temp" | jq -s
+    echo '```'
+} >>"$summary"
+! cat "$temp" | jq -r .event | grep failed
