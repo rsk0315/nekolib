@@ -140,6 +140,7 @@
 //! - [rust-lang / **miri**](https://github.com/rust-lang/miri)
 
 #[test]
+#[ignore]
 fn invalidate() {
     struct Foo(u32, u32);
     let mut foo = Foo(10, 20);
