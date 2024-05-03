@@ -45,8 +45,27 @@ def prettify_col(col, *, empty_ok=False):
         return f"**<span style={numer_style}>{ok}</span>** / <span style={denom_style}>{run}</span>"
 
 
+def status(row):
+    required = ["release"]
+    optional = ["doc", "stacked-borrows", "tree-borrows"]
+    if any(map(lambda k: row[k]["ok"] < row[k]["run"], required + optional)):
+        return ":x:"
+    elif any(map(lambda k: row[k]["run"] == 0, required)):
+        return ":warning:"
+    elif all(map(lambda k: row[k]["ok"] == row[k]["run"], required + optional)):
+        if row["doc"]["run"] > 0:
+            return ":sparkles:"
+        else:
+            return ":white_check_mark:"
+    else:
+        return ":thought_balloon:"
+
+
 def prettify(agg):
-    res = [["name", "lib", "doc", "lib (S)", "lib (T)"], [":--"] + [":-:"] * 4]
+    res = [
+        ["name", "lib", "doc", "lib (S)", "lib (T)", "status"],
+        [":--"] + [":-:"] * 5,
+    ]
     for (dir_k, dir_v) in agg.items():
         for (crate_k, d) in dir_v.items():
             td = [
@@ -55,6 +74,7 @@ def prettify(agg):
                 prettify_col(d["doc"]),
                 prettify_col(d["stacked-borrows"], empty_ok=True),
                 prettify_col(d["tree-borrows"], empty_ok=True),
+                status(d),
             ]
             res.append(td)
 
