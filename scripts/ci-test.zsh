@@ -37,9 +37,9 @@ cargo_test() {
             local doc=$(
                 cargo test --doc --manifest-path=$toml \
                       -- -Z unstable-options --format=json \
-                    | jq -rs 'map(select(.type == "test")) \
-                              | [(map(select(.event == "ok")) | length), \
-                                 (map(select([.event == "ok", .event == "failed"] | any)) | length)] \
+                    | jq -rs 'map(select(.type == "test"))
+                              | [(map(select(.event == "ok")) | length),
+                                 (map(select([.event == "ok", .event == "failed"] | any)) | length)]
                               | join("/")')
             out "$dir" "$crate" doc doc "$doc" >>$json
             
@@ -82,5 +82,7 @@ cargo_test "$temp"
     echo '```'
     cat "$temp" | jq -s
     echo '```'
+    echo '---'
+    cat "$temp" | python $(dirname $0)/ci-test-format.py
 } >>"$summary"
-! cat "$temp" | jq -r .event | grep failed
+! cat "$temp" | jq -r .event | grep -q failed
