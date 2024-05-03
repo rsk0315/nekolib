@@ -19,6 +19,7 @@ jobs:
         with:
           toolchain: nightly
           components: miri
+          rustflags: '-W warnings'
 
       - name: Install Zsh
         run: |

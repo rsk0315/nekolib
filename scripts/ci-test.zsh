@@ -26,12 +26,12 @@ cargo_test() {
             echo "test_name: (${test_name[*]})" >&2
             local event
             for t in ${test_name[@]}; do
-                if cargo test --release --manifest-path=$toml -- --exact "$test_name"; then
+                if cargo test --release --manifest-path=$toml -- --exact "$t"; then
                     event=ok
                 else
                     event=failed
                 fi
-                out "$dir" "$crate" "$test_name" release "$event" >>$json
+                out "$dir" "$crate" "$t" release "$event" >>$json
             done
 
             if cargo test --doc --manifest-path=$toml; then
@@ -39,7 +39,7 @@ cargo_test() {
             else
                 event=failed
             fi
-            out "$dir" "$crate" "$test_name" doc "$event" >>$json
+            out "$dir" "$crate" "$t" doc "$event" >>$json
             
             local miri_test_name
             if RUSTFLAGS=-Dunsafe_code cargo build --release; then
@@ -53,22 +53,22 @@ cargo_test() {
                 )
             fi
             echo "miri_test_name: (${miri_test_name[*]})" >&2
-            for t in ${test_name[@]}; do
+            for t in ${miri_test_name[@]}; do
                 export MIRIFLAGS=
-                if cargo miri test --manifest-path=$toml -- --exact "$test_name"; then
+                if cargo miri test --manifest-path=$toml -- --exact "$t"; then
                     event=ok
                 else
                     event=failed
                 fi
-                out "$dir" "$crate" "$test_name" stacked-borrows "$event" >>$json
+                out "$dir" "$crate" "$t" stacked-borrows "$event" >>$json
 
                 MIRIFLAGS=-Zmiri-tree-borrows
-                if cargo miri test --manifest-path=$toml -- --exact "$test_name"; then
+                if cargo miri test --manifest-path=$toml -- --exact "$t"; then
                     event=ok
                 else
                     event=failed
                 fi
-                out "$dir" "$crate" "$test_name" tree-borrows "$event" >>$json
+                out "$dir" "$crate" "$t" tree-borrows "$event" >>$json
             done
         done
     done
