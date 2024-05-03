@@ -86,9 +86,9 @@ cargo_test "$temp"
 <details>
 <summary>raw JSON</summary>
 
-```json
+\`\`\`json
 $(cat temp | jq -s)
-```
+\`\`\`
 </details>
 EOF
 } >>"$summary"
