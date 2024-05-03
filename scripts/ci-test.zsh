@@ -1,7 +1,7 @@
 set -u
 setopt nullglob
 
-which gmktemp >&/dev/null && mktemp=gmktemp || mktemp=mktemp
+which gmktemp &>/dev/null && mktemp=gmktemp || mktemp=mktemp
 
 summary="$1"
 
@@ -26,7 +26,7 @@ cargo_test() {
             echo "test_name: (${test_name[*]})" >&2
             local event
             for t in ${test_name[@]}; do
-                if cargo test --release --manifest-path=$toml -- --exact "$t"; then
+                if cargo test --lib --release --manifest-path=$toml -- --exact "$t"; then
                     event=ok
                 else
                     event=failed
@@ -34,15 +34,17 @@ cargo_test() {
                 out "$dir" "$crate" "$t" release "$event" >>$json
             done
 
-            if cargo test --doc --manifest-path=$toml; then
-                event=ok
-            else
-                event=failed
-            fi
-            out "$dir" "$crate" "$t" doc "$event" >>$json
+            local doc=$(
+                cargo test --doc --manifest-path=$toml \
+                      -- -Z unstable-options --format=json \
+                    | jq -rs 'map(select(.type == "test")) \
+                              | [(map(select(.event == "ok")) | length), \
+                                 (map(select([.event == "ok", .event == "failed"] | any)) | length)] \
+                              | join("/")')
+            out "$dir" "$crate" doc doc "$doc" >>$json
             
             local miri_test_name
-            if RUSTFLAGS=-Dunsafe_code cargo build --release --manifest-path=$toml; then
+            if RUSTFLAGS=-Dunsafe_code cargo build --release --manifest-path=$toml &>/dev/null; then
                 # If it has no unsafety, we do not have to test against Miri.
                 miri_test_name=()
             else
