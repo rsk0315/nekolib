@@ -220,12 +220,12 @@ mod tests {
                 }
                 Some(handle) => {
                     let was_none = handle.is_none();
-                    *handle = Some(value);
+                    let new = handle.insert(value);
                     let base = unsafe { self.dormant_base.awaken() };
                     if was_none {
                         base.len += 1;
                     }
-                    base.buf.get_mut(self.key).unwrap().as_mut().unwrap()
+                    new
                 }
             }
         }
