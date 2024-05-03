@@ -42,11 +42,11 @@ def prettify_col(col, *, empty_ok=False):
     else:
         numer_style = OK if ok == run > 0 else FAILED
         denom_style = DIMMED
-        return f"<span style={numer_style}>{ok}</span> / **<span style={denom_style}>{run}</span>**"
+        return f"**<span style={numer_style}>{ok}</span>** / <span style={denom_style}>{run}</span>"
 
 
 def prettify(agg):
-    res = [["name", "lib", "doc", "lib (S)", "lib (T)"], ["---"] * 5]
+    res = [["name", "lib", "doc", "lib (S)", "lib (T)"], [":--"] + [":-:"] * 4]
     for (dir_k, dir_v) in agg.items():
         for (crate_k, d) in dir_v.items():
             td = [
@@ -63,6 +63,13 @@ def prettify(agg):
 
 def main():
     print(prettify(aggregate(json.loads(sys.stdin.read()))))
+    print(
+        """
+
+\* lib (S): `cargo miri test --lib` (Stacked Borrows)
+\* lib (T): `cargo miri test --lib` with `MIRIFLAGS=-Zmiri-tree-borrows`
+    """
+    )
 
 
 if __name__ == "__main__":

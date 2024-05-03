@@ -57,7 +57,7 @@ cargo_test() {
             echo "miri_test_name: (${miri_test_name[*]})" >&2
             for t in ${miri_test_name[@]}; do
                 export MIRIFLAGS=
-                if cargo miri test --manifest-path=$toml -- --exact "$t"; then
+                if cargo miri test --lib --manifest-path=$toml -- --exact "$t"; then
                     event=ok
                 else
                     event=failed
@@ -65,7 +65,7 @@ cargo_test() {
                 out "$dir" "$crate" "$t" stacked-borrows "$event" >>$json
 
                 MIRIFLAGS=-Zmiri-tree-borrows
-                if cargo miri test --manifest-path=$toml -- --exact "$t"; then
+                if cargo miri test --lib --manifest-path=$toml -- --exact "$t"; then
                     event=ok
                 else
                     event=failed
@@ -79,10 +79,17 @@ cargo_test() {
 temp=$($mktemp --suffix=.json)
 cargo_test "$temp"
 {
-    echo '```'
-    cat "$temp" | jq -s
-    echo '```'
-    echo '---'
     cat "$temp" | jq -s | python $(dirname $0)/ci-test-format.py
+    cat <<EOF
+
+---
+<details>
+<summary>raw JSON</summary>
+
+```json
+$(cat temp | jq -s)
+```
+</details>
+EOF
 } >>"$summary"
 ! cat "$temp" | jq -r .event | grep -q failed
