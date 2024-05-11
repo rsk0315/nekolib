@@ -1652,7 +1652,7 @@ impl<'a, K, V> SplitResult<'a, K, V, marker::Internal> {
 /// マーカー。
 ///
 /// 種類や lifetime を管理する。
-mod marker {
+pub mod marker {
     use std::marker::PhantomData;
 
     /// 葉ノードを指すことを表す。
