@@ -34,8 +34,6 @@ use std::{
     slice::SliceIndex,
 };
 
-use crate::node::marker::BorrowType;
-
 /// 各定数の値を定めるためのパラメータ。
 const B: usize = 6;
 /// 各ノードの最大要素数。
@@ -1351,7 +1349,13 @@ impl<'a, K, V>
     Handle<NodeRef<marker::Mut<'a>, K, V, marker::Internal>, marker::KV>
 {
     pub fn consider_for_balancing(self) -> BalancingContext<'a, K, V> {
-        todo!()
+        let self1 = unsafe { ptr::read(&self) };
+        let self2 = unsafe { ptr::read(&self) };
+        BalancingContext {
+            parent: self,
+            left_child: self1.left_edge().descend(),
+            right_child: self2.right_edge().descend(),
+        }
     }
 }
 
@@ -1359,24 +1363,45 @@ impl<'a, K, V> NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal> {
     pub fn choose_parent_kv(
         self,
     ) -> Result<LeftOrRight<BalancingContext<'a, K, V>>, Self> {
-        todo!()
+        match unsafe { ptr::read(&self) }.ascend() {
+            Ok(parent_edge) => match parent_edge.left_kv() {
+                Ok(left_parent_kv) => Ok(LeftOrRight::Left(BalancingContext {
+                    parent: unsafe { ptr::read(&left_parent_kv) },
+                    left_child: left_parent_kv.left_edge().descend(),
+                    right_child: self,
+                })),
+                Err(parent_edge) => match parent_edge.right_kv() {
+                    Ok(right_parent_kv) => {
+                        Ok(LeftOrRight::Right(BalancingContext {
+                            parent: unsafe { ptr::read(&right_parent_kv) },
+                            left_child: self,
+                            right_child: right_parent_kv.right_edge().descend(),
+                        }))
+                    }
+                    Err(_) => unreachable!("empty internal node"),
+                },
+            },
+            Err(root) => Err(root),
+        }
     }
 }
 
 impl<'a, K, V> BalancingContext<'a, K, V> {
-    pub fn left_child_len(&self) -> usize { todo!() }
-    pub fn right_child_len(&self) -> usize { todo!() }
+    pub fn left_child_len(&self) -> usize { self.left_child.len() }
+    pub fn right_child_len(&self) -> usize { self.right_child.len() }
     pub fn into_left_child(
         self,
     ) -> NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal> {
-        todo!()
+        self.left_child
     }
     pub fn into_right_child(
         self,
     ) -> NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal> {
-        todo!()
+        self.right_child
     }
-    pub fn can_merge(&self) -> bool { todo!() }
+    pub fn can_merge(&self) -> bool {
+        self.left_child.len() + 1 + self.right_child.len() <= CAPACITY
+    }
 }
 
 impl<'a, K: 'a, V: 'a> BalancingContext<'a, K, V> {
@@ -1390,19 +1415,77 @@ impl<'a, K: 'a, V: 'a> BalancingContext<'a, K, V> {
         self,
         result: F,
     ) -> R {
-        todo!()
+        let Handle { node: mut parent_node, idx: parent_idx, .. } = self.parent;
+        let old_parent_len = parent_node.len();
+        let mut left_node = self.left_child;
+        let old_left_len = left_node.len();
+        let mut right_node = self.right_child;
+        let right_len = right_node.len();
+        let new_left_len = old_left_len + 1 + right_len;
+
+        assert!(new_left_len <= CAPACITY);
+
+        unsafe {
+            *left_node.len_mut() = new_left_len as u16;
+
+            let parent_key = slice_remove(
+                parent_node.key_area_mut(..old_parent_len),
+                parent_idx,
+            );
+            left_node.key_area_mut(old_left_len).write(parent_key);
+            move_to_slice(
+                right_node.key_area_mut(..right_len),
+                left_node.key_area_mut(old_left_len + 1..new_left_len),
+            );
+
+            let parent_val = slice_remove(
+                parent_node.val_area_mut(..old_parent_len),
+                parent_idx,
+            );
+            left_node.val_area_mut(old_left_len).write(parent_val);
+            move_to_slice(
+                right_node.val_area_mut(..right_len),
+                left_node.val_area_mut(old_left_len + 1..new_left_len),
+            );
+
+            slice_remove(
+                &mut parent_node.edge_area_mut(..old_parent_len + 1),
+                parent_idx + 1,
+            );
+            parent_node
+                .correct_childrens_parent_links(parent_idx + 1..old_parent_len);
+            *parent_node.len_mut() -= 1;
+
+            if parent_node.height > 1 {
+                let mut left_node =
+                    left_node.reborrow_mut().cast_to_internal_unchecked();
+                let mut right_node = right_node.cast_to_internal_unchecked();
+                move_to_slice(
+                    right_node.edge_area_mut(..right_len + 1),
+                    left_node.edge_area_mut(old_left_len + 1..new_left_len + 1),
+                );
+
+                left_node.correct_childrens_parent_links(
+                    old_left_len + 1..new_left_len + 1,
+                );
+                drop(Box::from_raw(NodeRef::as_internal_ptr(&mut right_node)));
+            } else {
+                drop(Box::from_raw(right_node.node.as_ptr()));
+            }
+        }
+        result(parent_node, left_node)
     }
 
     pub fn merge_tracking_parent(
         self,
     ) -> NodeRef<marker::Mut<'a>, K, V, marker::Internal> {
-        todo!()
+        self.do_merge(|parent, _child| parent)
     }
 
     pub fn merge_tracking_child(
         self,
     ) -> NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal> {
-        todo!()
+        self.do_merge(|_parent, child| child)
     }
 
     pub fn merge_tracking_child_edge(
@@ -1412,7 +1495,18 @@ impl<'a, K: 'a, V: 'a> BalancingContext<'a, K, V> {
         NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal>,
         marker::Edge,
     > {
-        todo!()
+        let old_left_len = self.left_child.len();
+        let right_len = self.right_child.len();
+        assert!(match track_edge_idx {
+            LeftOrRight::Left(idx) => idx <= old_left_len,
+            LeftOrRight::Right(idx) => idx <= right_len,
+        });
+        let child = self.merge_tracking_child();
+        let new_idx = match track_edge_idx {
+            LeftOrRight::Left(idx) => idx,
+            LeftOrRight::Right(idx) => old_left_len + 1 + idx,
+        };
+        unsafe { Handle::new_edge(child, new_idx) }
     }
 
     pub fn steal_left(
@@ -1422,7 +1516,8 @@ impl<'a, K: 'a, V: 'a> BalancingContext<'a, K, V> {
         NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal>,
         marker::Edge,
     > {
-        todo!()
+        self.bulk_steal_left(1);
+        unsafe { Handle::new_edge(self.right_child, 1 + track_right_edge_idx) }
     }
 
     pub fn steal_right(
@@ -1432,7 +1527,8 @@ impl<'a, K: 'a, V: 'a> BalancingContext<'a, K, V> {
         NodeRef<marker::Mut<'a>, K, V, marker::LeafOrInternal>,
         marker::Edge,
     > {
-        todo!()
+        self.bulk_steal_right(1);
+        unsafe { Handle::new_edge(self.left_child, track_left_edge_idx) }
     }
 
     pub fn bulk_steal_left(&mut self, count: usize) { todo!() }
@@ -1446,7 +1542,7 @@ impl<BorrowType, K, V>
         self,
     ) -> Handle<NodeRef<BorrowType, K, V, marker::LeafOrInternal>, marker::Edge>
     {
-        todo!()
+        unsafe { Handle::new_edge(self.node.forget_type(), self.idx) }
     }
 }
 
@@ -1457,7 +1553,7 @@ impl<BorrowType, K, V>
         self,
     ) -> Handle<NodeRef<BorrowType, K, V, marker::LeafOrInternal>, marker::Edge>
     {
-        todo!()
+        unsafe { Handle::new_edge(self.node.forget_type(), self.idx) }
     }
 }
 
@@ -1468,7 +1564,7 @@ impl<BorrowType, K, V>
         self,
     ) -> Handle<NodeRef<BorrowType, K, V, marker::LeafOrInternal>, marker::KV>
     {
-        todo!()
+        unsafe { Handle::new_kv(self.node.forget_type(), self.idx) }
     }
 }
 
@@ -1481,7 +1577,18 @@ impl<BorrowType, K, V, Type>
         Handle<NodeRef<BorrowType, K, V, marker::Leaf>, Type>,
         Handle<NodeRef<BorrowType, K, V, marker::Internal>, Type>,
     > {
-        todo!()
+        match self.node.force() {
+            ForceResult::Leaf(node) => ForceResult::Leaf(Handle {
+                node,
+                idx: self.idx,
+                _marker: PhantomData,
+            }),
+            ForceResult::Internal(node) => ForceResult::Internal(Handle {
+                node,
+                idx: self.idx,
+                _marker: PhantomData,
+            }),
+        }
     }
 }
 
@@ -1491,7 +1598,8 @@ impl<'a, K, V, Type>
     pub unsafe fn cast_to_leaf_unchecked(
         self,
     ) -> Handle<NodeRef<marker::Mut<'a>, K, V, marker::Leaf>, Type> {
-        todo!()
+        let node = unsafe { self.node.cast_to_leaf_unchecked() };
+        Handle { node, idx: self.idx, _marker: PhantomData }
     }
 }
 
@@ -1521,7 +1629,11 @@ impl<'a, K, V> SplitResult<'a, K, V, marker::Leaf> {
     pub fn forget_node_type(
         self,
     ) -> SplitResult<'a, K, V, marker::LeafOrInternal> {
-        todo!()
+        SplitResult {
+            left: self.left.forget_type(),
+            kv: self.kv,
+            right: self.right.forget_type(),
+        }
     }
 }
 
@@ -1529,7 +1641,11 @@ impl<'a, K, V> SplitResult<'a, K, V, marker::Internal> {
     pub fn forget_node_type(
         self,
     ) -> SplitResult<'a, K, V, marker::LeafOrInternal> {
-        todo!()
+        SplitResult {
+            left: self.left.forget_type(),
+            kv: self.kv,
+            right: self.right.forget_type(),
+        }
     }
 }
 
@@ -1582,21 +1698,49 @@ mod marker {
 }
 
 unsafe fn slice_insert<T>(slice: &mut [MaybeUninit<T>], idx: usize, val: T) {
-    todo!()
+    unsafe {
+        let len = slice.len();
+        debug_assert!(len > idx);
+        let slice_ptr = slice.as_mut_ptr();
+        if len > idx + 1 {
+            ptr::copy(
+                slice_ptr.add(idx),
+                slice_ptr.add(idx + 1),
+                len - idx - 1,
+            );
+        }
+        (*slice_ptr.add(idx)).write(val);
+    }
 }
 
 unsafe fn slice_remove<T>(slice: &mut [MaybeUninit<T>], idx: usize) -> T {
-    todo!()
+    unsafe {
+        let len = slice.len();
+        debug_assert!(idx < len);
+        let slice_ptr = slice.as_mut_ptr();
+        let ret = (*slice_ptr.add(idx)).assume_init_read();
+        ptr::copy(slice_ptr.add(idx + 1), slice_ptr.add(idx), len - idx - 1);
+        ret
+    }
 }
 
 unsafe fn slice_shl<T>(slice: &mut [MaybeUninit<T>], distance: usize) {
-    todo!()
+    unsafe {
+        let slice_ptr = slice.as_mut_ptr();
+        ptr::copy(slice_ptr.add(distance), slice_ptr, slice.len() - distance);
+    }
 }
 
 unsafe fn slice_shr<T>(slice: &mut [MaybeUninit<T>], distance: usize) {
-    todo!()
+    unsafe {
+        let slice_ptr = slice.as_mut_ptr();
+        ptr::copy(slice_ptr, slice_ptr.add(distance), slice.len() - distance);
+    }
 }
 
 fn move_to_slice<T>(src: &mut [MaybeUninit<T>], dst: &mut [MaybeUninit<T>]) {
-    todo!()
+    assert_eq!(src.len(), dst.len());
+    unsafe {
+        ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len());
+    }
 }
