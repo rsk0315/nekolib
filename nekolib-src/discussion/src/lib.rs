@@ -5,4 +5,5 @@ doc_inline_reexport! {
     dp,
     plane_sweep,
     ptr_ds,
+    std_btree,
 }
