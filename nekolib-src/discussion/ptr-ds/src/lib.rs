@@ -7,6 +7,8 @@
 //! - [variance](variance/index.html)
 //! - [エイリアスモデル](alias_model/index.html)
 
+#![allow(dead_code)]
+
 pub mod alias_model;
 pub mod maybe_uninit;
 pub mod rawptr;
