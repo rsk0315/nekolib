@@ -26,6 +26,35 @@
 //!     - 空のノードであっても少なくとも一本の辺を持つ。
 //!     - 葉ノードにおける辺は、値を持たないため、位置の管理にのみ用いる。
 //!     - 内部ノードにおける辺は、位置の管理および子ノードでのポインタを持つ。
+//!
+//! # Explanations
+//!
+//! [`LeafNode`] および [`InternalNode`] では生成のメソッドのみを定義し、具体的な処理は
+//! [`NodeRef`] を介して行うようになっている。[`NodeRef`] のメソッドには、mutability
+//! の変換や生ポインタの取得、[`Handle`] の取得などを行う boilerplate が多々ある。
+//!
+//! まず、[`marker::Owned`] に記述がある通り、[`NodeRef<Owned, ..>`]
+//! は根ノードへの参照を表す。根ノードに関する重要なメソッドとして、[`push_internal_level`],
+//! [`pop_internal_level`] がある。
+//!
+//! [`push_internal_level`] は次の処理を行う。
+//!
+//! - 既存の [`NodeRef<Owned, ..>`] が指しているノードのみを子に持つノードを作成する。
+//! - 新しく作った根ノードを参照するように更新する。
+//! - 新しい根ノードへの参照 [`NodeRef<Mut<'_>, ..>`] を返す。
+//!
+//! [`pop_internal_level`] は逆で、次の処理を行う。
+//! ただし、既存の根ノードは子をちょうど一つ持つものとする。
+//!
+//! - 既存の [`NodeRef<Owned, ..>`] の最左の子を新たな根ノードとなるように更新する。
+//! - 既存の根ノードを解放する。
+//!
+//! [`NodeRef<Owned, ..>`]: NodeRef
+//! [`NodeRef<Mut<'_>, ..>`]: NodeRef
+//! [`push_internal_level`]: NodeRef::push_internal_level
+//! [`pop_internal_level`]: NodeRef::pop_internal_level
+//!
+//!
 
 use std::{
     marker::PhantomData,
@@ -435,7 +464,7 @@ impl<'a, K, V, Type> NodeRef<marker::Mut<'a>, K, V, Type> {
     /// のルールに基づくものを含む。
     ///
     /// `BorrowType` に `!TRAVERSAL_PERMIT` な `Mut<'_>`
-    /// の亜種を追加することで、この `unsafe`-ty を回避することか可能？
+    /// の亜種を追加することで、この `unsafe`-ty を回避することが可能？
     unsafe fn reborrow_mut(&mut self) -> NodeRef<marker::Mut<'_>, K, V, Type> {
         NodeRef {
             height: self.height,
