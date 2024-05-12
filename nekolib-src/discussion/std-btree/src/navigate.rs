@@ -1,6 +1,10 @@
-use crate::node::{
-    marker::{self, BorrowType},
-    Handle, NodeRef,
+//! [`LeafRange`] と [`LazyLeafRange`] の定義。
+
+use std::{borrow::Borrow, ops::RangeBounds};
+
+use crate::{
+    node::{marker, Handle, NodeRef},
+    search::SearchBound,
 };
 
 pub struct LeafRange<BorrowType, K, V> {
@@ -127,4 +131,257 @@ impl<K, V> LazyLeafRange<marker::Dying, K, V> {
     }
 
     pub fn deallocating_end(&mut self) { todo!() }
+}
+
+impl<BorrowType: marker::BorrowType, K, V> LazyLeafRange<BorrowType, K, V> {
+    fn init_front(
+        &mut self,
+    ) -> Option<
+        &mut Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge>,
+    > {
+        todo!()
+    }
+
+    fn init_back(
+        &mut self,
+    ) -> Option<
+        &mut Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge>,
+    > {
+        todo!()
+    }
+}
+
+impl<BorrowType: marker::BorrowType, K, V>
+    NodeRef<BorrowType, K, V, marker::LeafOrInternal>
+{
+    unsafe fn find_leaf_edges_spanning_range<Q: ?Sized, R>(
+        self,
+        range: R,
+    ) -> LeafRange<BorrowType, K, V>
+    where
+        Q: Ord,
+        K: Borrow<Q>,
+        R: RangeBounds<Q>,
+    {
+        todo!()
+    }
+}
+
+fn full_range<BorrowType: marker::BorrowType, K, V>(
+    root1: NodeRef<BorrowType, K, V, marker::LeafOrInternal>,
+    root2: NodeRef<BorrowType, K, V, marker::LeafOrInternal>,
+) -> LazyLeafRange<BorrowType, K, V> {
+    todo!()
+}
+
+impl<'a, K: 'a, V: 'a>
+    NodeRef<marker::Immut<'a>, K, V, marker::LeafOrInternal>
+{
+    pub fn range_search<Q, R>(
+        self,
+        range: R,
+    ) -> LeafRange<marker::Immut<'a>, K, V>
+    where
+        Q: ?Sized + Ord,
+        K: Borrow<Q>,
+        R: RangeBounds<Q>,
+    {
+        todo!()
+    }
+
+    pub fn full_range(self) -> LazyLeafRange<marker::Immut<'a>, K, V> {
+        todo!()
+    }
+}
+
+impl<'a, K: 'a, V: 'a>
+    NodeRef<marker::ValMut<'a>, K, V, marker::LeafOrInternal>
+{
+    pub fn range_search<Q, R>(
+        self,
+        range: R,
+    ) -> LeafRange<marker::ValMut<'a>, K, V>
+    where
+        Q: ?Sized + Ord,
+        K: Borrow<Q>,
+        R: RangeBounds<Q>,
+    {
+        todo!()
+    }
+
+    pub fn full_range(self) -> LazyLeafRange<marker::ValMut<'a>, K, V> {
+        todo!()
+    }
+}
+
+impl<K, V> NodeRef<marker::Dying, K, V, marker::LeafOrInternal> {
+    pub fn full_range(self) -> LazyLeafRange<marker::Dying, K, V> { todo!() }
+}
+
+impl<BorrowType: marker::BorrowType, K, V>
+    Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge>
+{
+    pub fn next_kv(
+        self,
+    ) -> Result<
+        Handle<NodeRef<BorrowType, K, V, marker::LeafOrInternal>, marker::KV>,
+        NodeRef<BorrowType, K, V, marker::LeafOrInternal>,
+    > {
+        todo!()
+    }
+
+    pub fn next_back_kv(
+        self,
+    ) -> Result<
+        Handle<NodeRef<BorrowType, K, V, marker::LeafOrInternal>, marker::KV>,
+        NodeRef<BorrowType, K, V, marker::LeafOrInternal>,
+    > {
+        todo!()
+    }
+}
+
+impl<BorrowType: marker::BorrowType, K, V>
+    Handle<NodeRef<BorrowType, K, V, marker::Internal>, marker::Edge>
+{
+    fn next_kv(
+        self,
+    ) -> Result<
+        Handle<NodeRef<BorrowType, K, V, marker::Internal>, marker::KV>,
+        NodeRef<BorrowType, K, V, marker::Internal>,
+    > {
+        todo!()
+    }
+}
+
+impl<K, V> Handle<NodeRef<marker::Dying, K, V, marker::Leaf>, marker::Edge> {
+    unsafe fn deallocating_next(
+        self,
+    ) -> Option<(
+        Self,
+        Handle<
+            NodeRef<marker::Dying, K, V, marker::LeafOrInternal>,
+            marker::KV,
+        >,
+    )> {
+        todo!()
+    }
+
+    unsafe fn deallocating_next_back(
+        self,
+    ) -> Option<(
+        Self,
+        Handle<
+            NodeRef<marker::Dying, K, V, marker::LeafOrInternal>,
+            marker::KV,
+        >,
+    )> {
+        todo!()
+    }
+
+    fn deallocating_end(self) { todo!() }
+}
+
+impl<'a, K, V>
+    Handle<NodeRef<marker::Immut<'a>, K, V, marker::Leaf>, marker::Edge>
+{
+    unsafe fn next_unchecked(&mut self) -> (&'a K, &'a V) { todo!() }
+    unsafe fn next_back_unchecked(&mut self) -> (&'a K, &'a V) { todo!() }
+}
+
+impl<'a, K, V>
+    Handle<NodeRef<marker::ValMut<'a>, K, V, marker::Leaf>, marker::Edge>
+{
+    unsafe fn next_unchecked(&mut self) -> (&'a K, &'a mut V) { todo!() }
+    unsafe fn next_back_unchecked(&mut self) -> (&'a K, &'a mut V) { todo!() }
+}
+
+impl<'a, K, V>
+    Handle<NodeRef<marker::Dying, K, V, marker::Leaf>, marker::Edge>
+{
+    unsafe fn deallocacting_next_unchecked(
+        &mut self,
+    ) -> Handle<NodeRef<marker::Dying, K, V, marker::LeafOrInternal>, marker::KV>
+    {
+        todo!()
+    }
+    unsafe fn deallocacting_next_back_unchecked(
+        &mut self,
+    ) -> Handle<NodeRef<marker::Dying, K, V, marker::LeafOrInternal>, marker::KV>
+    {
+        todo!()
+    }
+}
+
+impl<BorrowType: marker::BorrowType, K, V>
+    NodeRef<BorrowType, K, V, marker::LeafOrInternal>
+{
+    pub fn first_leaf_edge(
+        self,
+    ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge> {
+        todo!()
+    }
+    pub fn last_leaf_edge(
+        self,
+    ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge> {
+        todo!()
+    }
+}
+
+pub enum Position<BorrowType, K, V> {
+    Leaf(NodeRef<BorrowType, K, V, marker::Leaf>),
+    Internal(NodeRef<BorrowType, K, V, marker::Internal>),
+    InternalKV(Handle<NodeRef<BorrowType, K, V, marker::Internal>, marker::KV>),
+}
+
+impl<'a, K: 'a, V: 'a>
+    NodeRef<marker::Immut<'a>, K, V, marker::LeafOrInternal>
+{
+    pub fn visit_nodes_in_order<F>(self, mut visit: F)
+    where
+        F: FnMut(Position<marker::Immut<'a>, K, V>),
+    {
+        todo!()
+    }
+
+    pub fn calc_length(self) -> usize { todo!() }
+}
+
+impl<BorrowType: marker::BorrowType, K, V>
+    Handle<NodeRef<BorrowType, K, V, marker::LeafOrInternal>, marker::KV>
+{
+    pub fn next_leaf_edge(
+        self,
+    ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge> {
+        todo!()
+    }
+    pub fn next_back_leaf_edge(
+        self,
+    ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge> {
+        todo!()
+    }
+}
+
+impl<BorrowType: marker::BorrowType, K, V>
+    NodeRef<BorrowType, K, V, marker::LeafOrInternal>
+{
+    pub fn lower_bound<Q: ?Sized>(
+        self,
+        mut bound: SearchBound<&Q>,
+    ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge>
+    where
+        Q: Ord,
+        K: Borrow<Q>,
+    {
+        todo!()
+    }
+    pub fn upper_bound<Q: ?Sized>(
+        self,
+        mut bound: SearchBound<&Q>,
+    ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge>
+    where
+        Q: Ord,
+        K: Borrow<Q>,
+    {
+        todo!()
+    }
 }

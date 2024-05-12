@@ -1,3 +1,5 @@
+//! [`SetValZST`] の定義。
+
 pub struct SetValZST;
 
 pub trait IsSetVal {

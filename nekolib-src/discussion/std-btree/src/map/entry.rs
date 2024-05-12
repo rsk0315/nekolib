@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use Entry::*;
-
 use super::BTreeMap;
 use crate::{
     borrow::DormantMutRef,

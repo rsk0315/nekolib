@@ -1,3 +1,5 @@
+//! [`BTreeMap`] の定義。
+
 use std::{
     borrow::Borrow,
     fmt,
@@ -5,7 +7,6 @@ use std::{
     iter::FusedIterator,
     marker::PhantomData,
     ops::{Index, RangeBounds},
-    ptr,
 };
 
 use crate::{

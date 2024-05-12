@@ -1,3 +1,5 @@
+//! [`take_mut`] と [`replace`] の定義。
+
 use std::{process, ptr};
 
 pub fn take_mut<T>(v: &mut T, change: impl FnOnce(T) -> T) {
