@@ -3,7 +3,11 @@
 use std::{borrow::Borrow, ops::RangeBounds};
 
 use crate::{
-    node::{marker, Handle, NodeRef},
+    node::{
+        marker,
+        ForceResult::{Internal, Leaf},
+        Handle, NodeRef,
+    },
     search::SearchBound,
 };
 
@@ -318,7 +322,13 @@ impl<BorrowType: marker::BorrowType, K, V>
     pub fn first_leaf_edge(
         self,
     ) -> Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge> {
-        todo!()
+        let mut node = self;
+        loop {
+            match node.force() {
+                Leaf(leaf) => return leaf.first_edge(),
+                Internal(internal) => node = internal.first_edge().descend(),
+            }
+        }
     }
     pub fn last_leaf_edge(
         self,

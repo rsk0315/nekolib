@@ -33,6 +33,8 @@
 //! [`NodeRef`] を介して行うようになっている。[`NodeRef`] のメソッドには、mutability
 //! の変換や生ポインタの取得、[`Handle`] の取得などを行う boilerplate が多々ある。
 //!
+//! ## Root updatings
+//!
 //! まず、[`marker::Owned`] に記述がある通り、[`NodeRef<Owned, ..>`]
 //! は根ノードへの参照を表す。根ノードに関する重要なメソッドとして、[`push_internal_level`],
 //! [`pop_internal_level`] がある。
@@ -54,7 +56,59 @@
 //! [`push_internal_level`]: NodeRef::push_internal_level
 //! [`pop_internal_level`]: NodeRef::pop_internal_level
 //!
+//! ## Insertions
 //!
+//! B-tree に対する挿入は葉ノードから再帰的に行うのが基本であり、公開する部分としては
+//! [`Handle::<NodeRef<Mut<'_>, .., Leaf>, Edge>::insert_recursing(..)`]
+//! となる。根ノードの更新が必要になる場合があるものの、receiver が
+//! [`Handle<Mut<'_>, ..>`] であり [`push_internal_level`]
+//! を直接呼べないため工夫が必要になる。
+//!
+//! 呼び出し元から [`insert_recursing`] に [`SplitResult`] を受け取る callback
+//! を渡しておき、ノードの分割が（既存の）根ノードでも起きた場合は、その
+//! [`SplitResult`] に対して callback を呼び出すようになっている。callback
+//! 内では [`push_internal_level`] を呼ぶのが想定されていると思われる。
+//!
+//! 概ね、次のような使い方となる。
+//!
+//! ```ignore
+//! struct BTreeMap<'a, K, V> {
+//!     root: Option<NodeRef<marker::Owned, K, V, marker::LeafOrInternal>>,
+//!     len: usize,
+//!     _marker: PhantomData<&'a mut (K, V)>,
+//! }
+//! let mut map = BTreeMap { root: Some(NodeRef::new()), len: 0, _marker: PhantomData };
+//!
+//! for i in (0..CAPACITY + 1).rev() {
+//!     let (map, mut dormant_map) = DormantMutRef::new(&mut map);
+//!     let mut_root = map.root.as_mut().unwrap().borrow_mut();
+//!     let mut handle = mut_root.first_leaf_edge();
+//!     let (key, val) = (i, ());
+//!     handle.insert_recursing(key, val, |ins| {
+//!         let SplitResult { left: _, kv: (k, v), right } = ins;
+//!         let mut map = unsafe { dormant_map.reborrow() };
+//!         let root = map.root.as_mut().unwrap();
+//!         root.push_internal_level().push(k, v, right)
+//!     });
+//!     let mut map = unsafe { dormant_map.awaken() };
+//!     map.len += 1;
+//! }
+//! ```
+//!
+//! [`DormantMutRef`] を使うことで、下記のエラーを回避している。
+//!
+//! ```text
+//! error[E0500]: closure requires unique access to `map.root` but it is already borrowed
+//! ```
+//!
+//! また、[`insert_recursing`] を呼んだ後、`dormant_map.awaken()`
+//! から取得した参照ではなく `DormantMutRef::new(..)` から取得した参照を使うと、Stacked
+//! Borrows のルールに違反することになる。
+//!
+//! [`DormantMutRef`]: super::borrow::DormantMutRef
+//! [`Handle<Mut<'_>, ..>`]: Handle
+//! [`insert_recursing`]: Handle::insert_recursing
+//! [`Handle::<NodeRef<Mut<'_>, .., Leaf>, Edge>::insert_recursing(..)`]: Handle::insert_recursing
 
 use std::{
     marker::PhantomData,
@@ -1126,7 +1180,7 @@ impl<'a, K: 'a, V: 'a>
     /// を挿入する領域が足りない場合、分離した部分を再帰的に [`.insert()`]
     /// を用いて親ノードに挿入する。再帰は根ノードに到達するまで行う。
     ///
-    /// [`.insert()`] の返り値が `Some(splitResult)` の場合、`left` が根ノードである。
+    /// [`.insert()`] の返り値が `Some(split_result)` の場合、`left` が根ノードである。
     ///
     /// TODO: `split_root` が行うべき処理の内容は？
     ///
@@ -1771,5 +1825,57 @@ fn move_to_slice<T>(src: &mut [MaybeUninit<T>], dst: &mut [MaybeUninit<T>]) {
     assert_eq!(src.len(), dst.len());
     unsafe {
         ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len());
+    }
+}
+
+#[test]
+fn insert_test() {
+    use crate::borrow::DormantMutRef;
+
+    struct BTreeMap<'a, K, V> {
+        root: Option<NodeRef<marker::Owned, K, V, marker::LeafOrInternal>>,
+        len: usize,
+        _marker: PhantomData<&'a mut (K, V)>,
+    }
+    let mut map = BTreeMap {
+        root: Some(NodeRef::new()),
+        len: 0,
+        _marker: PhantomData,
+    };
+
+    for i in 0..CAPACITY + 1 {
+        let (map, mut dormant_map) = DormantMutRef::new(&mut map);
+        let mut_root = map.root.as_mut().unwrap().borrow_mut();
+        let mut handle = mut_root.first_leaf_edge();
+        handle.insert_recursing(0, 0, |ins| {
+            let SplitResult { left: _, kv: (key, val), right } = ins;
+            let mut map = unsafe { dormant_map.reborrow() };
+            let root = map.root.as_mut().unwrap();
+            root.push_internal_level().push(key, val, right)
+        });
+        // let mut map = unsafe { dormant_map.awaken() };
+        map.len += 1;
+    }
+
+    let mut dying_root = map.root.unwrap().into_dying();
+    eprintln!("{:?}", dying_root.height);
+    {
+        let root1 = unsafe { ptr::read(&dying_root) };
+        let root2 = unsafe { ptr::read(&dying_root) };
+        let mut handle = match root1.first_edge().force() {
+            ForceResult::Internal(internal) => internal,
+            _ => unreachable!(),
+        };
+        unsafe {
+            handle.descend().deallocate_and_ascend();
+        }
+        let mut handle = match root2.last_edge().force() {
+            ForceResult::Internal(internal) => internal,
+            _ => unreachable!(),
+        };
+        unsafe {
+            let parent = handle.descend().deallocate_and_ascend().unwrap();
+            parent.into_node().forget_type().deallocate_and_ascend();
+        }
     }
 }
