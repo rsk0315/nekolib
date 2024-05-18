@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 katex-support = { path = "katex-support" }
+nested_mod = { path = "nested_mod" }
