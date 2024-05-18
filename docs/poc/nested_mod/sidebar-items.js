@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["foo","nested_foo"],"mod":["nested1","pub_inner"]};

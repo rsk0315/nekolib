@@ -47,6 +47,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["monoid",["",[],["lib.rs"]]],\
 ["naive",["",[],["lib.rs"]]],\
 ["nekolib_doc",["",[],["lib.rs"]]],\
+["nested_mod",["",[["nested1",[["nested2",[],["nested3.rs"]]],["nested2.rs"]]],["lib.rs","nested1.rs","priv_inner.rs","pub_inner.rs"]]],\
 ["op_add",["",[],["lib.rs"]]],\
 ["ops",["",[],["lib.rs"]]],\
 ["pdep_pext",["",[],["lib.rs"]]],\

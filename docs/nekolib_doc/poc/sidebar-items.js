@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["katex_support"]};
+window.SIDEBAR_ITEMS = {"fn":["foo","nested_foo"],"mod":["katex_support","nested_mod"]};
