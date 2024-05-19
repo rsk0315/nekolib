@@ -1,5 +1,10 @@
-use super::{marker, root_node::Root, Handle, NodeRef, B, CAPACITY};
-use crate::node::{slice::move_to_slice, LeafNode};
+use super::{
+    marker, root_node::Root, Handle, InternalNode, NodeRef, B, CAPACITY,
+};
+use crate::node::{
+    slice::{move_to_slice, slice_insert},
+    LeafNode,
+};
 
 pub(crate) struct SplitResult<'a, T, R, NodeType> {
     pub left: NodeRef<marker::Mut<'a>, T, R, NodeType>,
@@ -118,7 +123,11 @@ impl<'a, T: 'a, R: 'a>
         debug_assert!(self.node.len() < CAPACITY);
         let new_len = self.node.len() + 1;
 
-        todo!();
+        unsafe {
+            slice_insert(self.node.val_area_mut(..new_len), self.idx, value);
+            *self.node.len_mut() = new_len as _;
+            Handle::new_value(self.node, self.idx)
+        }
     }
 }
 
@@ -167,8 +176,16 @@ impl<'a, T: 'a, R: 'a>
         debug_assert!(self.node.len() < CAPACITY);
         debug_assert!(edge.height == self.node.height - 1);
         let new_len = self.node.len() + 1;
-
-        todo!();
+        unsafe {
+            slice_insert(self.node.val_area_mut(..new_len), self.idx, value);
+            slice_insert(
+                self.node.edge_area_mut(..new_len + 1),
+                self.idx + 1,
+                edge.node,
+            );
+            *self.node.len_mut() = new_len as _;
+            self.node.correct_childrens_parent_links(self.idx + 1..new_len + 1);
+        }
     }
 }
 
@@ -176,7 +193,19 @@ impl<'a, T: 'a, R: 'a>
     Handle<NodeRef<marker::Mut<'a>, T, R, marker::Internal>, marker::Value>
 {
     pub fn split(mut self) -> SplitResult<'a, T, R, marker::Internal> {
-        todo!()
+        let old_len = self.node.len();
+        unsafe {
+            let mut new_node = InternalNode::new();
+            let value = self.split_leaf_data(&mut new_node.data);
+            let new_len = usize::from(new_node.data.len);
+            move_to_slice(
+                self.node.edge_area_mut(self.idx + 1..old_len + 1),
+                &mut new_node.edges[..new_len + 1],
+            );
+            let height = self.node.height;
+            let right = NodeRef::from_new_internal(new_node, height);
+            SplitResult { left: self.node, value, right }
+        }
     }
 }
 

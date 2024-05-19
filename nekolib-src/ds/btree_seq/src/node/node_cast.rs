@@ -132,7 +132,7 @@ impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::Internal> {
 }
 
 impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
-    fn as_internal_mut(&mut self) -> &mut InternalNode<T, R> {
+    pub(super) fn as_internal_mut(&mut self) -> &mut InternalNode<T, R> {
         let ptr = Self::as_internal_ptr(self);
         unsafe { &mut *ptr }
     }

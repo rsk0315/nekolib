@@ -25,7 +25,7 @@ impl<T, R> NodeRef<marker::Owned, T, R, marker::Internal> {
 
     /// # Safety
     /// `height > 0`.
-    unsafe fn from_new_internal(
+    pub(super) unsafe fn from_new_internal(
         internal: Box<InternalNode<T, R>>,
         height: u8,
     ) -> Self {

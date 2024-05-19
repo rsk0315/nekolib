@@ -202,6 +202,17 @@ impl<'a, T: 'a, R: 'a, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
     }
 }
 
+impl<'a, T: 'a, R: 'a> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
+    unsafe fn edge_area_mut<I, Output: ?Sized>(&mut self, idx: I) -> &mut Output
+    where
+        I: SliceIndex<[MaybeUninit<BoxedNode<T, R>>], Output = Output>,
+    {
+        unsafe {
+            self.as_internal_mut().edges.as_mut_slice().get_unchecked_mut(idx)
+        }
+    }
+}
+
 pub struct Handle<Node, Type> {
     node: Node,
     idx: usize,
