@@ -1,9 +1,7 @@
 use super::{
-    marker, root_node::Root, Handle, InternalNode, NodeRef, B, CAPACITY,
-};
-use crate::node::{
+    marker,
     slice::{move_to_slice, slice_insert},
-    LeafNode,
+    Handle, InternalNode, LeafNode, NodeRef, Root, B, CAPACITY,
 };
 
 pub(crate) struct SplitResult<'a, T, R, NodeType> {

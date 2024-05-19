@@ -1,8 +1,6 @@
 use std::{marker::PhantomData, ptr::NonNull};
 
-use super::{marker, InternalNode, LeafNode, NodeRef};
-
-pub type Root<T, R> = NodeRef<marker::Owned, T, R, marker::LeafOrInternal>;
+use super::{marker, InternalNode, LeafNode, NodeRef, Root};
 
 impl<T, R> NodeRef<marker::Owned, T, R, marker::Leaf> {
     pub fn new_leaf() -> Self { Self::from_new_leaf(LeafNode::new()) }
@@ -37,15 +35,7 @@ impl<T, R> NodeRef<marker::Owned, T, R, marker::Internal> {
     }
 }
 
-impl<T, R> NodeRef<marker::Owned, T, R, marker::LeafOrInternal> {
-    fn clear_parent_link(&mut self) {
-        let mut root_node = self.borrow_mut();
-        let leaf = root_node.as_leaf_mut();
-        leaf.parent = None;
-    }
-}
-
-impl<T, R> NodeRef<marker::Owned, T, R, marker::LeafOrInternal> {
+impl<T, R> Root<T, R> {
     pub fn new() -> Self { NodeRef::new_leaf().forget_type() }
 
     pub fn push_internal_level(
@@ -74,5 +64,11 @@ impl<T, R> NodeRef<marker::Owned, T, R, marker::LeafOrInternal> {
         self.clear_parent_link();
 
         unsafe { drop(Box::from_raw(internal_node)) };
+    }
+
+    fn clear_parent_link(&mut self) {
+        let mut root_node = self.borrow_mut();
+        let leaf = root_node.as_leaf_mut();
+        leaf.parent = None;
     }
 }

@@ -147,6 +147,8 @@ impl<'a, T: 'a, R: 'a> NodeRef<marker::Mut<'a>, T, R, marker::LeafOrInternal> {
     }
 }
 
+pub type Root<T, R> = NodeRef<marker::Owned, T, R, marker::LeafOrInternal>;
+
 mod node_cast;
 mod root_node;
 
@@ -225,6 +227,21 @@ mod handle_cast;
 pub enum ForceResult<Leaf, Internal> {
     Leaf(Leaf),
     Internal(Internal),
+}
+
+impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::LeafOrInternal> {
+    pub fn force(
+        self,
+    ) -> ForceResult<
+        NodeRef<BorrowType, T, R, marker::Leaf>,
+        NodeRef<BorrowType, T, R, marker::Internal>,
+    > {
+        if self.height == 0 {
+            ForceResult::Leaf(unsafe { self.cast_to_leaf_unchecked() })
+        } else {
+            ForceResult::Internal(unsafe { self.cast_to_internal_unchecked() })
+        }
+    }
 }
 
 mod insert;

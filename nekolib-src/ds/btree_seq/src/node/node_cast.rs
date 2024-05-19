@@ -95,10 +95,10 @@ impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::Internal> {
     }
 }
 
-impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::LeafOrInternal> {
+impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::LeafOrInternal> {
     pub(super) unsafe fn cast_to_leaf_unchecked(
         self,
-    ) -> NodeRef<marker::Mut<'a>, T, R, marker::Leaf> {
+    ) -> NodeRef<BorrowType, T, R, marker::Leaf> {
         debug_assert!(self.height == 0);
         NodeRef {
             height: self.height,
@@ -109,7 +109,7 @@ impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::LeafOrInternal> {
 
     pub(super) unsafe fn cast_to_internal_unchecked(
         self,
-    ) -> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
+    ) -> NodeRef<BorrowType, T, R, marker::Internal> {
         debug_assert!(self.height > 0);
         NodeRef {
             height: self.height,
