@@ -7,7 +7,7 @@ pub type Root<T, R> = NodeRef<marker::Owned, T, R, marker::LeafOrInternal>;
 impl<T, R> NodeRef<marker::Owned, T, R, marker::Leaf> {
     pub fn new_leaf() -> Self { Self::from_new_leaf(LeafNode::new()) }
 
-    fn from_new_leaf(leaf: Box<LeafNode<T, R>>) -> Self {
+    pub(super) fn from_new_leaf(leaf: Box<LeafNode<T, R>>) -> Self {
         NodeRef {
             height: 0,
             node: NonNull::from(Box::leak(leaf)),

@@ -2,6 +2,7 @@ use std::{
     marker::PhantomData,
     mem::MaybeUninit,
     ptr::{self, NonNull},
+    slice::SliceIndex,
 };
 
 const B: usize = 6;
@@ -190,6 +191,17 @@ impl<T, R> NodeRef<marker::Dying, T, R, marker::LeafOrInternal> {
     }
 }
 
+impl<'a, T: 'a, R: 'a, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
+    pub fn len_mut(&mut self) -> &mut u8 { &mut self.as_leaf_mut().len }
+
+    unsafe fn val_area_mut<I, Output: ?Sized>(&mut self, idx: I) -> &mut Output
+    where
+        I: SliceIndex<[MaybeUninit<T>], Output = Output>,
+    {
+        unsafe { self.as_leaf_mut().vals.as_mut_slice().get_unchecked_mut(idx) }
+    }
+}
+
 pub struct Handle<Node, Type> {
     node: Node,
     idx: usize,
@@ -205,3 +217,5 @@ pub enum ForceResult<Leaf, Internal> {
 }
 
 mod insert;
+
+mod slice;

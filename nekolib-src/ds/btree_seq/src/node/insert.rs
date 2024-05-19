@@ -1,4 +1,5 @@
 use super::{marker, root_node::Root, Handle, NodeRef, B, CAPACITY};
+use crate::node::{slice::move_to_slice, LeafNode};
 
 pub(crate) struct SplitResult<'a, T, R, NodeType> {
     pub left: NodeRef<marker::Mut<'a>, T, R, NodeType>,
@@ -124,7 +125,12 @@ impl<'a, T: 'a, R: 'a>
 impl<'a, T: 'a, R: 'a>
     Handle<NodeRef<marker::Mut<'a>, T, R, marker::Leaf>, marker::Value>
 {
-    pub fn split(mut self) -> SplitResult<'a, T, R, marker::Leaf> { todo!() }
+    pub fn split(mut self) -> SplitResult<'a, T, R, marker::Leaf> {
+        let mut new_node = LeafNode::new();
+        let value = self.split_leaf_data(&mut new_node);
+        let right = NodeRef::from_new_leaf(new_node);
+        SplitResult { left: self.node, value, right }
+    }
 }
 
 impl<'a, T: 'a, R: 'a>
@@ -171,5 +177,25 @@ impl<'a, T: 'a, R: 'a>
 {
     pub fn split(mut self) -> SplitResult<'a, T, R, marker::Internal> {
         todo!()
+    }
+}
+
+impl<'a, T: 'a, R: 'a, NodeType>
+    Handle<NodeRef<marker::Mut<'a>, T, R, NodeType>, marker::Value>
+{
+    fn split_leaf_data(&mut self, new_node: &mut LeafNode<T, R>) -> T {
+        debug_assert!(self.idx < self.node.len());
+        let old_len = self.node.len();
+        let new_len = old_len - self.idx - 1;
+        new_node.len = new_len as _;
+        unsafe {
+            let value = self.node.val_area_mut(self.idx).assume_init_read();
+            move_to_slice(
+                self.node.val_area_mut(self.idx + 1..old_len),
+                &mut new_node.vals[..new_len],
+            );
+            *self.node.len_mut() = self.idx as _;
+            value
+        }
     }
 }
