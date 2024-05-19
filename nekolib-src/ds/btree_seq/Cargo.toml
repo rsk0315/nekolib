@@ -4,7 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-array_rotation = { path = "../../corro/array_rotation" }
-array_insertion = { path = "../../corro/array_insertion" }
-array_removal = { path = "../../corro/array_removal" }
-usize_bounds = { path = "../../ops/usize_bounds" }
+# usize_bounds = { path = "../../ops/usize_bounds" }
