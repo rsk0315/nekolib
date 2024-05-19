@@ -244,5 +244,6 @@ impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::LeafOrInternal> {
 }
 
 mod insert;
+mod navigate;
 
 mod slice;
