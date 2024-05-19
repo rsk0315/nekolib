@@ -13,7 +13,9 @@ impl<BorrowType, T, R, Type> NodeRef<BorrowType, T, R, Type> {
 }
 
 impl<'a, T, R, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
-    unsafe fn reborrow_mut(&mut self) -> NodeRef<marker::Mut<'_>, T, R, Type> {
+    pub(super) unsafe fn reborrow_mut(
+        &mut self,
+    ) -> NodeRef<marker::Mut<'_>, T, R, Type> {
         NodeRef {
             height: self.height,
             node: self.node,
@@ -94,7 +96,7 @@ impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::Internal> {
 }
 
 impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::LeafOrInternal> {
-    unsafe fn cast_to_leaf_unchecked(
+    pub(super) unsafe fn cast_to_leaf_unchecked(
         self,
     ) -> NodeRef<marker::Mut<'a>, T, R, marker::Leaf> {
         debug_assert!(self.height == 0);
@@ -105,7 +107,7 @@ impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::LeafOrInternal> {
         }
     }
 
-    unsafe fn cast_to_internal_unchecked(
+    pub(super) unsafe fn cast_to_internal_unchecked(
         self,
     ) -> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
         debug_assert!(self.height > 0);
@@ -132,6 +134,13 @@ impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::Internal> {
 impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
     fn as_internal_mut(&mut self) -> &mut InternalNode<T, R> {
         let ptr = Self::as_internal_ptr(self);
+        unsafe { &mut *ptr }
+    }
+}
+
+impl<'a, T, R, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
+    pub(super) fn as_leaf_mut(&mut self) -> &mut LeafNode<T, R> {
+        let ptr = Self::as_leaf_ptr(self);
         unsafe { &mut *ptr }
     }
 }

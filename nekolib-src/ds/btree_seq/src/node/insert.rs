@@ -1,0 +1,175 @@
+use super::{marker, root_node::Root, Handle, NodeRef, B, CAPACITY};
+
+pub(crate) struct SplitResult<'a, T, R, NodeType> {
+    pub left: NodeRef<marker::Mut<'a>, T, R, NodeType>,
+    pub value: T,
+    pub right: NodeRef<marker::Owned, T, R, NodeType>,
+}
+
+impl<'a, T, R> SplitResult<'a, T, R, marker::Leaf> {
+    pub fn forget_node_type(
+        self,
+    ) -> SplitResult<'a, T, R, marker::LeafOrInternal> {
+        SplitResult {
+            left: self.left.forget_type(),
+            value: self.value,
+            right: self.right.forget_type(),
+        }
+    }
+}
+impl<'a, T, R> SplitResult<'a, T, R, marker::Internal> {
+    pub fn forget_node_type(
+        self,
+    ) -> SplitResult<'a, T, R, marker::LeafOrInternal> {
+        SplitResult {
+            left: self.left.forget_type(),
+            value: self.value,
+            right: self.right.forget_type(),
+        }
+    }
+}
+
+enum LeftOrRight<T> {
+    Left(T),
+    Right(T),
+}
+
+const KV_IDX_CENTER: usize = B - 1;
+const EDGE_IDX_LEFT_OF_CENTER: usize = B - 1;
+const EDGE_IDX_RIGHT_OF_CENTER: usize = B - 1;
+
+fn splitpoint(edge_idx: usize) -> (usize, LeftOrRight<usize>) {
+    debug_assert!(edge_idx <= CAPACITY);
+    match edge_idx {
+        EDGE_IDX_LEFT_OF_CENTER => {
+            (KV_IDX_CENTER - 1, LeftOrRight::Left(edge_idx))
+        }
+        EDGE_IDX_RIGHT_OF_CENTER => (KV_IDX_CENTER, LeftOrRight::Right(0)),
+        0..=EDGE_IDX_LEFT_OF_CENTER => {
+            (KV_IDX_CENTER - 1, LeftOrRight::Left(edge_idx))
+        }
+        _ => (
+            KV_IDX_CENTER + 1,
+            LeftOrRight::Right(edge_idx - (KV_IDX_CENTER + 1 + 1)),
+        ),
+    }
+}
+
+impl<'a, T: 'a, R: 'a>
+    Handle<NodeRef<marker::Mut<'a>, T, R, marker::Leaf>, marker::Edge>
+{
+    pub fn insert_recursing(
+        self,
+        value: T,
+        split_root: impl FnOnce(SplitResult<'a, T, R, marker::LeafOrInternal>),
+    ) -> Handle<NodeRef<marker::Mut<'a>, T, R, marker::Leaf>, marker::Value>
+    {
+        let (mut split, handle) = match self.insert(value) {
+            (None, handle) => return unsafe { handle.awaken() },
+            (Some(split), handle) => (split.forget_node_type(), handle),
+        };
+        loop {
+            split = match split.left.ascend() {
+                Ok(parent) => match parent.insert(split.value, split.right) {
+                    None => return unsafe { handle.awaken() },
+                    Some(split) => split.forget_node_type(),
+                },
+                Err(root) => {
+                    split_root(SplitResult { left: root, ..split });
+                    return unsafe { handle.awaken() };
+                }
+            };
+        }
+    }
+
+    fn insert(
+        self,
+        value: T,
+    ) -> (
+        Option<SplitResult<'a, T, R, marker::Leaf>>,
+        Handle<NodeRef<marker::DormantMut, T, R, marker::Leaf>, marker::Value>,
+    ) {
+        if self.node.len() < CAPACITY {
+            let handle = unsafe { self.insert_fit(value) };
+            (None, handle.dormant())
+        } else {
+            let (middle_kv_idx, insertion) = splitpoint(self.idx);
+            let middle = unsafe { Handle::new_value(self.node, middle_kv_idx) };
+            let mut result = middle.split();
+            let insertion_edge = match insertion {
+                LeftOrRight::Left(insert_idx) => unsafe {
+                    Handle::new_edge(result.left.reborrow_mut(), insert_idx)
+                },
+                LeftOrRight::Right(insert_idx) => unsafe {
+                    Handle::new_edge(result.right.borrow_mut(), insert_idx)
+                },
+            };
+            let handle = unsafe { insertion_edge.insert_fit(value).dormant() };
+            (Some(result), handle)
+        }
+    }
+
+    unsafe fn insert_fit(
+        mut self,
+        value: T,
+    ) -> Handle<NodeRef<marker::Mut<'a>, T, R, marker::Leaf>, marker::Value>
+    {
+        debug_assert!(self.node.len() < CAPACITY);
+        let new_len = self.node.len() + 1;
+
+        todo!();
+    }
+}
+
+impl<'a, T: 'a, R: 'a>
+    Handle<NodeRef<marker::Mut<'a>, T, R, marker::Leaf>, marker::Value>
+{
+    pub fn split(mut self) -> SplitResult<'a, T, R, marker::Leaf> { todo!() }
+}
+
+impl<'a, T: 'a, R: 'a>
+    Handle<NodeRef<marker::Mut<'a>, T, R, marker::Internal>, marker::Edge>
+{
+    fn insert(
+        mut self,
+        value: T,
+        edge: Root<T, R>,
+    ) -> Option<SplitResult<'a, T, R, marker::Internal>> {
+        assert!(edge.height == self.node.height - 1);
+
+        if self.node.len() < CAPACITY {
+            unsafe { self.insert_fit(value, edge) };
+            None
+        } else {
+            let (middle_kv_idx, insertion) = splitpoint(self.idx);
+            let middle = unsafe { Handle::new_value(self.node, middle_kv_idx) };
+            let mut result = middle.split();
+            let mut insertion_edge = match insertion {
+                LeftOrRight::Left(insert_idx) => unsafe {
+                    Handle::new_edge(result.left.reborrow_mut(), insert_idx)
+                },
+                LeftOrRight::Right(insert_idx) => unsafe {
+                    Handle::new_edge(result.right.borrow_mut(), insert_idx)
+                },
+            };
+            unsafe { insertion_edge.insert_fit(value, edge) };
+            Some(result)
+        }
+    }
+
+    unsafe fn insert_fit(mut self, value: T, edge: Root<T, R>) {
+        debug_assert!(self.node.len() < CAPACITY);
+        debug_assert!(edge.height == self.node.height - 1);
+        let new_len = self.node.len() + 1;
+
+        todo!();
+    }
+}
+
+impl<'a, T: 'a, R: 'a>
+    Handle<NodeRef<marker::Mut<'a>, T, R, marker::Internal>, marker::Value>
+{
+    pub fn split(mut self) -> SplitResult<'a, T, R, marker::Internal> {
+        todo!()
+    }
+}

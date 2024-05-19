@@ -68,8 +68,6 @@ pub struct NodeRef<BorrowType, T, R, Type> {
     _marker: PhantomData<(BorrowType, Type)>,
 }
 
-pub type Root<T, R> = NodeRef<marker::Owned, T, R, marker::LeafOrInternal>;
-
 impl<'a, T: 'a, R: 'a, Type> Copy for NodeRef<marker::Immut<'a>, T, R, Type> {}
 impl<'a, T: 'a, R: 'a, Type> Clone for NodeRef<marker::Immut<'a>, T, R, Type> {
     fn clone(&self) -> Self { *self }
@@ -101,36 +99,10 @@ unsafe impl<T: Send, R: Send, Type> Send
 {
 }
 
-impl<T, R> NodeRef<marker::Owned, T, R, marker::Leaf> {
-    pub fn new_leaf() -> Self { Self::from_new_leaf(LeafNode::new()) }
-
-    fn from_new_leaf(leaf: Box<LeafNode<T, R>>) -> Self {
-        NodeRef {
-            height: 0,
-            node: NonNull::from(Box::leak(leaf)),
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<T, R> NodeRef<marker::Owned, T, R, marker::Internal> {
-    fn new_internal(child: Root<T, R>) -> Self {
-        let mut new_node = unsafe { InternalNode::new() };
-        new_node.edges[0].write(child.node);
-        unsafe { NodeRef::from_new_internal(new_node, child.height + 1) }
-    }
-
-    /// # Safety
-    /// `height > 0`.
-    unsafe fn from_new_internal(
-        internal: Box<InternalNode<T, R>>,
-        height: u8,
-    ) -> Self {
+impl<BorrowType, T, R> NodeRef<BorrowType, T, R, marker::Internal> {
+    fn from_internal(node: NonNull<InternalNode<T, R>>, height: u8) -> Self {
         debug_assert!(height > 0);
-        let node = NonNull::from(Box::leak(internal)).cast();
-        let mut this = NodeRef { height, node, _marker: PhantomData };
-        this.borrow_mut().correct_all_childrens_parent_links();
-        this
+        NodeRef { height, node: node.cast(), _marker: PhantomData }
     }
 }
 
@@ -151,9 +123,8 @@ impl<'a, T, R> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
     ) {
         for i in range {
             debug_assert!(i <= self.len());
-            // unsafe { Handle::new_edge(self.reborrow_mut(), i) }
-            //     .correct_parent_link();
-            todo!()
+            unsafe { Handle::new_edge(self.reborrow_mut(), i) }
+                .correct_parent_link();
         }
     }
 
@@ -176,6 +147,48 @@ impl<'a, T: 'a, R: 'a> NodeRef<marker::Mut<'a>, T, R, marker::LeafOrInternal> {
 }
 
 mod node_cast;
+mod root_node;
+
+impl<BorrowType: marker::Traversable, T, R, Type>
+    NodeRef<BorrowType, T, R, Type>
+{
+    pub fn ascend(
+        self,
+    ) -> Result<
+        Handle<NodeRef<BorrowType, T, R, marker::Internal>, marker::Edge>,
+        Self,
+    > {
+        let leaf_ptr: *const _ = Self::as_leaf_ptr(&self);
+        unsafe { (*leaf_ptr).parent }
+            .as_ref()
+            .map(|parent| Handle {
+                node: NodeRef::from_internal(*parent, self.height + 1),
+                idx: unsafe {
+                    usize::from((*leaf_ptr).parent_idx.assume_init())
+                },
+                _marker: PhantomData,
+            })
+            .ok_or(self)
+    }
+}
+
+impl<T, R> NodeRef<marker::Dying, T, R, marker::LeafOrInternal> {
+    pub unsafe fn deallocate_and_ascend(
+        self,
+    ) -> Option<
+        Handle<NodeRef<marker::Dying, T, R, marker::Internal>, marker::Edge>,
+    > {
+        let Self { height, node, .. } = self;
+        let ret = self.ascend().ok();
+        if height == 0 {
+            unsafe { drop(Box::from_raw(node.as_ptr())) };
+        } else {
+            let ptr: NonNull<InternalNode<T, R>> = node.cast();
+            unsafe { drop(Box::from_raw(node.as_ptr())) };
+        }
+        ret
+    }
+}
 
 pub struct Handle<Node, Type> {
     node: Node,
@@ -184,3 +197,11 @@ pub struct Handle<Node, Type> {
 }
 
 mod handle;
+mod handle_cast;
+
+pub enum ForceResult<Leaf, Internal> {
+    Leaf(Leaf),
+    Internal(Internal),
+}
+
+mod insert;

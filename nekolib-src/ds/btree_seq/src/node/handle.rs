@@ -66,7 +66,7 @@ impl<BorrowType, T, R, NodeType>
 impl<'a, T, R>
     Handle<NodeRef<marker::Mut<'a>, T, R, marker::Internal>, marker::Edge>
 {
-    fn correct_parent_link(self) {
+    pub(super) fn correct_parent_link(self) {
         let ptr = unsafe {
             NonNull::new_unchecked(NodeRef::as_internal_ptr(&self.node))
         };
