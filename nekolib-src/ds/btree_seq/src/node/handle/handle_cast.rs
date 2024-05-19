@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
-use super::{marker, Handle, NodeRef};
+use super::super::{marker, Handle, NodeRef};
 
 impl<BorrowType, T, R, NodeType, HandleType>
     Handle<NodeRef<BorrowType, T, R, NodeType>, HandleType>
 {
-    pub(super) fn reborrow(
+    pub(in super::super) fn reborrow(
         &self,
     ) -> Handle<NodeRef<marker::Immut<'_>, T, R, NodeType>, HandleType> {
         Handle {
@@ -19,7 +19,7 @@ impl<BorrowType, T, R, NodeType, HandleType>
 impl<'a, T, R, NodeType, HandleType>
     Handle<NodeRef<marker::Mut<'a>, T, R, NodeType>, HandleType>
 {
-    pub(super) unsafe fn reborrow_mut(
+    pub(in super::super) unsafe fn reborrow_mut(
         &mut self,
     ) -> Handle<NodeRef<marker::Mut<'_>, T, R, NodeType>, HandleType> {
         Handle {
@@ -29,7 +29,7 @@ impl<'a, T, R, NodeType, HandleType>
         }
     }
 
-    pub(super) fn dormant(
+    pub(in super::super) fn dormant(
         &self,
     ) -> Handle<NodeRef<marker::DormantMut, T, R, NodeType>, HandleType> {
         Handle {
@@ -43,7 +43,7 @@ impl<'a, T, R, NodeType, HandleType>
 impl<T, R, NodeType, HandleType>
     Handle<NodeRef<marker::DormantMut, T, R, NodeType>, HandleType>
 {
-    pub(super) unsafe fn awaken<'a>(
+    pub(in super::super) unsafe fn awaken<'a>(
         self,
     ) -> Handle<NodeRef<marker::Mut<'a>, T, R, NodeType>, HandleType> {
         Handle {

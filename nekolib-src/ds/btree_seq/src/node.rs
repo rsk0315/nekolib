@@ -222,7 +222,6 @@ pub struct Handle<Node, Type> {
 }
 
 mod handle;
-mod handle_cast;
 
 pub enum ForceResult<Leaf, Internal> {
     Leaf(Leaf),

@@ -91,3 +91,5 @@ impl<BorrowType: marker::Traversable, T, R>
         }
     }
 }
+
+mod handle_cast;
