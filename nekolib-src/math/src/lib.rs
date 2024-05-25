@@ -6,4 +6,5 @@ doc_inline_reexport! {
     gcd,
     linear_sieve,
     modint,
+    stern_brocot,
 }
