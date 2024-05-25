@@ -70,6 +70,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["seq",["",[],["lib.rs"]]],\
 ["small_rank_select",["",[],["lib.rs"]]],\
 ["snippet",["",[],["lib.rs"]]],\
+["stern_brocot",["",[],["lib.rs"]]],\
 ["str_sep",["",[],["lib.rs"]]],\
 ["suffix_array",["",[],["lib.rs"]]],\
 ["tortoise_hare",["",[],["lib.rs"]]],\
