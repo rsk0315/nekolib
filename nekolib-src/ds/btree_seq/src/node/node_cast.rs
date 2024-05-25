@@ -144,3 +144,12 @@ impl<'a, T, R, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
         unsafe { &mut *ptr }
     }
 }
+
+impl<'a, T: 'a, R: 'a, Type> NodeRef<marker::Immut<'a>, T, R, Type> {
+    pub(super) fn into_leaf(self) -> &'a LeafNode<T, R> {
+        let ptr = Self::as_leaf_ptr(&self);
+        // SAFETY: there can be no mutable references into this tree
+        // borrowed as `Immut`
+        unsafe { &*ptr }
+    }
+}

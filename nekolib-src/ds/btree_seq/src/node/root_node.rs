@@ -18,6 +18,7 @@ impl<T, R> NodeRef<marker::Owned, T, R, marker::Internal> {
     fn new_internal(child: Root<T, R>) -> Self {
         let mut new_node = unsafe { InternalNode::new() };
         new_node.edges[0].write(child.node);
+        // TODO: we need to initialize `reduced` field.
         unsafe { NodeRef::from_new_internal(new_node, child.height + 1) }
     }
 

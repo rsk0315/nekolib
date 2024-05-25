@@ -7,6 +7,15 @@ impl<Node: Copy, Type> Clone for Handle<Node, Type> {
     fn clone(&self) -> Self { *self }
 }
 
+impl<BorrowType, T, R, NodeType, HandleType> PartialEq
+    for Handle<NodeRef<BorrowType, T, R, NodeType>, HandleType>
+{
+    fn eq(&self, other: &Self) -> bool {
+        let Self { node, idx, .. } = self;
+        node.eq(&other.node) && *idx == other.idx
+    }
+}
+
 impl<BorrowType, T, R, NodeType>
     Handle<NodeRef<BorrowType, T, R, NodeType>, marker::Value>
 {

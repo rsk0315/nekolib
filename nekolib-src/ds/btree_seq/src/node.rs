@@ -23,6 +23,7 @@ impl<T, R> LeafNode<T, R> {
     // Initializes a new `LeafNode` in-place.
     //
     // # Safety
+    // `this` is uninitialized.
     unsafe fn init(this: *mut Self) {
         unsafe {
             ptr::addr_of_mut!((*this).parent).write(None);
@@ -173,9 +174,47 @@ impl<BorrowType: marker::Traversable, T, R, Type>
             })
             .ok_or(self)
     }
+
+    pub fn first_edge(self) -> Handle<Self, marker::Edge> {
+        unsafe { Handle::new_edge(self, 0) }
+    }
+
+    pub fn last_edge(self) -> Handle<Self, marker::Edge> {
+        let len = self.len();
+        unsafe { Handle::new_edge(self, len) }
+    }
+
+    /// # Panics
+    /// Panics if `self.len() == 0`
+    pub fn first_value(self) -> Handle<Self, marker::Value> {
+        let len = self.len();
+        assert!(len > 0);
+        unsafe { Handle::new_value(self, 0) }
+    }
+
+    /// # Panics
+    /// Panics if `self.len() == 0`
+    pub fn last_value(self) -> Handle<Self, marker::Value> {
+        let len = self.len();
+        assert!(len > 0);
+        unsafe { Handle::new_value(self, len - 1) }
+    }
+}
+
+impl<BorrowType, T, R, Type> NodeRef<BorrowType, T, R, Type> {
+    fn eq(&self, other: &Self) -> bool {
+        let Self { node, height, .. } = self;
+        if node.eq(&other.node) {
+            debug_assert_eq!(*height, other.height);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl<T, R> NodeRef<marker::Dying, T, R, marker::LeafOrInternal> {
+    /// # Safety
     pub unsafe fn deallocate_and_ascend(
         self,
     ) -> Option<
@@ -187,6 +226,7 @@ impl<T, R> NodeRef<marker::Dying, T, R, marker::LeafOrInternal> {
             unsafe { drop(Box::from_raw(node.as_ptr())) };
         } else {
             let ptr: NonNull<InternalNode<T, R>> = node.cast();
+            // TODO: we need to deallocate `reduced` field here.
             unsafe { drop(Box::from_raw(node.as_ptr())) };
         }
         ret
@@ -196,6 +236,8 @@ impl<T, R> NodeRef<marker::Dying, T, R, marker::LeafOrInternal> {
 impl<'a, T: 'a, R: 'a, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
     pub fn len_mut(&mut self) -> &mut u8 { &mut self.as_leaf_mut().len }
 
+    /// # Safety
+    /// `idx` is in bounds of `0..CAPACITY`
     unsafe fn val_area_mut<I, Output: ?Sized>(&mut self, idx: I) -> &mut Output
     where
         I: SliceIndex<[MaybeUninit<T>], Output = Output>,
@@ -205,6 +247,8 @@ impl<'a, T: 'a, R: 'a, Type> NodeRef<marker::Mut<'a>, T, R, Type> {
 }
 
 impl<'a, T: 'a, R: 'a> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
+    /// # Safety
+    /// `idx` is in bounds of `0..CAPACITY + 1`
     unsafe fn edge_area_mut<I, Output: ?Sized>(&mut self, idx: I) -> &mut Output
     where
         I: SliceIndex<[MaybeUninit<BoxedNode<T, R>>], Output = Output>,
@@ -212,6 +256,17 @@ impl<'a, T: 'a, R: 'a> NodeRef<marker::Mut<'a>, T, R, marker::Internal> {
         unsafe {
             self.as_internal_mut().edges.as_mut_slice().get_unchecked_mut(idx)
         }
+    }
+}
+
+impl<'a, T, R, Type> NodeRef<marker::ValMut<'a>, T, R, Type> {
+    /// # Safety
+    /// `self` has more than `idx` initialized elements.
+    unsafe fn into_val_mut_at(mut self, idx: usize) -> &'a mut T {
+        let leaf = Self::as_leaf_ptr(&mut self);
+        let vals = unsafe { ptr::addr_of_mut!((*leaf).vals) };
+        let vals: *mut [_] = vals;
+        unsafe { (*ptr::addr_of_mut!((*vals)[idx])).assume_init_mut() }
     }
 }
 
