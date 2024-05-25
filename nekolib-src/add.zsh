@@ -1,10 +1,10 @@
 #! /usr/bin/zsh
 
-mod="$1"
-crate="$2"
+mod="${1%%/*}"
+crate="${1#*/}"
 
 show_usage() {
-    echo "Usage: add.zsh mod [crate]"
+    echo "Usage: add.zsh mod[/crate]"
 }
 
 if [[ -z "$mod" ]]; then
