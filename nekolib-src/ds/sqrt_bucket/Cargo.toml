@@ -1,0 +1,7 @@
+[package]
+name = "sqrt_bucket"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+usize_bounds = { path = "../../ops/usize_bounds" }

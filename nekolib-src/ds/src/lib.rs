@@ -6,6 +6,7 @@ doc_inline_reexport! {
     foldable_deque,
     foldable_queue,
     rs01_dict,
+    sqrt_bucket,
     union_find,
     vec_segtree,
     wavelet_matrix,
