@@ -48,6 +48,9 @@ var srcIndex = new Map(JSON.parse('[\
 ["naive",["",[],["lib.rs"]]],\
 ["nekolib_doc",["",[],["lib.rs"]]],\
 ["nested_mod",["",[["nested1",[["nested2",[],["nested3.rs"]]],["nested2.rs"]]],["lib.rs","nested1.rs","priv_inner.rs","pub_inner.rs"]]],\
+["num_bigint",["",[["bigint",[],["addition.rs","bits.rs","convert.rs","division.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]],["biguint",[],["addition.rs","bits.rs","convert.rs","division.rs","iter.rs","monty.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]]],["bigint.rs","biguint.rs","lib.rs","macros.rs"]]],\
+["num_integer",["",[],["average.rs","lib.rs","roots.rs"]]],\
+["num_traits",["",[["ops",[],["bytes.rs","checked.rs","euclid.rs","inv.rs","mod.rs","mul_add.rs","overflowing.rs","saturating.rs","wrapping.rs"]]],["bounds.rs","cast.rs","float.rs","identities.rs","int.rs","lib.rs","macros.rs","pow.rs","real.rs","sign.rs"]]],\
 ["op_add",["",[],["lib.rs"]]],\
 ["ops",["",[],["lib.rs"]]],\
 ["pdep_pext",["",[],["lib.rs"]]],\
