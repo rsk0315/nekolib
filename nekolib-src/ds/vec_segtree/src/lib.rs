@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut, Index, Range};
 use monoid::Monoid;
 use usize_bounds::UsizeBounds;
 
+#[derive(Clone)]
 pub struct VecSegtree<M: Monoid> {
     tree: Vec<M::Set>,
     monoid: M,
@@ -115,7 +116,7 @@ impl<M: Monoid> VecSegtree<M> {
             _ => {}
         }
 
-        for v in self.roots(0..r) {
+        for v in self.roots(0..r).rev() {
             let tmp = monoid.op(&self.tree[v], &x);
             if pred(&tmp) {
                 x = tmp;
@@ -211,4 +212,93 @@ fn sanity_check() {
     assert_eq!(tree.fold(..), 6);
     *tree.peek_mut(1) -= 2;
     assert_eq!(tree.fold(..), 4);
+}
+
+#[test]
+fn fold_bisect() {
+    use op_add::OpAdd;
+
+    let tree: VecSegtree<OpAdd<i32>> = vec![1, 2, 3, 4, 5].into();
+
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 0), (0, 0));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 1), (1, 1));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 2), (1, 1));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 3), (2, 3));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 5), (2, 3));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 6), (3, 6));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 9), (3, 6));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 10), (4, 10));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 14), (4, 10));
+    assert_eq!(tree.fold_bisect_from(0, |&x| x <= 15), (5, 15));
+    assert_eq!(tree.fold_bisect_from(0, |_| true), (5, 15));
+
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 1), (1, 0));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 2), (2, 2));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 4), (2, 2));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 5), (3, 5));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 8), (3, 5));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 9), (4, 9));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 13), (4, 9));
+    assert_eq!(tree.fold_bisect_from(1, |&x| x <= 14), (5, 14));
+    assert_eq!(tree.fold_bisect_from(1, |_| true), (5, 14));
+
+    assert_eq!(tree.fold_bisect_from(2, |&x| x <= 2), (2, 0));
+    assert_eq!(tree.fold_bisect_from(2, |&x| x <= 3), (3, 3));
+    assert_eq!(tree.fold_bisect_from(2, |&x| x <= 6), (3, 3));
+    assert_eq!(tree.fold_bisect_from(2, |&x| x <= 7), (4, 7));
+    assert_eq!(tree.fold_bisect_from(2, |&x| x <= 11), (4, 7));
+    assert_eq!(tree.fold_bisect_from(2, |&x| x <= 12), (5, 12));
+    assert_eq!(tree.fold_bisect_from(2, |_| true), (5, 12));
+
+    assert_eq!(tree.fold_bisect_from(3, |&x| x <= 3), (3, 0));
+    assert_eq!(tree.fold_bisect_from(3, |&x| x <= 4), (4, 4));
+    assert_eq!(tree.fold_bisect_from(3, |&x| x <= 8), (4, 4));
+    assert_eq!(tree.fold_bisect_from(3, |&x| x <= 9), (5, 9));
+    assert_eq!(tree.fold_bisect_from(3, |_| true), (5, 9));
+
+    assert_eq!(tree.fold_bisect_from(4, |&x| x <= 4), (4, 0));
+    assert_eq!(tree.fold_bisect_from(4, |&x| x <= 5), (5, 5));
+    assert_eq!(tree.fold_bisect_from(4, |_| true), (5, 5));
+
+    assert_eq!(tree.fold_bisect_from(5, |_| true), (5, 0));
+
+    assert_eq!(tree.fold_bisect_to(0, |_| true), (0, 0));
+
+    assert_eq!(tree.fold_bisect_to(1, |&x| x <= 0), (1, 0));
+    assert_eq!(tree.fold_bisect_to(1, |&x| x <= 1), (0, 1));
+    assert_eq!(tree.fold_bisect_to(1, |_| true), (0, 1));
+
+    assert_eq!(tree.fold_bisect_to(2, |&x| x <= 0), (2, 0));
+    assert_eq!(tree.fold_bisect_to(2, |&x| x <= 1), (2, 0));
+    assert_eq!(tree.fold_bisect_to(2, |&x| x <= 2), (1, 2));
+    assert_eq!(tree.fold_bisect_to(2, |&x| x <= 3), (0, 3));
+    assert_eq!(tree.fold_bisect_to(2, |_| true), (0, 3));
+
+    assert_eq!(tree.fold_bisect_to(3, |&x| x <= 2), (3, 0));
+    assert_eq!(tree.fold_bisect_to(3, |&x| x <= 3), (2, 3));
+    assert_eq!(tree.fold_bisect_to(3, |&x| x <= 4), (2, 3));
+    assert_eq!(tree.fold_bisect_to(3, |&x| x <= 5), (1, 5));
+    assert_eq!(tree.fold_bisect_to(3, |&x| x <= 6), (0, 6));
+    assert_eq!(tree.fold_bisect_to(3, |_| true), (0, 6));
+
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 0), (4, 0));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 3), (4, 0));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 4), (3, 4));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 6), (3, 4));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 7), (2, 7));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 8), (2, 7));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 9), (1, 9));
+    assert_eq!(tree.fold_bisect_to(4, |&x| x <= 10), (0, 10));
+    assert_eq!(tree.fold_bisect_to(4, |_| true), (0, 10));
+
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 0), (5, 0));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 4), (5, 0));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 5), (4, 5));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 8), (4, 5));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 9), (3, 9));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 10), (3, 9));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 12), (2, 12));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 13), (2, 12));
+    assert_eq!(tree.fold_bisect_to(5, |&x| x <= 14), (1, 14));
+    assert_eq!(tree.fold_bisect_to(5, |_| true), (0, 15));
 }
