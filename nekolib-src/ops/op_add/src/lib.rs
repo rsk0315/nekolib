@@ -5,7 +5,7 @@ use std::{
 
 use monoid::{Associative, BinaryOp, Commutative, Identity, Recip};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct OpAdd<T>(std::marker::PhantomData<fn(&T) -> T>);
 
 impl<T> Default for OpAdd<T> {
