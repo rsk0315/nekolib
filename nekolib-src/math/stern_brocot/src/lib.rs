@@ -4,6 +4,9 @@ use std::{
     ops::{Add, ControlFlow, Div, Mul, Sub},
 };
 
+#[cfg(feature = "bigint")]
+use num_bigint::BigUint;
+
 #[derive(Clone)]
 pub struct Fraction<I> {
     pub numer: I,
@@ -203,8 +206,12 @@ pub trait SbUnsignedInt: Clone + Ord {
     fn const_0() -> Self;
     fn const_1() -> Self;
     fn const_2() -> Self;
-    fn frac_0() -> Fraction<Self>;
-    fn frac_oo() -> Fraction<Self>;
+    fn frac_0() -> Fraction<Self> {
+        Fraction { numer: Self::const_0(), denom: Self::const_1() }
+    }
+    fn frac_oo() -> Fraction<Self> {
+        Fraction { numer: Self::const_1(), denom: Self::const_0() }
+    }
 }
 
 macro_rules! impl_uint {
@@ -213,14 +220,15 @@ macro_rules! impl_uint {
             fn const_0() -> $ty { 0 }
             fn const_1() -> $ty { 1 }
             fn const_2() -> $ty { 2 }
-            fn frac_0() -> Fraction<$ty> {
-                Fraction { numer: Self::const_0(), denom: Self::const_1() }
-            }
-            fn frac_oo() -> Fraction<$ty> {
-                Fraction { numer: Self::const_1(), denom: Self::const_0() }
-            }
         }
     )* }
 }
 
 impl_uint! { u8 u16 u32 u64 u128 usize }
+
+#[cfg(feature = "bigint")]
+impl SbUnsignedInt for BigUint {
+    fn const_0() -> Self { Self::from(0_u32) }
+    fn const_1() -> Self { Self::from(1_u32) }
+    fn const_2() -> Self { Self::from(2_u32) }
+}
