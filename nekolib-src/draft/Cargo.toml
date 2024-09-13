@@ -7,3 +7,4 @@ edition = "2021"
 inner = { path = "../inner" }
 rs01dict_runtime = { path = "rs01dict_runtime" }
 rs01dict_tree = { path = "rs01dict_tree" }
+convex_count = { path = "convex_count" }
