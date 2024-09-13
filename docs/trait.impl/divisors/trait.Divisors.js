@@ -1,5 +1,9 @@
-(function() {var implementors = {
-"divisors":[],
-"math":[],
-"nekolib_doc":[]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {
+    var implementors = Object.fromEntries([["divisors",[]],["math",[]],["nekolib_doc",[]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[15,12,19]}
