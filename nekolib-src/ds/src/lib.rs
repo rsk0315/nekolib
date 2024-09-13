@@ -5,6 +5,7 @@ doc_inline_reexport! {
     fibonacci_heap,
     foldable_deque,
     foldable_queue,
+    n1_rmq,
     rs01_dict,
     sqrt_bucket,
     union_find,

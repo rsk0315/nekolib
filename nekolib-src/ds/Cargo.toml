@@ -16,3 +16,4 @@ wavelet_matrix = { path = "wavelet_matrix" }
 fibonacci_heap = { path = "fibonacci_heap" }
 btree_seq = { path = "btree_seq" }
 sqrt_bucket = { path = "sqrt_bucket" }
+n1_rmq = { path = "n1_rmq" }
