@@ -1986,6 +1986,28 @@ impl<T> BTreeSeq<T> {
         new_left.append(new_right);
         self.root = new_left.root.take();
     }
+
+    /// # Safety
+    /// `i < self.len()`
+    pub unsafe fn get_unchecked(&self, index: usize) -> &T {
+        debug_assert!(self.root.is_some()); // as `0 <= index < self.len()`
+        let root = self.root.as_ref().unwrap();
+        unsafe { root.borrow().select_value(index).get() }
+    }
+    /// # Safety
+    /// `i < self.len()`
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut T {
+        debug_assert!(self.root.is_some()); // as `0 <= index < self.len()`
+        let root = self.root.as_mut().unwrap();
+        unsafe { root.borrow_valmut().select_value(index).get_mut() }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&T> {
+        (index < self.len()).then(|| unsafe { self.get_unchecked(index) })
+    }
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        (index < self.len()).then(|| unsafe { self.get_unchecked_mut(index) })
+    }
 }
 
 impl<T> Default for BTreeSeq<T> {
@@ -2059,9 +2081,7 @@ impl<T> Index<usize> for BTreeSeq<T> {
         if index >= self.len() {
             assert_failed(index, self.len());
         }
-        debug_assert!(self.root.is_some());
-        let root = self.root.as_ref().unwrap();
-        unsafe { root.borrow().select_value(index).get() }
+        unsafe { self.get_unchecked(index) }
     }
 }
 impl<T> IndexMut<usize> for BTreeSeq<T> {
@@ -2073,9 +2093,7 @@ impl<T> IndexMut<usize> for BTreeSeq<T> {
         if index >= self.len() {
             assert_failed(index, self.len());
         }
-        debug_assert!(self.root.is_some());
-        let root = self.root.as_mut().unwrap();
-        unsafe { root.borrow_valmut().select_value(index).get_mut() }
+        unsafe { self.get_unchecked_mut(index) }
     }
 }
 
