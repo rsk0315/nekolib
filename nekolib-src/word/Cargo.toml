@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 inner = { path = "../inner" }
 small_rank_select = { path = "small_rank_select" }
+binom = { path = "binom" }
