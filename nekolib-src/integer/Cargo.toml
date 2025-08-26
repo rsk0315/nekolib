@@ -10,3 +10,4 @@ inner = { path = "../inner" }
 bin_iter = { path = "bin_iter" }
 pdep_pext = { path = "pdep_pext" }
 word_set = { path = "word_set" }
+digits_iter = { path = "digits_iter" }
