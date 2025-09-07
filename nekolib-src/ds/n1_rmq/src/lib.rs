@@ -46,6 +46,7 @@ impl<T: Clone + Ord> N1Rmq<T> {
     }
 
     pub fn min(&self, l: usize, r: usize) -> &T {
+        assert!(l < r);
         let b = self.b;
         let lb = l / b;
         let rb = (r - 1) / b;
