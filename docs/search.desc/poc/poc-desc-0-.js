@@ -1,1 +1,0 @@
-searchState.loadedDescShard("poc", 0, "")

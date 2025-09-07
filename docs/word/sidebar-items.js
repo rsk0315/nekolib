@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["const_rank_table","const_select_table","rank","select"],"mod":["small_rank_select"],"struct":["IntVec","RankTable","SelectTable"]};
+window.SIDEBAR_ITEMS = {"fn":["const_rank_table","const_select_table","rank","select"],"mod":["binom","small_rank_select"],"struct":["IntVec","RankTable","SelectTable"],"trait":["Binom"]};

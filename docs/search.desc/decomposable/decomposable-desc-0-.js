@@ -1,1 +1,0 @@
-searchState.loadedDescShard("decomposable", 0, "分解可能なクエリ。")

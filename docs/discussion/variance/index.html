@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="variance。"><title>discussion::variance - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9d5ec5f3536319c6.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.83.0-nightly (1d68e6dd1 2024-09-21)" data-channel="nightly" data-search-js="search-0cfde64e8ad3a7fe.js" data-settings-js="settings-7e3bb6c46e92e77c.js" ><script src="../../static.files/storage-29b1d5a9048d38fe.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-59a36e46ca746814.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-40f72c9259523cb3.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="variance。"><title>discussion::variance - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0-nightly (1ed3cd703 2025-09-06)" data-channel="nightly" data-search-js="search-d846cb6c.js" data-stringdex-js="stringdex-5af928a3.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
 
 <!-- The loading of KaTeX is deferred to speed up page rendering -->
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
@@ -93,6 +93,7 @@
   const cratesLs = {
     "algo": [
       "bisect",
+      "frac_approx",
       "tortoise_hare",
       "twosat"
     ],
@@ -117,6 +118,8 @@
       "fibonacci_heap",
       "foldable_deque",
       "foldable_queue",
+      "interval_map",
+      "interval_set",
       "n1_rmq",
       "rs01_dict",
       "sqrt_bucket",
@@ -137,6 +140,7 @@
     "inner": [],
     "integer": [
       "bin_iter",
+      "digits_iter",
       "pdep_pext",
       "word_set"
     ],
@@ -186,6 +190,7 @@
       "permutation"
     ],
     "word": [
+      "binom",
       "small_rank_select"
     ]
   };
@@ -248,7 +253,7 @@
   });
 </script>
 
-</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module variance</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#preliminaries" title="Preliminaries">Preliminaries</a><ul><li><a href="#簡単な-lifetime-に関する例" title="簡単な lifetime に関する例">簡単な lifetime に関する例</a></li><li><a href="#variance" title="Variance">Variance</a></li><li><a href="#higher-rank-trait-bounds" title="Higher-rank trait bounds">Higher-rank trait bounds</a></li></ul></li><li><a href="#notes" title="Notes">Notes</a></li><li><a href="#see-also" title="See also">See also</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate discussion</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">discussion</a>::<wbr><a class="mod" href="#">variance</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/ptr_ds/lib.rs.html#15">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>variance。</p>
+</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module variance</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module variance</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#preliminaries" title="Preliminaries">Preliminaries</a><ul><li><a href="#簡単な-lifetime-に関する例" title="簡単な lifetime に関する例">簡単な lifetime に関する例</a></li><li><a href="#variance" title="Variance">Variance</a></li><li><a href="#higher-rank-trait-bounds" title="Higher-rank trait bounds">Higher-rank trait bounds</a></li></ul></li><li><a href="#notes" title="Notes">Notes</a></li><li><a href="#see-also" title="See also">See also</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate discussion</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">discussion</a></div><h1>Module <span>variance</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/ptr_ds/lib.rs.html#15">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>variance。</p>
 <h3 id="preliminaries"><a class="doc-anchor" href="#preliminaries">§</a>Preliminaries</h3>
 <p>型 $<code>S</code>$, $<code>T</code>$ に対して、$<code>S</code>$ が $<code>T</code>$ の <strong>部分型</strong> (<em>subtype</em>) であることを
 $<code>S \subtype T</code>$ と書く。Rust においては、部分型は lifetime の文脈でのみ話題になる<sup id="fnref1"><a href="#fn1">1</a></sup>。
@@ -277,8 +282,7 @@ $<code>S</code>$ が $<code>T</code>$ の満たすべき制約を全て満たし
   --&gt; src/lib.rs:9:25
    |
 9  | let _invalid = unsafe { (*dang).clone() }; // UB
-   |                         ^^^^^^^ out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling
-</code></pre></div><h4 id="variance"><a class="doc-anchor" href="#variance">§</a>Variance</h4>
+   |                         ^^^^^^^ out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling</code></pre></div><h4 id="variance"><a class="doc-anchor" href="#variance">§</a>Variance</h4>
 <p>さて、<code>long</code>, <code>short</code> の lifetime をそれぞれ $<code>\lifetime{long}</code>$ (<code>'long</code>),
 $<code>\lifetime{short}</code>$ (<code>'short</code>) とする。
 $<code>\lifetime{long}</code>$ は、$<code>\lifetime{short}</code>$ が満たすべき制約（該当の期間を生き延びる）を満たし、
@@ -332,8 +336,7 @@ $<code>\lifetime{long}</code>$ は、$<code>\lifetime{short}</code>$ が満た�
 13 | }
    | - `short` dropped here while still borrowed
 14 | println!(&quot;{long_ref}&quot;);
-   |           ---------- borrow later used here
-</code></pre></div>
+   |           ---------- borrow later used here</code></pre></div>
 <p><code>'a &lt;: 'b</code> のときは <code>&amp;'a T &lt;: &amp;'b T</code> となるため、<code>&amp;T</code> は <code>'a &lt;: 'b</code>
 の関係を保存する操作と見做すことができる。こうした操作を <em>covariant</em> (<code>&amp;'a T</code> is <em>covariant</em> over <code>'a</code>)
 と言う。一方、<code>S &lt;: T</code> であっても <code>&amp;mut S &lt;: &amp;mut T</code> や <code>&amp;mut T &lt;: &amp;mut S</code>
@@ -380,8 +383,7 @@ $<code>\lifetime{long}</code>$ は、$<code>\lifetime{short}</code>$ が満た�
   --&gt; src/lib.rs:12:16
    |
 12 | let _invalid = long_ref.clone(); // UB
-   |                ^^^^^^^^ out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling
-</code></pre></div>
+   |                ^^^^^^^^ out-of-bounds pointer use: alloc943 has been freed, so this pointer is dangling</code></pre></div>
 <p>ところで、<a href="https://doc.rust-lang.org/nightly/core/ptr/non_null/struct.NonNull.html" title="struct core::ptr::non_null::NonNull"><code>std::ptr::NonNull</code></a> のドキュメントにおける一行の説明は下記の通りである。</p>
 <blockquote>
 <p><code>*mut T</code> but non-zero and covariant.</p>

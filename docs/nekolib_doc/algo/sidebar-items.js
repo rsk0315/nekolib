@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["twosat"],"mod":["bisect","tortoise_hare","twosat"],"trait":["Bisect","CycleMuLambda"]};
+window.SIDEBAR_ITEMS = {"enum":["ApproxFrac"],"fn":["twosat"],"mod":["bisect","frac_approx","tortoise_hare","twosat"],"struct":["FracApproxIter"],"trait":["Bisect","CycleMuLambda","FracApprox","SbInt"]};

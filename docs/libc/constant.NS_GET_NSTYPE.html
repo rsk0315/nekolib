@@ -1,0 +1,256 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `NS_GET_NSTYPE` constant in crate `libc`."><title>NS_GET_NSTYPE in libc - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="libc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0-nightly (1ed3cd703 2025-09-06)" data-channel="nightly" data-search-js="search-d846cb6c.js" data-stringdex-js="stringdex-5af928a3.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+
+<!-- The loading of KaTeX is deferred to speed up page rendering -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+
+<style>
+  code.code-math {
+      background-color: transparent;
+  }
+</style>
+
+<script>
+  'use strict';
+
+  const macros = {
+    // '\\foo': '42',
+    // '\\bar': '\\operatorname{bar}^{#1}',
+    '\\halfopen': '[#1, #2)',
+    '\\floor': '\\lfloor #1\\rfloor',
+    '\\ceil': '\\lceil #1\\rceil',
+    '\\rounded': '\\lfloor #1\\rceil',
+    '\\Floor': '\\left\\lfloor #1\\right\\rfloor',
+    '\\Ceil': '\\left\\lceil #1\\right\\rceil',
+    '\\Rounded': '\\left\\lfloor #1\\right\\rceil',
+    '\\angled': '\\langle #1\\rangle',
+    '\\Angled': '\\left\\langle #1\\right\\rangle',
+    '\\lcm': '\\operatorname*{lcm}',
+    '\\gcd': '\\operatorname*{gcd}',
+    '\\poly': '\\operatorname{poly}',
+    '\\polylog': '\\operatorname{polylog}',
+    '\\concat': '\\mathrel{+\\!\\!+}',
+    '\\mex': '\\operatorname*{mex}',
+    '\\qed': '\\square',
+    '\\Q': '\\mathbb{Q}',
+    '\\dd': '\\mathrm{d}',
+    '\\ForallL': '{}^{\\forall}#1.\\:#2',
+    '\\Forall': '{}^{\\forall}#1.\\,\\left[#2\\right]',
+    '\\ExistsL': '{}^{\\exists}#1.\\:#2',
+    '\\Exists': '{}^{\\exists}#1.\\,\\left[#2\\right]',
+    '\\roundp': '(\\kern-.2em[#1]\\kern-.2em)',
+    '\\bigroundp': '\\big(\\kern-.25em\\big[#1\\big]\\kern-.25em\\big)',
+    '\\Bigroundp': '\\Big(\\kern-.3em\\Big[#1\\Big]\\kern-.3em\\Big)',
+    '\\biggroundp': '\\bigg(\\kern-.3em\\bigg[#1\\bigg]\\kern-.3em\\bigg)',
+    '\\Biggroundp': '\\Bigg(\\kern-.35em\\Bigg[#1\\Bigg]\\kern-.35em\\Bigg)',
+    '\\hfloor': '\\lfloor\\hspace{-.25em}\\lfloor#1\\rfloor\\hspace{-.25em}\\rfloor',
+    '\\xgets': '\\xleftarrow{#1}',
+    '\\eod': '\\blacksquare', // end of \<details\>
+    '\\lldot': '\\mathop{.\\,.}',
+    '\\dp': '\\mathrm{dp}',
+    '\\subtype': '\\mathrel{\\lt:}',
+    '\\lifetime': '{}^{\\triangledown}\\text{\\texttt{#1}}',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
+    }
+
+    const codes = Array.from(document.getElementsByTagName('code'));
+    for (const elt of codes) {
+      if (elt.classList.contains('language-math')) continue;
+      if (elt.classList.contains('language-inline-math')) {
+        katex.render(elt.innerText, elt, { macros });
+        continue;
+      }
+
+      const parent = elt.parentNode;
+      if (parent.nodeName.toLowerCase() === 'pre') {
+        continue;
+      }
+
+      parent.style.overflowX = 'unset';
+      const content = parent.outerHTML.replaceAll(
+        /\$<code>([^<]*?)<\/code>\$/g,
+        ((match, inner) => {
+          return `<code class="code-math">${katex.renderToString(inner, { macros })}</code>`;
+        }),
+      );
+
+      try {
+        parent.outerHTML = content;
+      } catch (DOMException) {
+        continue;
+      }
+    }
+  });
+</script>
+
+<script>
+  'use strict';
+
+  const cratesLs = {
+    "algo": [
+      "bisect",
+      "frac_approx",
+      "tortoise_hare",
+      "twosat"
+    ],
+    "corro": [
+      "array_insertion",
+      "array_removal",
+      "array_rotation",
+      "borrow"
+    ],
+    "discussion": [
+      "decomposable",
+      "dp",
+      "plane-sweep",
+      "ptr-ds"
+    ],
+    "draft": [
+      "rs01dict_runtime",
+      "rs01dict_tree"
+    ],
+    "ds": [
+      "btree_seq",
+      "fibonacci_heap",
+      "foldable_deque",
+      "foldable_queue",
+      "interval_map",
+      "interval_set",
+      "n1_rmq",
+      "rs01_dict",
+      "sqrt_bucket",
+      "union-find",
+      "vec_segtree",
+      "wavelet_matrix"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "graph": [
+      "bfs01",
+      "dijkstra",
+      "lowlink",
+      "scc"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "digits_iter",
+      "pdep_pext",
+      "word_set"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "divisors",
+      "factors",
+      "gcd",
+      "linear_sieve",
+      "modint",
+      "stern_brocot"
+    ],
+    "naive": [
+      "assoc-list",
+      "bit-vector",
+      "concat-monoid",
+      "disjoint-set"
+    ],
+    "ops": [
+      "monoid",
+      "op_add",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support",
+      "nested_mod"
+    ],
+    "random": [
+      "randgen"
+    ],
+    "seq": [
+      "inversion",
+      "lis",
+      "majority_vote",
+      "opmph",
+      "suffix_array"
+    ],
+    "snippet": [
+      "proconio"
+    ],
+    "uslice": [
+      "bucket_sort",
+      "permutation"
+    ],
+    "word": [
+      "binom",
+      "small_rank_select"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const crates = [...document.getElementsByClassName('block crate')][0];
+
+    const links = new Map([...crates.querySelectorAll('a')].map((e) => [
+      e.innerText,
+      {
+        name: e.innerText,
+        href: e.href,
+        current: e.parentNode.classList.contains('current'),
+      },
+    ]));
+
+    const tree = new Map();
+    for (const mod of Object.keys(cratesLs)) {
+      for (const crate of cratesLs[mod]) {
+        const crate_ = crate.replaceAll('-', '_');
+        if (!links.has(crate_)) continue;
+
+        if (!tree.has(mod)) {
+          tree.set(mod, []);
+        }
+
+        tree.get(mod).push(links.get(crate_));
+      }
+    }
+
+    const cratesElt = document.createElement('ul');
+    cratesElt.classList.add('block');
+    cratesElt.classList.add('crate');
+    for (const [modName, mod] of tree) {
+      {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        const link = links.get(modName);
+        a.href = link.href;
+        if (link.current) li.classList.add('current');
+        a.innerText = link.name;
+        li.appendChild(a);
+        cratesElt.appendChild(li);
+      }
+
+      const ul = document.createElement('ul');
+      for (const crate of mod) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = crate.href;
+        if (crate.current) li.classList.add('current');
+        a.innerText = crate.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      cratesElt.appendChild(ul);
+    }
+
+    crates.outerHTML = cratesElt.outerHTML;
+  });
+</script>
+
+</head><body class="rustdoc constant"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">NS_GET_NSTYPE</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../libc/index.html">libc</a><span class="version">0.2.175</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">libc</a></div><h1>Constant <span class="constant">NS_<wbr>GET_<wbr>NSTYPE</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/libc/unix/linux_like/linux/mod.rs.html#2911">Source</a> </span></div><pre class="rust item-decl"><code>pub const NS_GET_NSTYPE: <a class="type" href="type.c_ulong.html" title="type libc::c_ulong">c_ulong</a> = _; // 46_851u64</code></pre></section></div></main></body></html>

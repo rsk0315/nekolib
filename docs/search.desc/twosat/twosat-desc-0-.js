@@ -1,1 +1,0 @@
-searchState.loadedDescShard("twosat", 0, "")

@@ -1,1 +1,0 @@
-searchState.loadedDescShard("gcd", 0, "")

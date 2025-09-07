@@ -1,1 +1,0 @@
-searchState.loadedDescShard("inner", 0, "")

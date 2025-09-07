@@ -1,1 +1,0 @@
-searchState.loadedDescShard("ptr_ds", 0, "ポインタ系データ構造。\nエイリアスモデル。\n未初期化の値。\n生ポインタ。\nvariance。")

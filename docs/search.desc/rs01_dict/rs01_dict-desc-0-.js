@@ -1,1 +1,0 @@
-searchState.loadedDescShard("rs01_dict", 0, "Returns the argument unchanged.\nCalls <code>U::from(self)</code>.")

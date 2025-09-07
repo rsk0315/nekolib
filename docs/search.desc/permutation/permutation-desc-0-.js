@@ -1,1 +1,0 @@
-searchState.loadedDescShard("permutation", 0, "")
