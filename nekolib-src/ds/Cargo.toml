@@ -17,3 +17,5 @@ fibonacci_heap = { path = "fibonacci_heap" }
 btree_seq = { path = "btree_seq" }
 sqrt_bucket = { path = "sqrt_bucket" }
 n1_rmq = { path = "n1_rmq" }
+interval_set = { path = "interval_set" }
+interval_map = { path = "interval_map" }
