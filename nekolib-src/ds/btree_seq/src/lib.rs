@@ -442,7 +442,7 @@ impl<BorrowType: Traversable, T> NodeRef<BorrowType, T, marker::Internal> {
     fn children_ref(&self) -> &[NonNull<LeafNode<T>>] {
         let init_len = self.buflen() as usize;
         unsafe {
-            &*(&(*self.as_internal_ptr()).children[..=init_len]
+            &*(&(&(*self.as_internal_ptr()).children)[..=init_len]
                 as *const [MaybeUninit<_>]
                 as *const [NonNull<LeafNode<T>>])
         }
@@ -662,7 +662,7 @@ impl<T> DyingNodeRef<T> {
         let ptr = self.node.as_ptr();
         if !elt_dropped {
             unsafe {
-                for e in &mut (*ptr).buf[..init_len] {
+                for e in &mut (&mut (*ptr).buf)[..init_len] {
                     e.assume_init_drop()
                 }
             }
