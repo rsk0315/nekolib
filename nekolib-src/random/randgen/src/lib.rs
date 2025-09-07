@@ -3,8 +3,8 @@
 use std::{collections::BTreeSet, ops::Range};
 
 use rand::{
-    distributions::{Distribution, Uniform},
     Rng, SeedableRng,
+    distributions::{Distribution, Uniform},
 };
 use rand_chacha::ChaCha20Rng;
 
@@ -100,7 +100,7 @@ fn uniformity() {
 }
 
 #[test]
-#[cfg(ignore)]
+#[cfg(false)]
 fn macros() {
     rand_gen! {
         rng = _; // Default
