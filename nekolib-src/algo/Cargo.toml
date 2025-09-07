@@ -10,3 +10,4 @@ inner = { path = "../inner" }
 bisect = { path = "bisect" }
 tortoise_hare = { path = "tortoise_hare" }
 twosat = { path = "twosat" }
+frac_approx = { path = "frac_approx" }
