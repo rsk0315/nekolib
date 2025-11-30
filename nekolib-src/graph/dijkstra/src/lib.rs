@@ -49,7 +49,7 @@ where
         heap.push(RevFst(zero, src.clone()));
         while let Some(RevFst(w, v)) = heap.pop() {
             if let Some(cur_w) = &cost[index(&v)] {
-                if cur_w > &w {
+                if cur_w < &w {
                     continue;
                 }
             }
@@ -102,7 +102,7 @@ where
         heap.push(RevFst(zero, src.clone()));
         while let Some(RevFst(w, v)) = heap.pop() {
             if let Some(cur_w) = &cost[index(&v)] {
-                if cur_w > &w {
+                if cur_w < &w {
                     continue;
                 }
             }
