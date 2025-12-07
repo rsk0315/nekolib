@@ -4,6 +4,7 @@ doc_inline_reexport! {
     divisors,
     factors,
     gcd,
+    gcd_recip,
     linear_sieve,
     modint,
     stern_brocot,

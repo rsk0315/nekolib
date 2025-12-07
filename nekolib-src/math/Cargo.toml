@@ -13,3 +13,4 @@ divisors = { path = "divisors" }
 factors = { path = "factors" }
 gcd = { path = "gcd" }
 stern_brocot = { path = "stern_brocot" }
+gcd_recip = { path = "gcd_recip" }
