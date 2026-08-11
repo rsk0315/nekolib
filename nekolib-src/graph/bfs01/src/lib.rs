@@ -4,7 +4,7 @@ pub struct Cert<V>(Vec<Option<V>>);
 pub struct NoCert;
 
 pub struct Bfs01Sssp<V, I, C> {
-    cost: Vec<usize>,
+    cost: Vec<u32>,
     prev: C,
     index: I,
     src: V,
@@ -18,14 +18,18 @@ where
     pub fn new_cert<D, J>(src: V, len: usize, index: I, delta: D) -> Self
     where
         D: Fn(&V) -> J,
-        J: Iterator<Item = (V, usize)>,
+        J: Iterator<Item = (V, u32)>,
     {
-        let mut cost = vec![len; len];
+        let mut cost = vec![len as u32; len];
         let mut prev = vec![None; len];
         let mut deque = VecDeque::new();
         cost[index(&src)] = 0;
         deque.push_front((0, src.clone()));
         while let Some((w, v)) = deque.pop_front() {
+            if cost[index(&v)] != w {
+                continue;
+            }
+
             for (nv, dw) in delta(&v) {
                 let nw = w + dw;
                 let ni = index(&nv);
@@ -67,13 +71,17 @@ where
     pub fn new<D, J>(src: V, len: usize, index: I, delta: D) -> Self
     where
         D: Fn(&V) -> J,
-        J: Iterator<Item = (V, usize)>,
+        J: Iterator<Item = (V, u32)>,
     {
-        let mut cost = vec![len; len];
+        let mut cost = vec![len as u32; len];
         let mut deque = VecDeque::new();
         cost[index(&src)] = 0;
         deque.push_front((0, src.clone()));
         while let Some((w, v)) = deque.pop_front() {
+            if cost[index(&v)] != w {
+                continue;
+            }
+
             for (nv, dw) in delta(&v) {
                 let nw = w + dw;
                 let ni = index(&nv);
@@ -98,7 +106,7 @@ where
     I: Fn(&V) -> usize,
 {
     pub fn cost(&self, dst: &V) -> Option<usize> {
-        let tmp = self.cost[(self.index)(dst)].clone();
+        let tmp = self.cost[(self.index)(dst)].clone() as usize;
         (tmp < self.cost.len()).then_some(tmp)
     }
 }
