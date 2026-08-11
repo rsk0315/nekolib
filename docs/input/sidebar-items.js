@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["read_value","scan"],"static":["STDIN_SOURCE"],"struct":["OnceSource"],"trait":["Readable","Source"],"type":["AutoSource"]};
+window.SIDEBAR_ITEMS = {"macro":[["read_value",1],["scan",1]],"static":["STDIN_SOURCE"],"struct":["OnceSource"],"trait":["Readable","Source"],"type":["AutoSource"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["doc_inline_reexport"]};
+window.SIDEBAR_ITEMS = {"macro":[["doc_inline_reexport",1]]};

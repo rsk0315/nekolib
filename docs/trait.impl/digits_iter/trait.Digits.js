@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["digits_iter",[]],["integer",[]],["nekolib_doc",[]]]);
+    const implementors = Object.fromEntries([["digits_iter",[]],["integer",[]],["nekolib_doc",[]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[18,15,19]}
+//{"start":59,"fragment_lengths":[18,15,19]}
