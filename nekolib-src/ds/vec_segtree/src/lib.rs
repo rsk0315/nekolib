@@ -1,4 +1,7 @@
-use std::ops::{Deref, DerefMut, Index, Range};
+use std::{
+    fmt,
+    ops::{Deref, DerefMut, Index, Range},
+};
 
 use monoid::Monoid;
 use usize_bounds::UsizeBounds;
@@ -179,8 +182,8 @@ impl<M: Monoid> DerefMut for PeekMutTmp<'_, M> {
 
 impl<M: Monoid> Drop for PeekMutTmp<'_, M> {
     fn drop(&mut self) {
-        let Self {
-            self_: VecSegtree { ref mut tree, ref monoid },
+        let &mut Self {
+            self_: &mut VecSegtree { ref mut tree, ref monoid },
             index: mut i,
         } = self;
         while i > 1 {
@@ -201,6 +204,16 @@ impl<M: Monoid + Default> FromIterator<M::Set> for VecSegtree<M> {
     fn from_iter<I: IntoIterator<Item = M::Set>>(iter: I) -> Self {
         let buf: Vec<_> = iter.into_iter().collect();
         buf.into()
+    }
+}
+
+impl<M: Monoid> fmt::Debug for VecSegtree<M>
+where
+    M::Set: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let n = self.tree.len() / 2;
+        f.debug_list().entries(self.tree[n..].iter()).finish()
     }
 }
 
