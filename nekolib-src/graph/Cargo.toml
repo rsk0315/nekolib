@@ -9,3 +9,4 @@ dijkstra = { path = "dijkstra" }
 bfs01 = { path = "bfs01" }
 scc = { path = "scc" }
 lowlink = { path = "lowlink" }
+tree_cata = { path = "tree_cata" }

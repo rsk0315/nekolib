@@ -5,4 +5,5 @@ doc_inline_reexport! {
     dijkstra,
     lowlink,
     scc,
+    tree_cata,
 }
