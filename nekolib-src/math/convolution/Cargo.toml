@@ -1,0 +1,8 @@
+[package]
+name = "convolution"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+garner = { path = "../garner" }
+modint = { path = "../modint" }

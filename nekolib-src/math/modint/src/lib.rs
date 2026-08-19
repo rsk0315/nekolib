@@ -8,6 +8,7 @@ use std::{
 };
 
 use bin_iter::BinIter;
+use gcd_recip::GcdRecip;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct StaticModInt<const MOD: u32>(u32);
@@ -48,8 +49,10 @@ impl<const MOD: u32> DivAssign for StaticModInt<MOD> {
 
 impl<const MOD: u32> StaticModInt<MOD> {
     pub fn recip(self) -> Self { self.checked_recip().unwrap() }
-    // XXX use Euclidean algorithm
-    pub fn checked_recip(self) -> Option<Self> { Some(self.pow(MOD - 2)) }
+    pub fn checked_recip(self) -> Option<Self> {
+        let (g, r) = (self.0 as u64).gcd_recip(MOD as u64);
+        (g == 1).then_some(Self::new(r))
+    }
     pub fn pow(self, exp: impl BinIter) -> Self {
         let mut res = Self::new(1);
         let mut dbl = self;
@@ -194,6 +197,39 @@ impl<const MOD: u32> Hash for StaticModInt<MOD> {
     fn hash<H: Hasher>(&self, state: &mut H) { self.0.hash(state) }
 }
 
+pub trait ModInt:
+    Sized
+    + Clone
+    + Copy
+    + Eq
+    + Hash
+    + Add<Self, Output = Self>
+    + AddAssign<Self>
+    + Sub<Self, Output = Self>
+    + SubAssign<Self>
+    + Mul<Self, Output = Self>
+    + MulAssign<Self>
+    + Div<Self, Output = Self>
+    + DivAssign<Self>
+    + Neg
+    + Sum
+    + Product
+{
+    fn new(val: impl RemEuclidU32) -> Self;
+    fn get(self) -> u32;
+    fn pow(self, exp: impl BinIter) -> Self;
+    fn recip(self) -> Self;
+    fn checked_recip(self) -> Option<Self>;
+}
+
+impl<const MOD: u32> ModInt for StaticModInt<MOD> {
+    fn new(val: impl RemEuclidU32) -> Self { Self::new(val) }
+    fn get(self) -> u32 { self.0 }
+    fn pow(self, exp: impl BinIter) -> Self { self.pow(exp) }
+    fn recip(self) -> Self { self.recip() }
+    fn checked_recip(self) -> Option<Self> { self.checked_recip() }
+}
+
 pub type ModInt998244353 = StaticModInt<998244353>;
 pub type ModInt1000000007 = StaticModInt<1000000007>;
 
@@ -202,8 +238,8 @@ fn arithmetic() {
     type Mi = ModInt998244353;
 
     let zero = Mi::new(0);
-    let half = Mi::new(499122177);
-    let quarter = Mi::new(748683265);
+    let half = Mi::new(2).recip();
+    let quarter = Mi::new(4).recip();
     let one = Mi::new(1);
     let two = Mi::new(2);
     assert_eq!(Mi::new(Mi::modulus()), zero);
