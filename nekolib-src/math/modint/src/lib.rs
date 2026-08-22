@@ -19,6 +19,10 @@ impl<const MOD: u32> StaticModInt<MOD> {
     pub fn modulus() -> u32 { MOD }
 }
 
+impl<const MOD: u32> Default for StaticModInt<MOD> {
+    fn default() -> Self { Self(0) }
+}
+
 impl<const MOD: u32> AddAssign for StaticModInt<MOD> {
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;

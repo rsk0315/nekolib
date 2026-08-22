@@ -11,6 +11,7 @@ doc_inline_reexport! {
     rs01_dict,
     sqrt_bucket,
     union_find,
+    vec_lazy_segtree,
     vec_segtree,
     wavelet_matrix,
 }

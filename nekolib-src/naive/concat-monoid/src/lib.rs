@@ -2,8 +2,8 @@ use monoid::def_monoid_generics;
 
 def_monoid_generics! {
     pub OpConcat[T, B] where [
-        T: Clone,
-        B: Clone + IntoIterator<Item = T> + FromIterator<T>,
+        T: Clone + Eq,
+        B: Clone + Eq + IntoIterator<Item = T> + FromIterator<T>,
     ] = (
         B,
         |x: &B, y: &B| x.clone().into_iter().chain(y.clone()).collect(),

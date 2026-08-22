@@ -1,5 +1,5 @@
 pub trait BinaryOp {
-    type Set;
+    type Set: PartialEq;
     fn op(&self, lhs: &Self::Set, rhs: &Self::Set) -> Self::Set;
 }
 

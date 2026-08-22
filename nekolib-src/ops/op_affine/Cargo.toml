@@ -1,10 +1,9 @@
 [package]
-name = "op_add"
+name = "op_affine"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 monoid = { path = "../monoid" }
 has_zero = { path = "../has_zero" }
+has_one = { path = "../has_one" }

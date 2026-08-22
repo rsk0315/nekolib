@@ -1,0 +1,12 @@
+[package]
+name = "op_affine_on_op_add_deg1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+monoid = { path = "../monoid" }
+monoid_action = { path = "../monoid_action" }
+op_affine = { path = "../op_affine" }
+op_add_deg1 = { path = "../op_add_deg1" }
+has_zero = { path = "../has_zero" }
+has_one = { path = "../has_one" }

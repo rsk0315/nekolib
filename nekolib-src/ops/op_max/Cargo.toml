@@ -1,0 +1,8 @@
+[package]
+name = "op_max"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+monoid = { path = "../monoid" }
+has_minimum = { path = "../has_minimum" }

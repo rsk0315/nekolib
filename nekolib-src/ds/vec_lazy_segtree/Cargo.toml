@@ -1,0 +1,9 @@
+[package]
+name = "vec_lazy_segtree"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+monoid = { path = "../../ops/monoid" }
+monoid_action = { path = "../../ops/monoid_action" }
+usize_bounds = { path = "../../ops/usize_bounds" }

@@ -10,3 +10,13 @@ inner = { path = "../inner" }
 monoid = { path = "monoid" }
 usize_bounds = { path = "usize_bounds" }
 op_add = { path = "op_add" }
+monoid_action = { path = "monoid_action" }
+op_min = { path = "op_min" }
+op_max = { path = "op_max" }
+op_affine = { path = "op_affine" }
+has_zero = { path = "has_zero" }
+has_one = { path = "has_one" }
+has_maximum = { path = "has_maximum" }
+has_minimum = { path = "has_minimum" }
+op_add_deg1 = { path = "op_add_deg1" }
+op_affine_on_op_add_deg1 = { path = "op_affine_on_op_add_deg1" }

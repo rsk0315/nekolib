@@ -19,3 +19,4 @@ sqrt_bucket = { path = "sqrt_bucket" }
 n1_rmq = { path = "n1_rmq" }
 interval_set = { path = "interval_set" }
 interval_map = { path = "interval_map" }
+vec_lazy_segtree = { path = "vec_lazy_segtree" }
