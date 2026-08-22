@@ -15,6 +15,7 @@ pub struct StaticModInt<const MOD: u32>(u32);
 
 impl<const MOD: u32> StaticModInt<MOD> {
     pub fn new(val: impl RemEuclidU32) -> Self { Self::from(val) }
+    pub const fn new_const(val: u32) -> Self { Self(val.rem_euclid(MOD)) }
     pub fn modulus() -> u32 { MOD }
 }
 
