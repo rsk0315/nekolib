@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["nekolib_doc",[]],["op_affine_on_op_add_deg1",[["impl&lt;T&gt; <a class=\"trait\" href=\"monoid_action/trait.MonoidAction.html\" title=\"trait monoid_action::MonoidAction\">MonoidAction</a> for <a class=\"struct\" href=\"op_affine_on_op_add_deg1/struct.OpAffineOnOpAddDeg1.html\" title=\"struct op_affine_on_op_add_deg1::OpAffineOnOpAddDeg1\">OpAffineOnOpAddDeg1</a>&lt;T&gt;<div class=\"where\">where\n    T: <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html\" title=\"trait core::cmp::Eq\">Eq</a> + <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html\" title=\"trait core::clone::Clone\">Clone</a> + <a class=\"trait\" href=\"has_zero/trait.HasZero.html\" title=\"trait has_zero::HasZero\">HasZero</a> + <a class=\"trait\" href=\"has_one/trait.HasOne.html\" title=\"trait has_one::HasOne\">HasOne</a>,\n    for&lt;'a&gt; <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.reference.html\">&amp;'a T</a>: <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/arith/trait.Add.html\" title=\"trait core::ops::arith::Add\">Add</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.reference.html\">&amp;'a T</a>, Output = T&gt; + <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/arith/trait.Mul.html\" title=\"trait core::ops::arith::Mul\">Mul</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.reference.html\">&amp;'a T</a>, Output = T&gt;,</div>",0]]],["ops",[]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[18,1531,11]}

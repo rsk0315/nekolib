@@ -124,6 +124,7 @@
       "rs01_dict",
       "sqrt_bucket",
       "union-find",
+      "vec_lazy_segtree",
       "vec_segtree",
       "wavelet_matrix"
     ],
@@ -168,8 +169,18 @@
       "disjoint-set"
     ],
     "ops": [
+      "has_maximum",
+      "has_minimum",
+      "has_one",
+      "has_zero",
       "monoid",
+      "monoid_action",
       "op_add",
+      "op_add_deg1",
+      "op_affine",
+      "op_affine_on_op_add_deg1",
+      "op_max",
+      "op_min",
       "usize_bounds"
     ],
     "poc": [
@@ -258,8 +269,8 @@
 </script>
 
 </head><body class="rustdoc trait"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">BinaryOp</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../monoid/index.html">monoid</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Binary<wbr>Op</a></h2><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Set" title="Set">Set</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.op" title="op">op</a></li></ul><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate monoid</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">monoid</a></div><h1>Trait <span class="trait">Binary<wbr>Op</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/monoid/lib.rs.html#1-4">Source</a> </span></div><pre class="rust item-decl"><code>pub trait BinaryOp {
-    type <a href="#associatedtype.Set" class="associatedtype">Set</a>;
+    type <a href="#associatedtype.Set" class="associatedtype">Set</a>: <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html" title="trait core::cmp::PartialEq">PartialEq</a>;
 
     // Required method
     fn <a href="#tymethod.op" class="fn">op</a>(&amp;self, lhs: &amp;Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>, rhs: &amp;Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>) -&gt; Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>;
-}</code></pre><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><section id="associatedtype.Set" class="method"><a class="src rightside" href="../src/monoid/lib.rs.html#2">Source</a><h4 class="code-header">type <a href="#associatedtype.Set" class="associatedtype">Set</a></h4></section></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><section id="tymethod.op" class="method"><a class="src rightside" href="../src/monoid/lib.rs.html#3">Source</a><h4 class="code-header">fn <a href="#tymethod.op" class="fn">op</a>(&amp;self, lhs: &amp;Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>, rhs: &amp;Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>) -&gt; Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a></h4></section></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait <b>is</b> <a href="https://doc.rust-lang.org/nightly/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety".</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../trait.impl/monoid/trait.BinaryOp.js" async></script></section></div></main></body></html>
+}</code></pre><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><section id="associatedtype.Set" class="method"><a class="src rightside" href="../src/monoid/lib.rs.html#2">Source</a><h4 class="code-header">type <a href="#associatedtype.Set" class="associatedtype">Set</a>: <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html" title="trait core::cmp::PartialEq">PartialEq</a></h4></section></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><section id="tymethod.op" class="method"><a class="src rightside" href="../src/monoid/lib.rs.html#3">Source</a><h4 class="code-header">fn <a href="#tymethod.op" class="fn">op</a>(&amp;self, lhs: &amp;Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>, rhs: &amp;Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a>) -&gt; Self::<a class="associatedtype" href="trait.BinaryOp.html#associatedtype.Set" title="type monoid::BinaryOp::Set">Set</a></h4></section></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait <b>is</b> <a href="https://doc.rust-lang.org/nightly/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety".</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../trait.impl/monoid/trait.BinaryOp.js" async></script></section></div></main></body></html>

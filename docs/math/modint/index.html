@@ -124,6 +124,7 @@
       "rs01_dict",
       "sqrt_bucket",
       "union-find",
+      "vec_lazy_segtree",
       "vec_segtree",
       "wavelet_matrix"
     ],
@@ -168,8 +169,18 @@
       "disjoint-set"
     ],
     "ops": [
+      "has_maximum",
+      "has_minimum",
+      "has_one",
+      "has_zero",
       "monoid",
+      "monoid_action",
       "op_add",
+      "op_add_deg1",
+      "op_affine",
+      "op_affine_on_op_add_deg1",
+      "op_max",
+      "op_min",
       "usize_bounds"
     ],
     "poc": [
@@ -257,4 +268,4 @@
   });
 </script>
 
-</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate modint</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../math/index.html">math</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#structs">Crate Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">math</a></div><h1>Crate <span>modint</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/modint/lib.rs.html#1-313">Source</a> </span></div><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.StaticModInt.html" title="struct math::modint::StaticModInt">Static<wbr>ModInt</a></dt></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.ModInt.html" title="trait math::modint::ModInt">ModInt</a></dt><dt><a class="trait" href="trait.RemEuclidU32.html" title="trait math::modint::RemEuclidU32">RemEuclid<wbr>U32</a></dt></dl><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><dl class="item-table"><dt><a class="type" href="type.ModInt998244353.html" title="type math::modint::ModInt998244353">ModInt998244353</a></dt><dt><a class="type" href="type.ModInt1000000007.html" title="type math::modint::ModInt1000000007">ModInt1000000007</a></dt></dl></section></div></main></body></html>
+</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate modint</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../math/index.html">math</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#structs">Crate Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">math</a></div><h1>Crate <span>modint</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/modint/lib.rs.html#1-317">Source</a> </span></div><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.StaticModInt.html" title="struct math::modint::StaticModInt">Static<wbr>ModInt</a></dt></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.ModInt.html" title="trait math::modint::ModInt">ModInt</a></dt><dt><a class="trait" href="trait.RemEuclidU32.html" title="trait math::modint::RemEuclidU32">RemEuclid<wbr>U32</a></dt></dl><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><dl class="item-table"><dt><a class="type" href="type.ModInt998244353.html" title="type math::modint::ModInt998244353">ModInt998244353</a></dt><dt><a class="type" href="type.ModInt1000000007.html" title="type math::modint::ModInt1000000007">ModInt1000000007</a></dt></dl></section></div></main></body></html>

@@ -124,6 +124,7 @@
       "rs01_dict",
       "sqrt_bucket",
       "union-find",
+      "vec_lazy_segtree",
       "vec_segtree",
       "wavelet_matrix"
     ],
@@ -168,8 +169,18 @@
       "disjoint-set"
     ],
     "ops": [
+      "has_maximum",
+      "has_minimum",
+      "has_one",
+      "has_zero",
       "monoid",
+      "monoid_action",
       "op_add",
+      "op_add_deg1",
+      "op_affine",
+      "op_affine_on_op_add_deg1",
+      "op_max",
+      "op_min",
       "usize_bounds"
     ],
     "poc": [
@@ -261,8 +272,8 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="macro">def_monoid_generics!</span> {
 <a href=#4 id=4 data-nosnippet>4</a>    <span class="kw">pub </span>OpConcat[T, B] <span class="kw">where </span>[
-<a href=#5 id=5 data-nosnippet>5</a>        T: Clone,
-<a href=#6 id=6 data-nosnippet>6</a>        B: Clone + IntoIterator&lt;Item = T&gt; + FromIterator&lt;T&gt;,
+<a href=#5 id=5 data-nosnippet>5</a>        T: Clone + Eq,
+<a href=#6 id=6 data-nosnippet>6</a>        B: Clone + Eq + IntoIterator&lt;Item = T&gt; + FromIterator&lt;T&gt;,
 <a href=#7 id=7 data-nosnippet>7</a>    ] = (
 <a href=#8 id=8 data-nosnippet>8</a>        B,
 <a href=#9 id=9 data-nosnippet>9</a>        |x: <span class="kw-2">&amp;</span>B, y: <span class="kw-2">&amp;</span>B| x.clone().into_iter().chain(y.clone()).collect(),
