@@ -9,6 +9,7 @@ use std::{
 
 use bin_iter::BinIter;
 use gcd_recip::GcdRecip;
+use linear_sieve::LinearSieve;
 use primality::is_prime_u32;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -73,7 +74,9 @@ impl<const MOD: u32> StaticModInt<MOD> {
 
     pub fn recip_table_prime(n: usize) -> Vec<Self> {
         if !Self::IS_PRIME {
-            unimplemented!();
+            let ls = LinearSieve::new(n);
+            let res = ls.recip_mod(Self::MOD as usize);
+            return res.into_iter().map(Self::new).collect();
         }
 
         let m = Self::MOD as usize;

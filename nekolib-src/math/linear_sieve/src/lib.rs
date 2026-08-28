@@ -1,3 +1,5 @@
+use gcd_recip::GcdRecip;
+
 pub struct LinearSieve {
     lpf: Vec<usize>,
     lpf_e: Vec<(usize, u32)>,
@@ -123,6 +125,30 @@ impl LinearSieve {
         }
         res
     }
+
+    pub fn recip_mod(&self, m: usize) -> Vec<usize> {
+        let n = self.lpf.len() - 1;
+        let mut res = vec![0; n + 1];
+        if n == 0 {
+            return res;
+        }
+        res[1] = 1;
+        for i in 2..=n.min(m - 1) {
+            let j = self.lpf[i];
+            if j == i {
+                let (g, r) = i.gcd_recip(m);
+                if g == 1 {
+                    res[i] = r;
+                }
+            } else {
+                res[i] = res[j] * res[i / j] % m;
+            }
+        }
+        for i in m..=n {
+            res[i] = res[i % m];
+        }
+        res
+    }
 }
 
 #[test]
@@ -190,4 +216,17 @@ fn dp() {
         ls.dp((0, 0, 0), (1, 1, 1), eq, gt).try_into().unwrap();
     let sigma = sigma.map(|(prod, sum, _)| prod * sum);
     assert_eq!(sigma, [0, 1, 3, 4, 7, 6, 12, 8, 15, 13, 18]);
+}
+
+#[test]
+fn recip() {
+    let n = 100;
+    let ls = LinearSieve::new(n);
+    for m in 1..=n {
+        let recip = ls.recip_mod(m);
+        for i in 1..=n {
+            let (g, r) = i.gcd_recip(m);
+            assert_eq!(recip[i], if g == 1 { r } else { 0 });
+        }
+    }
 }

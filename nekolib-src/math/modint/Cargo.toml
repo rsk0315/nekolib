@@ -9,3 +9,4 @@ edition = "2021"
 bin_iter = { path = "../../integer/bin_iter" }
 gcd_recip = { path = "../gcd_recip" }
 primality = { path = "../primality" }
+linear_sieve = { path = "../linear_sieve" }
