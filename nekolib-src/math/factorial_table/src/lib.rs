@@ -2,44 +2,43 @@ use modint::ModInt;
 
 #[derive(Clone, Debug)]
 pub struct FactorialTable<M> {
-    factorial: Vec<M>,
-    factorial_recip: Vec<M>,
+    fact: Vec<M>,
+    fact_recip: Vec<M>,
 }
 
 // where M: PrimeMod? n <= M?
 impl<M: ModInt> FactorialTable<M> {
     pub fn new(n: usize) -> Self {
-        let mut factorial = vec![M::new(1); n + 1];
+        let mut fact = vec![M::new(1); n + 1];
         for i in 0..n {
-            factorial[i + 1] = factorial[i] * M::new(i + 1);
+            fact[i + 1] = fact[i] * M::new(i + 1);
         }
-        let mut factorial_recip = vec![M::new(1); n + 1];
-        factorial_recip[n] = factorial[n].recip();
+        let mut fact_recip = vec![M::new(1); n + 1];
+        fact_recip[n] = fact[n].recip();
         for i in (0..n).rev() {
-            factorial_recip[i] = factorial_recip[i + 1] * M::new(i + 1);
+            fact_recip[i] = fact_recip[i + 1] * M::new(i + 1);
         }
-        Self { factorial, factorial_recip }
+        Self { fact, fact_recip }
     }
 
-    pub fn factorial(&self, i: usize) -> M { self.factorial[i] }
-    pub fn factorial_recip(&self, i: usize) -> M { self.factorial_recip[i] }
+    pub fn factorial(&self, i: usize) -> M { self.fact[i] }
+    pub fn factorial_recip(&self, i: usize) -> M { self.fact_recip[i] }
+
+    pub fn perm(&self, i: usize, j: usize) -> M {
+        if j <= i { self.fact[i] * self.fact_recip[i - j] } else { M::new(0) }
+    }
+    pub fn perm_recip(&self, i: usize, j: usize) -> M {
+        self.fact_recip[i] * self.fact[i - j]
+    }
 
     pub fn binom(&self, i: usize, j: usize) -> M {
-        if j <= i {
-            self.factorial[i]
-                * self.factorial_recip[j]
-                * self.factorial_recip[i - j]
-        } else {
-            M::new(0)
-        }
+        self.perm(i, j) * self.fact_recip[j]
     }
     pub fn binom_recip(&self, i: usize, j: usize) -> M {
-        self.factorial_recip[i] * self.factorial[j] * self.factorial[i - j]
+        self.perm_recip(i, j) * self.fact[j]
     }
 
-    pub fn recip(&self, i: usize) -> M {
-        self.factorial_recip[i] * self.factorial[i - 1]
-    }
+    pub fn recip(&self, i: usize) -> M { self.fact_recip[i] * self.fact[i - 1] }
 }
 
 #[test]

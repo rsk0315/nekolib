@@ -10,5 +10,7 @@ doc_inline_reexport! {
     gcd_recip,
     linear_sieve,
     modint,
+    polynomial,
+    primality,
     stern_brocot,
 }

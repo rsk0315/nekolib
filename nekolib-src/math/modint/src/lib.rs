@@ -9,6 +9,7 @@ use std::{
 
 use bin_iter::BinIter;
 use gcd_recip::GcdRecip;
+use primality::is_prime_u32;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct StaticModInt<const MOD: u32>(u32);
@@ -68,6 +69,20 @@ impl<const MOD: u32> StaticModInt<MOD> {
             dbl *= dbl;
         }
         res
+    }
+
+    pub fn recip_table_prime(n: usize) -> Vec<Self> {
+        if !Self::IS_PRIME {
+            unimplemented!();
+        }
+
+        let m = Self::MOD as usize;
+        let mut dp = vec![1_usize; n + 1];
+        for i in 2..=n {
+            let (q, r) = (m / i, m % i);
+            dp[i] = m - q * dp[r] % m;
+        }
+        dp.into_iter().map(|x| Self::new(x)).collect()
     }
 }
 
@@ -216,23 +231,29 @@ pub trait ModInt:
     + MulAssign<Self>
     + Div<Self, Output = Self>
     + DivAssign<Self>
-    + Neg
+    + Neg<Output = Self>
     + Sum
     + Product
 {
+    const MOD: u32;
+    const IS_PRIME: bool;
     fn new(val: impl RemEuclidU32) -> Self;
     fn get(self) -> u32;
     fn pow(self, exp: impl BinIter) -> Self;
     fn recip(self) -> Self;
     fn checked_recip(self) -> Option<Self>;
+    fn recip_table_prime(n: usize) -> Vec<Self>;
 }
 
 impl<const MOD: u32> ModInt for StaticModInt<MOD> {
+    const MOD: u32 = MOD;
+    const IS_PRIME: bool = is_prime_u32(MOD);
     fn new(val: impl RemEuclidU32) -> Self { Self::new(val) }
     fn get(self) -> u32 { self.0 }
     fn pow(self, exp: impl BinIter) -> Self { self.pow(exp) }
     fn recip(self) -> Self { self.recip() }
     fn checked_recip(self) -> Option<Self> { self.checked_recip() }
+    fn recip_table_prime(n: usize) -> Vec<Self> { Self::recip_table_prime(n) }
 }
 
 pub type ModInt998244353 = StaticModInt<998244353>;
@@ -255,6 +276,18 @@ fn arithmetic() {
     assert_eq!(half * half, quarter);
     assert_eq!(one / two, half);
     assert_eq!(two.pow(998244352_u64), one);
+    assert!(Mi::IS_PRIME);
+}
+
+#[test]
+fn recip_table() {
+    type Mi = ModInt998244353;
+
+    let n = 100;
+    let recip_table = Mi::recip_table_prime(n);
+    for i in 1..=n {
+        assert_eq!(recip_table[i] * Mi::new(i), Mi::new(1));
+    }
 }
 
 #[test]

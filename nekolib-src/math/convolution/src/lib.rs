@@ -74,7 +74,6 @@ const fn mod_pow(a: u32, mut e: u32, m: u32) -> u32 {
 }
 
 pub trait NttFriendly: ModInt {
-    const MOD: u32;
     const PRIMITIVE_ROOT: u32 = primitive_root(Self::MOD);
     // ODD << EXP | 1 == MOD
     const EXP: u32 = (Self::MOD - 1).trailing_zeros();
@@ -90,7 +89,6 @@ static MOD998244353_CACHE: OnceLock<ButterflyCache<ModInt998244353>> =
     OnceLock::new();
 
 impl NttFriendly for ModInt998244353 {
-    const MOD: u32 = 998244353;
     fn cache() -> &'static OnceLock<ButterflyCache<Self>> {
         &MOD998244353_CACHE
     }
@@ -360,7 +358,6 @@ macro_rules! impl_modint_ntt {
         type $modint = StaticModInt<$mod>;
         static $cache: OnceLock<ButterflyCache<$modint>> = OnceLock::new();
         impl NttFriendly for $modint {
-            const MOD: u32 = $mod;
             fn cache() -> &'static OnceLock<ButterflyCache<$modint>> { &$cache }
         }
     )* }
