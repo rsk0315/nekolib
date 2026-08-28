@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["is_prime_u16","is_prime_u32","is_prime_u64","is_prime_u8","is_sprp_32","is_sprp_64"]};
