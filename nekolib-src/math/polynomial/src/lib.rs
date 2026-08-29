@@ -905,11 +905,10 @@ fn mul_product_pow() {
 fn taylor_shift() {
     type Poly = Polynomial<modint::ModInt998244353>;
     let f: Poly = [31, 41, 59, 26, 53, 58, 97].into();
-    // let shift = 93;
-    let shift = -2;
+    let shift = 93;
     let f_shift = f.taylor_shift(shift);
 
-    let n = (f.len() - 1) as i32;
+    let n = f.len() - 1;
     let actual: Vec<_> = (0..=n).map(|x| f_shift.eval(x)).collect();
     let expected: Vec<_> = (0..=n).map(|x| f.eval(shift + x)).collect();
     assert_eq!(actual, expected);
