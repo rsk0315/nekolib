@@ -72,7 +72,7 @@ impl<const MOD: u32> StaticModInt<MOD> {
         res
     }
 
-    pub fn recip_table_prime(n: usize) -> Vec<Self> {
+    pub fn recip_table(n: usize) -> Vec<Self> {
         if !Self::IS_PRIME {
             let ls = LinearSieve::new(n);
             let res = ls.recip_mod(Self::MOD as usize);
@@ -147,7 +147,11 @@ impl<const MOD: u32> fmt::Display for StaticModInt<MOD> {
 
 impl<const MOD: u32> fmt::Debug for StaticModInt<MOD> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} mod {}", self, MOD)
+        if f.alternate() {
+            write!(f, "{self} mod {MOD}")
+        } else {
+            write!(f, "{self}")
+        }
     }
 }
 
@@ -226,6 +230,8 @@ pub trait ModInt:
     + Copy
     + Eq
     + Hash
+    + fmt::Display
+    + fmt::Debug
     + Add<Self, Output = Self>
     + AddAssign<Self>
     + Sub<Self, Output = Self>
@@ -243,9 +249,18 @@ pub trait ModInt:
     fn new(val: impl RemEuclidU32) -> Self;
     fn get(self) -> u32;
     fn pow(self, exp: impl BinIter) -> Self;
+    fn pow_table(self, n: usize) -> Vec<Self> {
+        (0..=n)
+            .scan(Self::new(1), |state, _| {
+                let res = *state;
+                *state *= self;
+                Some(res)
+            })
+            .collect()
+    }
     fn recip(self) -> Self;
     fn checked_recip(self) -> Option<Self>;
-    fn recip_table_prime(n: usize) -> Vec<Self>;
+    fn recip_table(n: usize) -> Vec<Self>;
 }
 
 impl<const MOD: u32> ModInt for StaticModInt<MOD> {
@@ -256,7 +271,7 @@ impl<const MOD: u32> ModInt for StaticModInt<MOD> {
     fn pow(self, exp: impl BinIter) -> Self { self.pow(exp) }
     fn recip(self) -> Self { self.recip() }
     fn checked_recip(self) -> Option<Self> { self.checked_recip() }
-    fn recip_table_prime(n: usize) -> Vec<Self> { Self::recip_table_prime(n) }
+    fn recip_table(n: usize) -> Vec<Self> { Self::recip_table(n) }
 }
 
 pub type ModInt998244353 = StaticModInt<998244353>;
@@ -287,9 +302,21 @@ fn recip_table() {
     type Mi = ModInt998244353;
 
     let n = 100;
-    let recip_table = Mi::recip_table_prime(n);
+    let recip_table = Mi::recip_table(n);
     for i in 1..=n {
         assert_eq!(recip_table[i] * Mi::new(i), Mi::new(1));
+    }
+}
+
+#[test]
+fn pow_table() {
+    type Mi = ModInt998244353;
+
+    let n = 100;
+    let x = Mi::new(3);
+    let ys = x.pow_table(n);
+    for i in 0..=n {
+        assert_eq!(x.pow(i), ys[i]);
     }
 }
 
@@ -315,8 +342,16 @@ fn fmt() {
 
     let one = Mi::new(1);
     assert_eq!(format!("{}", one), "1");
-    assert_eq!(format!("{:?}", one), "1 mod 998244353");
-    assert_eq!(format!("{:?}", [one; 2]), "[1 mod 998244353, 1 mod 998244353]");
+    assert_eq!(format!("{:?}", one), "1");
+    assert_eq!(format!("{:#?}", one), "1 mod 998244353");
+    assert_eq!(format!("{:?}", [one; 2]), "[1, 1]");
+    assert_eq!(
+        format!("{:#?}", [one; 2]),
+        r"[
+    1 mod 998244353,
+    1 mod 998244353,
+]"
+    );
 }
 
 #[test]

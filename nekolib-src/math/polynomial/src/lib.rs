@@ -9,7 +9,7 @@ use std::{
 };
 
 use convolution::{NttFriendly, butterfly, butterfly_inv, convolve};
-use modint::RemEuclidU32;
+use factorial_table::FactorialTable;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Polynomial<M: NttFriendly>(Vec<M>);
@@ -149,7 +149,7 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
             return;
         }
         let n = self.0.len();
-        let recip = M::recip_table_prime(n);
+        let recip = M::recip_table(n);
         for i in 0..n {
             self.0[i] *= recip[i + 1];
         }
@@ -166,8 +166,60 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         diff
     }
 
-    pub fn exp(&self, _len: usize) -> Self {
-        todo!();
+    pub fn exp(&self, len: usize) -> Self {
+        let zero = M::new(0);
+        let one = M::new(1);
+        let mut b = Self::from([one, self.get(1)]);
+        let mut c = Self::from([one]);
+        let mut z2 = Self::from([one, one]);
+
+        let mut cur_len = 2;
+        while cur_len < len {
+            let m = cur_len;
+            cur_len *= 2;
+
+            let mut y = b.clone();
+            y.0.resize(2 * m, zero);
+            y.fft_butterfly(2 * m);
+            let z1 = z2;
+            let mut z = &y & &z1;
+            z.fft_inv_butterfly(m);
+            z.0.resize(m, zero);
+            z.0[..m / 2].fill(zero);
+            z.fft_butterfly(m);
+            z &= -&z1;
+            z.fft_inv_butterfly(m);
+            c.0.resize(m / 2, zero);
+            c.0.extend_from_slice(&z.0[z.0.len().min(m / 2)..]);
+            z2 = c.clone();
+            z2.fft_butterfly(2 * m);
+            let mut x = Self::from(&self.0[..m.min(self.0.len())]);
+            x.differentiate();
+            x.fft_butterfly(m);
+            x &= &y;
+            x.fft_inv_butterfly(m);
+            x -= b.clone().differential();
+            x.0.resize(2 * m, zero);
+            for i in 0..m - 1 {
+                x.0[m + i] = x.0[i];
+                x.0[i] = zero;
+            }
+            x.fft_butterfly(2 * m);
+            x &= &z2;
+            x.fft_inv_butterfly(2 * m);
+            x.integrate();
+            x.0.resize(2 * m, zero);
+            for i in m..self.0.len().min(2 * m) {
+                x.0[i] += self.0[i];
+            }
+            x.0[..m].fill(zero);
+            x.fft_butterfly(2 * m);
+            x &= &y;
+            x.fft_inv_butterfly(2 * m);
+            b.0.resize(m, zero);
+            b.0.extend_from_slice(&x.0[x.0.len().min(m)..]);
+        }
+        b.truncated(len)
     }
 
     pub fn pow<I: Into<M>>(&self, k: I, len: usize) -> Self {
@@ -176,7 +228,7 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
 
         // 0^0 = 1
         if k_ == 0 {
-            return Self::from([1]).truncated(len);
+            return Self::from([M::new(1)]).truncated(len);
         } else if self.is_zero() {
             return Self::new();
         }
@@ -193,7 +245,63 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         (g_pow << (l * k_)) * a_l.pow(k_ as u64)
     }
 
-    pub fn circular(&self, _im: &Self, _len: usize) -> (Self, Self) { todo!() }
+    pub fn circular(&self, im: &Self, len: usize) -> (Self, Self) {
+        let re = self;
+        assert_eq!(re.get(0).get(), 0);
+        assert_eq!(im.get(0).get(), 0);
+        if len == 0 {
+            return (Self::new(), Self::new());
+        }
+
+        let zero = M::new(0);
+        let one = M::new(1);
+        let mut cos = Self::from([one]);
+        let mut sin = Self::from([zero]);
+        let mut cur_len = 1;
+        while cur_len < len {
+            cur_len *= 2;
+
+            let mut dcos = cos.clone().differential();
+            let mut dsin = sin.clone().differential();
+            cos.fft_butterfly(cur_len);
+            sin.fft_butterfly(cur_len);
+            dcos.fft_butterfly(cur_len);
+            dsin.fft_butterfly(cur_len);
+
+            let mut hypot = (&cos & &cos) + (&sin & &sin);
+            let mut ecos = (&dcos & &cos) + (&dsin & &sin);
+            let mut esin = (&dsin & &cos) - (&dcos & &sin);
+            hypot.fft_inv_butterfly(cur_len);
+            hypot = hypot.recip(cur_len);
+            hypot.fft_butterfly(2 * cur_len);
+            ecos.fft_butterfly_double(2 * cur_len);
+            esin.fft_butterfly_double(2 * cur_len);
+
+            let mut logcos = &ecos & &hypot;
+            let mut logsin = &esin & &hypot;
+            logcos.fft_inv_butterfly(2 * cur_len);
+            logsin.fft_inv_butterfly(2 * cur_len);
+            logcos = logcos.truncated(cur_len - 1).integral();
+            logsin = logsin.truncated(cur_len - 1).integral();
+
+            let mut gcos = -logcos + one + re.ref_truncated(cur_len);
+            let mut gsin = -logsin + im.ref_truncated(cur_len);
+            gcos.fft_butterfly(2 * cur_len);
+            gsin.fft_butterfly(2 * cur_len);
+            cos.fft_butterfly_double(2 * cur_len);
+            sin.fft_butterfly_double(2 * cur_len);
+
+            let mut hcos = (&cos & &gcos) - (&sin & &gsin);
+            let mut hsin = (&cos & &gsin) + (&sin & &gcos);
+            hcos.fft_inv_butterfly(2 * cur_len);
+            hsin.fft_inv_butterfly(2 * cur_len);
+
+            cos = hcos.truncated(cur_len);
+            sin = hsin.truncated(cur_len);
+        }
+
+        (cos.truncated(len), sin.truncated(len))
+    }
 
     pub fn cos(&self, len: usize) -> Self { Self::new().circular(self, len).0 }
     pub fn sin(&self, len: usize) -> Self { Self::new().circular(self, len).1 }
@@ -296,7 +404,6 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
     }
 
     pub fn is_zero(&self) -> bool { self.0.is_empty() }
-
     pub fn len(&self) -> usize { self.0.len() }
 
     pub fn div_mod(&self, other: &Self) -> (Self, Self) {
@@ -305,51 +412,102 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         (q, r)
     }
 
-    pub fn div_nth(&self, _other: &Self, _n: usize) -> M { todo!() }
+    pub fn div_nth(&self, other: &Self, mut n: usize) -> M {
+        let mut p = self.clone();
+        let mut q = other.clone();
+        while n > 0 {
+            let d = (2 * q.0.len() - 1).next_power_of_two();
+            p.fft_butterfly(d);
+            q.fft_butterfly(d);
+            let pq_: Vec<_> = (0..d).map(|i| p.get(i) * q.get(i ^ 1)).collect();
+            let qq_: Vec<_> =
+                (0..d).step_by(2).map(|i| q.get(i) * q.get(i + 1)).collect();
+            let [mut pq_, mut qq_]: [Self; 2] = [pq_.into(), qq_.into()];
+            pq_.fft_inv_butterfly(d);
+            qq_.fft_inv_butterfly(d / 2);
+            let u: Vec<_> = (n % 2..d).step_by(2).map(|i| pq_.get(i)).collect();
+            p = u.into();
+            q = qq_.into();
+            n /= 2;
+        }
+        p.get(0)
+    }
 
-    pub fn taylor_shift(&self, _i: usize) -> Self { todo!() }
+    pub fn taylor_shift<I: Into<M>>(&self, shift: I) -> Self {
+        if self.is_zero() {
+            return Self::new();
+        }
 
-    pub fn multieval(&self, _xs: &[M]) -> Vec<M> { todo!() }
+        let shift = shift.into();
+        let n = self.0.len() - 1;
+        let pow_table = shift.pow_table(n);
+        let fact_table = FactorialTable::new(n);
 
-    pub fn interpolate(_ys: &[M]) -> Self { todo!() }
+        let lhs: Vec<_> = (0..=n)
+            .map(|i| self.get(n - i) * fact_table.factorial(n - i))
+            .collect();
+        let rhs: Vec<_> = (0..=n)
+            .map(|i| pow_table[i] * fact_table.factorial_recip(i))
+            .collect();
+        let mut res = (Self::from(lhs) * Self::from(rhs)).into_inner();
+        res.resize(n + 1, M::new(0));
+        res.reverse();
+        for i in 0..=n {
+            res[i] *= fact_table.factorial_recip(i);
+        }
+        res.into()
+    }
+
+    pub fn multieval<I: Into<M>>(&self, _xs: &[I]) -> Vec<M> { todo!() }
+
+    pub fn interpolate<I: Into<M>>(_ys: &[I]) -> Self { todo!() }
+
+    pub fn interpolate_arithmetic<I1, I2, I3>(
+        _x0: I1,
+        _d: I2,
+        _ys: &[I3],
+    ) -> Vec<M>
+    where
+        I1: Into<M>,
+        I2: Into<M>,
+        I3: Into<M>,
+    {
+        todo!()
+    }
 }
 
-impl<I: Copy + RemEuclidU32, M: NttFriendly + 'static> From<Vec<I>>
+impl<I: Copy + Into<M>, M: NttFriendly + 'static> From<Vec<I>>
     for Polynomial<M>
 {
     fn from(value: Vec<I>) -> Self {
-        let value: Vec<_> = value.into_iter().map(M::new).collect();
+        let value: Vec<_> = value.into_iter().map(|x| x.into()).collect();
         let mut res = Self(value);
         res.normalize();
         res
     }
 }
 
-impl<'a, I: Copy + RemEuclidU32, M: NttFriendly + 'static> From<&'a [I]>
+impl<'a, I: Copy + Into<M>, M: NttFriendly + 'static> From<&'a [I]>
     for Polynomial<M>
 {
     fn from(value: &'a [I]) -> Self {
-        let value: Vec<_> = value.iter().map(|&x| M::new(x)).collect();
+        let value: Vec<_> = value.iter().map(|&x| x.into()).collect();
         let mut res = Self(value);
         res.normalize();
         res
     }
 }
 
-impl<I: Copy + RemEuclidU32, M: NttFriendly + 'static, const N: usize>
-    From<[I; N]> for Polynomial<M>
+impl<I: Copy + Into<M>, M: NttFriendly + 'static, const N: usize> From<[I; N]>
+    for Polynomial<M>
 {
     fn from(value: [I; N]) -> Self {
-        let value: Vec<_> = value.iter().map(|&x| M::new(x)).collect();
+        let value: Vec<_> = value.iter().map(|&x| x.into()).collect();
         let mut res = Self(value);
         res.normalize();
         res
     }
 }
-
-// impl<M: NttFriendly> From<Vec<M>> for Polynomial<M>
-// impl<'a, M: NttFriendly> From<[&a' M]> for Polynomial<M>
-// impl<M: NttFriendly, const N: usize> From<[M; N]> for Polynomial<M>
 
 // Polynomial<M> @= Polynomial<M>
 
@@ -701,17 +859,58 @@ impl<M: NttFriendly + 'static> Product<Polynomial<M>> for Polynomial<M> {
                 return lhs;
             }
         }
-        return [1].into();
+        return [M::new(1)].into();
     }
+}
+
+#[test]
+fn conversion() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+    let _: Poly = vec![1].into();
+    let _: Poly = [1].into();
+    let _: Poly = [1][..].into();
+    let x = Mi::new(1);
+    let _: Poly = vec![x].into();
+    let _: Poly = [x].into();
+    let _: Poly = [x][..].into();
 }
 
 #[test]
 fn format() {
     type Poly = Polynomial<modint::ModInt998244353>;
-    let f: Poly = vec![1, 0, 2, 3].into();
+    let f: Poly = [1, 0, 2, 3].into();
     assert_eq!(format!("{f}"), "1+2x^2+3x^3");
     assert_eq!(
         format!("{f:?}"),
         "Polynomial { f: [1, 0, 2, 3], mod: 998244353 }"
     );
+}
+
+#[test]
+fn mul_product_pow() {
+    type Poly = Polynomial<modint::ModInt998244353>;
+    let f: Poly = [31, 41, 59, 26, 53, 58, 97].into();
+    let exp = 93;
+
+    let mul = (0..exp).map(|_| f.clone()).reduce(|x, y| x * y).unwrap();
+    let prod: Poly = (0..exp).map(|_| f.clone()).product();
+    let pow = f.pow(exp, (f.len() - 1) * exp + 1);
+
+    assert_eq!(prod, mul);
+    assert_eq!(pow, mul);
+}
+
+#[test]
+fn taylor_shift() {
+    type Poly = Polynomial<modint::ModInt998244353>;
+    let f: Poly = [31, 41, 59, 26, 53, 58, 97].into();
+    // let shift = 93;
+    let shift = -2;
+    let f_shift = f.taylor_shift(shift);
+
+    let n = (f.len() - 1) as i32;
+    let actual: Vec<_> = (0..=n).map(|x| f_shift.eval(x)).collect();
+    let expected: Vec<_> = (0..=n).map(|x| f.eval(shift + x)).collect();
+    assert_eq!(actual, expected);
 }

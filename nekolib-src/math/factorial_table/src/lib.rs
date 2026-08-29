@@ -6,17 +6,16 @@ pub struct FactorialTable<M> {
     fact_recip: Vec<M>,
 }
 
-// where M: PrimeMod? n <= M?
 impl<M: ModInt> FactorialTable<M> {
     pub fn new(n: usize) -> Self {
         let mut fact = vec![M::new(1); n + 1];
         for i in 0..n {
             fact[i + 1] = fact[i] * M::new(i + 1);
         }
+        let recip = M::recip_table(n);
         let mut fact_recip = vec![M::new(1); n + 1];
-        fact_recip[n] = fact[n].recip();
-        for i in (0..n).rev() {
-            fact_recip[i] = fact_recip[i + 1] * M::new(i + 1);
+        for i in 0..n {
+            fact_recip[i + 1] = fact_recip[i] * recip[i + 1];
         }
         Self { fact, fact_recip }
     }

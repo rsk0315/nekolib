@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 modint = { path = "../modint" }
 convolution = { path = "../convolution" }
+factorial_table = { path = "../factorial_table" }
