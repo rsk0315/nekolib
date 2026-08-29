@@ -7,3 +7,4 @@ edition = "2021"
 modint = { path = "../modint" }
 convolution = { path = "../convolution" }
 factorial_table = { path = "../factorial_table" }
+bin_iter = { path = "../../integer/bin_iter" }

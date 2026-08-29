@@ -8,6 +8,7 @@ use std::{
     },
 };
 
+use bin_iter::{BinIter, TryFromBoolIter};
 use convolution::{NttFriendly, butterfly, butterfly_inv, convolve};
 use factorial_table::FactorialTable;
 
@@ -222,27 +223,28 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         b.truncated(len)
     }
 
-    pub fn pow<I: Into<M>>(&self, k: I, len: usize) -> Self {
-        let k = k.into();
-        let k_ = k.get() as usize;
+    pub fn pow<I: Copy + Into<M> + BinIter>(&self, k: I, len: usize) -> Self {
+        let k_is_zero = k.bin_iter().next().is_none();
 
         // 0^0 = 1
-        if k_ == 0 {
+        if k_is_zero {
             return Self::from([M::new(1)]).truncated(len);
-        } else if self.is_zero() {
+        } else if self.is_zero() || len == 0 {
             return Self::new();
         }
 
         // f(x) = (a_l x^l) (1+g(x))
         let l = (0..).find(|&i| self.0[i].get() != 0).unwrap();
         let a_l = self.0[l];
-        if len <= l * k_ {
-            return Self::new();
-        }
+        let k_as_usize = match usize::try_from_lsb(k.bin_iter()) {
+            Some(k) if l < 1 + (len - 1) / k => k,
+            _ => return Self::new(),
+        };
 
         let g = (self >> l) / a_l;
-        let g_pow = (g.log(len) * k).exp(len - l * k_);
-        (g_pow << (l * k_)) * a_l.pow(k_ as u64)
+        let k_mod_p = M::new(k_as_usize);
+        let g_pow = (g.log(len) * k_mod_p).exp(len - l * k_as_usize);
+        (g_pow << (l * k_as_usize)) * a_l.pow(k)
     }
 
     pub fn circular(&self, im: &Self, len: usize) -> (Self, Self) {
