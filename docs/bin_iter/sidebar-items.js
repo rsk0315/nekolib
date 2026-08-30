@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["UIntIter"],"trait":["BinIter","Binary"]};
+window.SIDEBAR_ITEMS = {"struct":["UIntIter"],"trait":["BinIter","Binary","TryFromBoolIter"]};
