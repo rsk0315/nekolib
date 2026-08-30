@@ -228,9 +228,9 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
 
         // 0^0 = 1
         if k_is_zero {
-            return Self::from([M::new(1)]).truncated(len);
+            return Self::const_1().truncated(len);
         } else if self.is_zero() || len == 0 {
-            return Self::new();
+            return Self::const_0();
         }
 
         // f(x) = (a_l x^l) (1+g(x))
@@ -238,7 +238,7 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         let a_l = self.0[l];
         let k_as_usize = match usize::try_from_lsb(k.bin_iter()) {
             Some(k) if l < 1 + (len - 1) / k => k,
-            _ => return Self::new(),
+            _ => return Self::const_0(),
         };
 
         let g = (self >> l) / a_l;
@@ -252,7 +252,7 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         assert_eq!(re.get(0).get(), 0);
         assert_eq!(im.get(0).get(), 0);
         if len == 0 {
-            return (Self::new(), Self::new());
+            return (Self::const_0(), Self::const_0());
         }
 
         let zero = M::new(0);
@@ -305,11 +305,15 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         (cos.truncated(len), sin.truncated(len))
     }
 
-    pub fn cos(&self, len: usize) -> Self { Self::new().circular(self, len).0 }
-    pub fn sin(&self, len: usize) -> Self { Self::new().circular(self, len).1 }
+    pub fn cos(&self, len: usize) -> Self {
+        Self::const_0().circular(self, len).0
+    }
+    pub fn sin(&self, len: usize) -> Self {
+        Self::const_0().circular(self, len).1
+    }
 
     pub fn tan(&self, len: usize) -> Self {
-        let (cos, sin) = Self::new().circular(self, len);
+        let (cos, sin) = Self::const_0().circular(self, len);
         (sin * cos.recip(len)).truncated(len)
     }
 
@@ -350,8 +354,51 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         y.truncated(n)
     }
 
+    pub fn const_0() -> Self { Self::new() }
+    pub fn const_1() -> Self { Self::from([M::new(1)]) }
+    pub fn const_x() -> Self { Self::from([M::new(0), M::new(1)]) }
+
+    pub fn ge1(&self) -> Self {
+        let mut res = self.clone();
+        if !res.0.is_empty() {
+            res.0[0] = M::new(0)
+        }
+        res.normalize();
+        res
+    }
+
+    pub fn seq(&self, len: usize) -> Self {
+        (Self::const_1() - self).recip(len)
+    }
+    pub fn set(&self, len: usize) -> Self { self.exp(len) }
+    pub fn cyc(&self, len: usize) -> Self { self.seq(len).log(len) }
+
     pub fn get(&self, i: usize) -> M {
         self.0.get(i).copied().unwrap_or(M::new(0))
+    }
+
+    pub fn ogf_into_egf(mut self) -> Self {
+        let n = self.0.len();
+        if n == 0 {
+            return Self::const_0();
+        }
+        let fact_table = FactorialTable::new(n - 1);
+        for i in 0..n {
+            self.0[i] *= fact_table.factorial_recip(i);
+        }
+        self
+    }
+
+    pub fn egf_into_ogf(mut self) -> Self {
+        let n = self.0.len();
+        if n == 0 {
+            return Self::const_0();
+        }
+        let fact_table = FactorialTable::new(n - 1);
+        for i in 0..n {
+            self.0[i] *= fact_table.factorial(i);
+        }
+        self
     }
 
     pub fn eval(&self, t: impl Into<M>) -> M {
@@ -437,7 +484,7 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
 
     pub fn taylor_shift<I: Into<M>>(&self, shift: I) -> Self {
         if self.is_zero() {
-            return Self::new();
+            return Self::const_0();
         }
 
         let shift = shift.into();
@@ -914,4 +961,37 @@ fn taylor_shift() {
     let actual: Vec<_> = (0..=n).map(|x| f_shift.eval(x)).collect();
     let expected: Vec<_> = (0..=n).map(|x| f.eval(shift + x)).collect();
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn egf() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+    let n = 8;
+    let z = Poly::const_x();
+
+    let surjections = z.set(n).ge1().seq(n).egf_into_ogf();
+    let set_partitions = z.set(n).ge1().set(n).egf_into_ogf();
+    let alignments = z.cyc(n).seq(n).egf_into_ogf();
+    let permutations = z.cyc(n).ge1().set(n).egf_into_ogf();
+
+    assert_eq!(surjections, Poly::from([1, 1, 3, 13, 75, 541, 4683, 47293]));
+    assert_eq!(set_partitions, Poly::from([1, 1, 2, 5, 15, 52, 203, 877]));
+    assert_eq!(alignments, Poly::from([1, 1, 3, 14, 88, 694, 6578, 72792]));
+    assert_eq!(permutations, Poly::from([1, 1, 2, 6, 24, 120, 720, 5040]));
+
+    // T = Z * Set{T}; T(z) = z exp(T(z)); T: [0, 1, 2, 9, 64, 625, ...]
+    let t: Vec<_> = (1..n).map(|i| Mi::new(i).pow(i - 1)).collect();
+    let t = (Poly::from(t) << 1).ogf_into_egf();
+    let u = Poly::const_0().polyeqn(n, |y, n| {
+        // T(z) = z exp(T(z))
+        // f(y) = x exp(y) - y
+        // f(y) / f'(y) = (x exp(y) - y) / (x exp(y) - 1)
+        let exp = y.exp(n);
+        let num = ((&exp << 1) - y).truncated(n);
+        let den = ((&exp << 1) - Poly::const_1()).truncated(n);
+        (num * den.recip(n)).truncated(n)
+    });
+    assert_eq!(u, t);
+    assert_eq!((&z * t.exp(n)).truncated(n), t);
 }

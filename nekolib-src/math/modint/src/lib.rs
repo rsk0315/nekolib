@@ -258,6 +258,15 @@ pub trait ModInt:
             })
             .collect()
     }
+    fn perm_table(self, n: usize) -> Vec<Self> {
+        (0..=n)
+            .scan(Self::new(1), |state, x| {
+                let res = *state;
+                *state *= self - Self::new(x);
+                Some(res)
+            })
+            .collect()
+    }
     fn recip(self) -> Self;
     fn checked_recip(self) -> Option<Self>;
     fn recip_table(n: usize) -> Vec<Self>;
