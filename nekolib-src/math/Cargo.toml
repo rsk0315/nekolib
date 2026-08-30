@@ -19,3 +19,4 @@ convolution = { path = "convolution" }
 factorial_table = { path = "factorial_table" }
 polynomial = { path = "polynomial" }
 primality = { path = "primality" }
+matrix = { path = "matrix" }

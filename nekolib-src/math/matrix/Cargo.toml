@@ -1,0 +1,9 @@
+[package]
+name = "matrix"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+has_zero = { path = "../../ops/has_zero" }
+has_one = { path = "../../ops/has_one" }
+bin_iter = { path = "../../integer/bin_iter" }

@@ -58,6 +58,26 @@ macro_rules! impl_bin_iter {
 
 impl_bin_iter! { u8 u16 u32 u64 u128 usize }
 
+pub trait TryFromBoolIter: Sized {
+    fn try_from_lsb<I: Iterator<Item = bool>>(iter: I) -> Option<Self>;
+}
+
+macro_rules! impl_try_from_bool_iter {
+    ( $($ty:ty)* ) => { $(
+        impl TryFromBoolIter for $ty {
+            fn try_from_lsb<I: Iterator<Item = bool>>(iter: I) -> Option<Self> {
+                let mut res = 0;
+                for (i, bit) in iter.enumerate() {
+                    res |= (bit as Self).checked_shl(i as u32)?;
+                }
+                Some(res)
+            }
+        }
+    )* }
+}
+
+impl_try_from_bool_iter! { u8 u16 u32 u64 u128 usize }
+
 #[test]
 fn sanity_check() {
     assert!(0_u32.bin_iter().eq([]));

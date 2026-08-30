@@ -9,6 +9,7 @@ doc_inline_reexport! {
     gcd,
     gcd_recip,
     linear_sieve,
+    matrix,
     modint,
     polynomial,
     primality,
