@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="動的計画法。"><title>dp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="dp" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (fd7ed57df 2026-08-29)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../static.files/storage-41dd4d93.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="動的計画法。"><title>dp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="dp" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (0dfb098f3 2026-08-31)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../static.files/storage-41dd4d93.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
 <script defer src="https://rsk0315.github.io/KaTeX/dist/katex.min.js" integrity="sha384-uTtSJt9XPLiqIUfRVfOITjgIvmh5bzXv8CWqNvlv0Gd5jXgLOUU0grHCGKhXhMD/" crossorigin="anonymous"></script>
 
 <style>
@@ -50,11 +50,6 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
-    const maths = document.getElementsByClassName('language-math');
-    for (const elt of maths) {
-      katex.render(elt.innerText, elt, { displayMode: true, macros });
-    }
-
     const codes = Array.from(document.getElementsByTagName('code'));
     for (const elt of codes) {
       if (elt.classList.contains('language-math')) continue;
@@ -81,6 +76,11 @@
       } catch (DOMException) {
         continue;
       }
+    }
+
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
     }
   });
 </script>
@@ -272,9 +272,15 @@
   });
 </script>
 
-</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate dp</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../dp/index.html">dp</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#notations" title="Notations">Notations</a></li><li><a href="#idea" title="Idea">Idea</a><ul><li><a href="#variants-1" title="Variants">Variants</a></li></ul></li><li><a href="#see-also" title="See also">See also</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1>Crate <span>dp</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/dp/lib.rs.html#1-31">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>動的計画法。</p>
+</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate dp</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../dp/index.html">dp</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#notations" title="Notations">Notations</a></li><li><a href="#idea" title="Idea">Idea</a><ul><li><a href="#variants-1" title="Variants">Variants</a></li><li><a href="#speed-up" title="Speed-up">Speed-up</a></li></ul></li><li><a href="#see-also" title="See also">See also</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1>Crate <span>dp</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/dp/lib.rs.html#1-148">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>動的計画法。</p>
 <h3 id="notations"><a class="doc-anchor" href="#notations">§</a>Notations</h3>
-<p>$<code>\Lambda_n = \{0, 1, \dots, n-1\}</code>$ とする。</p>
+<p>$<code>\Lambda_n = \{0, 1, \dots, n-1\}</code>$ とする。
+$<code>\gdef\M{\mathsf{M}}</code>$
+$<code>\gdef\MM{\mathsf{MM}}</code>$</p>
+<p>積が $<code>n</code>$ 次になる多項式乗算の時間計算量を $<code>\M(n)</code>$ とする。$<code>\M(n)\in O(n^2)\cap\Omega(n)</code>$ とする。$<code>\M(n_1+n_2) \ge \M(n_1)+\M(n_2)</code>$ が成り立つ。</p>
+<p>$<code>n</code>$ 次正方行列同士の乗算の時間計算量を $<code>\MM(n)</code>$ とする。$<code>\MM(n)\in O(n^3)\cap\Omega(n^2)</code>$ とする。
+古典的には $<code>\MM(n) = \Theta(n^3)</code>$ や $<code>\MM(n) = \Theta(n^{\log_2(7)})</code>$ などである。
+最近は $<code>\MM(n) = O(n^{2.371177})</code>$ が達成されているらしい？</p>
 <h3 id="idea"><a class="doc-anchor" href="#idea">§</a>Idea</h3><h4 id="variants-1"><a class="doc-anchor" href="#variants-1">§</a>Variants</h4><h5 id="区間での分割全体からなる集合"><a class="doc-anchor" href="#%E5%8C%BA%E9%96%93%E3%81%A7%E3%81%AE%E5%88%86%E5%89%B2%E5%85%A8%E4%BD%93%E3%81%8B%E3%82%89%E3%81%AA%E3%82%8B%E9%9B%86%E5%90%88">§</a>区間での分割全体からなる集合</h5>
 <p>長さ $<code>n</code>$ の配列をいくつかの非空な区間に分割したものを考える。
 すなわち、$<code>[0\lldot n) = [i_0\lldot i_1)\sqcup[i_1\lldot i_2)\sqcup\dots\sqcup[i_{k-1}\lldot i_k)</code>$
@@ -284,6 +290,84 @@
 <div class="example-wrap"><pre class="language-math"><code>\dp[n] = \{\{[0\lldot n)\}\}\sqcup\bigsqcup_{i\in\Lambda_n} \{S\sqcup\{[n-1\lldot n)\} \mid S\in\dp[n-1]\}.</code></pre></div>
 <p>分割 $<code>[l\lldot r)</code>$ に関する値 $<code>f(l, r)</code>$ に対し、$<code>f(i_0, i_1)\circ\dots\circ f(i_{k-1}, i_k)</code>$
 のすべての分割における $<code>\ast</code>$-fold を求めるのに使える場合がある (<a href="https://atcoder.jp/contests/abc224/tasks/abc224_f">ABC 224 F</a>)。</p>
+<h4 id="speed-up"><a class="doc-anchor" href="#speed-up">§</a>Speed-up</h4><h5 id="行列累乗"><a class="doc-anchor" href="#%E8%A1%8C%E5%88%97%E7%B4%AF%E4%B9%97">§</a>行列累乗</h5>
+<p>$<code>\dp[i][j]</code>$ ($<code>i, j \in \Lambda_n</code>$) を考える。
+$<code>\dp[0][j]</code>$ ($<code>j\in\Lambda_n</code>$) は与えられているとし、$<code>i\ge 0</code>$ について下記が成り立つとする。</p>
+<div class="example-wrap"><pre class="language-math"><code>\dp[i+1][j] = \sum_{t=0}^{n-1} a_{j, t}\cdot \dp[i][t].</code></pre></div>
+<p>すなわち、下記が成り立つ。</p>
+<div class="example-wrap"><pre class="language-math"><code>\left(\begin{matrix}
+\dp[i+1][0] \\
+\dp[i+1][1] \\
+\vdots \\
+\dp[i+1][n-1]
+\end{matrix}\right)
+=
+\left(\begin{matrix}
+a_{0, 0} &amp; a_{0, 1} &amp; \cdots &amp; a_{0, n-1} \\
+a_{1, 0} &amp; a_{1, 1} &amp; \cdots &amp; a_{1, n-1} \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+a_{n-1, 0} &amp; a_{n-1, 1} &amp; \cdots &amp; a_{n-1, n-1}
+\end{matrix}\right)
+\times
+\left(\begin{matrix}
+\dp[i][0] \\
+\dp[i][1] \\
+\vdots \\
+\dp[i][n-1]
+\end{matrix}\right).</code></pre></div>
+<p>このとき、下記が成り立つ。</p>
+<div class="example-wrap"><pre class="language-math"><code>\left(\begin{matrix}
+\dp[m][0] \\
+\dp[m][1] \\
+\vdots \\
+\dp[m][n-1]
+\end{matrix}\right)
+=
+\left(\begin{matrix}
+a_{0, 0} &amp; a_{0, 1} &amp; \cdots &amp; a_{0, n-1} \\
+a_{1, 0} &amp; a_{1, 1} &amp; \cdots &amp; a_{1, n-1} \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+a_{n-1, 0} &amp; a_{n-1, 1} &amp; \cdots &amp; a_{n-1, n-1}
+\end{matrix}\right)^m
+\times
+\left(\begin{matrix}
+\dp[0][0] \\
+\dp[0][1] \\
+\vdots \\
+\dp[0][n-1]
+\end{matrix}\right).</code></pre></div>
+<p>よって、各 $<code>j\in\Lambda_n</code>$ について $<code>\dp[m][j]</code>$ を $<code>O(\MM(n)\log(m)+m)</code>$ 時間で求められる。</p>
+<p>特に、$<code>\dp[n]</code>$ が $<code>(\dp[0], \dp[1], \dots, \dp[n-1])^{\top}</code>$ の線形和で表せるときは、
+$<code>(\dp'[i][0], \dp'[i][1], \dots, \dp'[i][n-1]) = (\dp[i], \dp[i+1], \dots, \dp[i+n-1])</code>$
+と見なすことで前述の形に帰着できる。</p>
+<p>下記のような形で表される DP も、適切な行列を考えることで上記の形式で扱える
+(<a href="https://twitter.com/rsk0315_h4x/status/1634874645588643840">ref</a>)。</p>
+<div class="example-wrap"><pre class="language-math"><code>\dp[n+1] = d\cdot\dp[n] + \sum_{j=0}^k c_j \sum_{i=1}^{n-1} i^j\cdot \dp[n-i] + \sum_{j=0}^m q_jn^j + r\cdot a^n.</code></pre></div><h5 id="多項式積"><a class="doc-anchor" href="#%E5%A4%9A%E9%A0%85%E5%BC%8F%E7%A9%8D">§</a>多項式積</h5>
+<p>$<code>\dp[i][j]</code>$ ($<code>i\in\Lambda_n</code>$, $<code>j\in\Lambda_m</code>$) を考える。
+$<code>\dp[0][0] = 1</code>$ かつ $<code>\dp[0][j] = 0</code>$ ($<code>j\gt 0</code>$) とし、$<code>i\ge 0</code>$
+について下記が成り立つとする。</p>
+<div class="example-wrap"><pre class="language-math"><code>\dp[i+1][j] = \sum_{t=0}^{d_i} a_{i, t}\cdot \dp[i][j-t]</code></pre></div>
+<p>ただし、$<code>j'\lt 0</code>$ のとき $<code>\dp[i][j'] = 0</code>$ とする。
+各 $<code>i\in\Lambda_{n+1}</code>$ について</p>
+<div class="example-wrap"><pre class="language-math"><code>f_i(x) = \sum_{j=0}^{\infty} \dp[i][j]\cdot x^j,</code></pre></div>
+<p>各 $<code>i\in\Lambda_n</code>$ について</p>
+<div class="example-wrap"><pre class="language-math"><code>a_i(x) = \sum_{t=0}^{d_i} a_{i, t}\cdot x^t</code></pre></div>
+<p>とすると、</p>
+<div class="example-wrap"><pre class="language-math"><code>f_{i+1}(x) = a_i(x) \cdot f_i(x)</code></pre></div>
+<p>であり、</p>
+<div class="example-wrap"><pre class="language-math"><code>f_n(x) = \prod_{i=0}^{n-1} a_i(x)</code></pre></div>
+<p>が成り立つ。
+$<code>d = \sum_{i=0}^{n-1} d_i</code>$ として $<code>O(\M(d)\log(n))</code>$ 時間で $<code>f_n(x)</code>$ を求められる。</p>
+<p><em>Proof</em>.</p>
+<p>簡単のため $<code>n</code>$ は $<code>2</code>$ べきとする。
+$<code>n/2</code>$ 個のペアを作り、それぞれの積を求めることを考える。</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+&amp;\phantom{{}={}} \M(d_0+d_1) + \M(d_2+d_3) + \dots + \M(d_{n-2}+d_{n-1}) \\
+&amp;\le \M((d_0+d_1) + (d_2+d_3) + \dots + (d_{n-2}+d_{n-1})) \\
+&amp;= \M(d)
+\end{aligned}</code></pre></div>
+<p>が成り立つ。これにより、$<code>n</code>$ を $<code>n/2</code>$ で置き換えた問題に $<code>O(\M(d))</code>$ 時間で帰着できる。
+これを $<code>\log_2(n)</code>$ 回繰り返すことで所望の $<code>d</code>$ 次式が得られるため、全体で $<code>O(\M(d)\log(n))</code>$ 時間となる。$<code>\qed</code>$</p>
 <h3 id="see-also"><a class="doc-anchor" href="#see-also">§</a>See also</h3>
 <ul>
 <li><a href="https://rsk0315.hatenablog.com/entry/2023/09/10/225138">https://rsk0315.hatenablog.com/entry/2023/09/10/225138</a></li>
