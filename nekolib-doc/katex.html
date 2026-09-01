@@ -50,11 +50,6 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
-    const maths = document.getElementsByClassName('language-math');
-    for (const elt of maths) {
-      katex.render(elt.innerText, elt, { displayMode: true, macros });
-    }
-
     const codes = Array.from(document.getElementsByTagName('code'));
     for (const elt of codes) {
       if (elt.classList.contains('language-math')) continue;
@@ -81,6 +76,11 @@
       } catch (DOMException) {
         continue;
       }
+    }
+
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
     }
   });
 </script>
