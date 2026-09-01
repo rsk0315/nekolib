@@ -26,7 +26,7 @@ fn lcp(i: usize, j: usize) -> usize {
 
 pub struct VecLazySegtree<A: MonoidAction> {
     tree: RefCell<Vec<<A::Operand as BinaryOp>::Set>>,
-    deferred: RefCell<Vec<<A::Operator as BinaryOp>::Set>>,
+    susp: RefCell<Vec<<A::Operator as BinaryOp>::Set>>,
     len: usize,
     action: A,
 }
@@ -39,7 +39,7 @@ where
     fn clone(&self) -> Self {
         Self {
             tree: RefCell::new(self.tree.borrow().to_vec()),
-            deferred: RefCell::new(self.deferred.borrow().to_vec()),
+            susp: RefCell::new(self.susp.borrow().to_vec()),
             len: self.len,
             action: self.action.clone(),
         }
@@ -55,12 +55,11 @@ impl<A: MonoidAction> VecLazySegtree<A> {
         let action = A::default();
         let tree: Vec<_> =
             (0..len + len).map(|_| action.operand().id()).collect();
-        let deferred: Vec<_> =
-            (0..len).map(|_| action.operator().id()).collect();
+        let susp: Vec<_> = (0..len).map(|_| action.operator().id()).collect();
         Self {
             len,
             tree: RefCell::new(tree),
-            deferred: RefCell::new(deferred),
+            susp: RefCell::new(susp),
             action,
         }
     }
@@ -100,32 +99,30 @@ impl<A: MonoidAction> VecLazySegtree<A> {
 
     fn build_range(&mut self, start: usize, end: usize) {
         let mut tree = self.tree.borrow_mut();
-        let deferred = self.deferred.borrow();
+        let susp = self.susp.borrow();
         let action = &self.action;
         let operand = action.operand();
         let id = action.operator().id();
-        for i in
-            self.ancestors_upward(start, end).filter(|&i| deferred[i] == id)
-        {
+        for i in self.ancestors_upward(start, end).filter(|&i| susp[i] == id) {
             tree[i] = operand.op(&tree[i << 1], &tree[i << 1 | 1]);
         }
     }
 
     fn act1(&self, i: usize, op: &<A::Operator as BinaryOp>::Set) {
         let mut tree = self.tree.borrow_mut();
-        let mut deferred = self.deferred.borrow_mut();
+        let mut susp = self.susp.borrow_mut();
         let operator = self.action.operator();
         tree[i] = self.action.act(&tree[i], op);
         if i < self.len {
-            deferred[i] = operator.op(&deferred[i], op);
+            susp[i] = operator.op(&susp[i], op);
         }
     }
 
     fn force(&self, i: usize) {
         let id = || self.action.operator().id();
         let d = {
-            let mut deferred = self.deferred.borrow_mut();
-            std::mem::replace(&mut deferred[i], id())
+            let mut susp = self.susp.borrow_mut();
+            std::mem::replace(&mut susp[i], id())
         };
         if d != id() {
             self.act1(i << 1, &d);
@@ -192,15 +189,15 @@ impl<A: MonoidAction> VecLazySegtree<A> {
 
     fn force_all(&self) {
         let mut tree = self.tree.borrow_mut();
-        let mut deferred = self.deferred.borrow_mut();
+        let mut susp = self.susp.borrow_mut();
         let action = &self.action;
         let operator = action.operator();
         let id = || operator.id();
         for i in 1..self.len {
-            let d = std::mem::replace(&mut deferred[i], id());
+            let d = std::mem::replace(&mut susp[i], id());
             for &j in &[i << 1, i << 1 | 1] {
                 if j < self.len {
-                    deferred[j] = operator.op(&deferred[j], &d);
+                    susp[j] = operator.op(&susp[j], &d);
                 }
                 tree[j] = action.act(&tree[j], &d);
             }
@@ -230,10 +227,9 @@ impl<A: MonoidAction> From<(Vec<<A::Operand as BinaryOp>::Set>, A)>
             tree[i] = action.operand().op(&tree[i << 1], &tree[i << 1 | 1]);
         }
         let tree = RefCell::new(tree);
-        let deferred: Vec<_> =
-            (0..len).map(|_| action.operator().id()).collect();
-        let deferred = RefCell::new(deferred);
-        Self { tree, deferred, len, action }
+        let susp: Vec<_> = (0..len).map(|_| action.operator().id()).collect();
+        let susp = RefCell::new(susp);
+        Self { tree, susp, len, action }
     }
 }
 
