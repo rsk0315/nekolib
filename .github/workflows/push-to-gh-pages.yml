@@ -47,7 +47,7 @@ jobs:
           bash crates-ls.sh
           RUSTDOCFLAGS="--html-in-header=$PWD/katex.html"
           RUSTDOCFLAGS+=" --html-in-header=$PWD/crates-ls.html"
-          RUSTDOCFLAGS+=" --html-in-header=$$PWD/font.html"
+          RUSTDOCFLAGS+=" --html-in-header=$PWD/font.html"
           export RUSTDOCFLAGS
           sed -Ei 's/X{40}/${{ github.sha }}/g' src/lib.rs
           cargo d
