@@ -1,0 +1,434 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="確率。"><title>probability - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="probability" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (5db7f4be8 2026-09-01)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../static.files/storage-41dd4d93.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
+<script defer src="https://rsk0315.github.io/KaTeX/dist/katex.min.js" integrity="sha384-uTtSJt9XPLiqIUfRVfOITjgIvmh5bzXv8CWqNvlv0Gd5jXgLOUU0grHCGKhXhMD/" crossorigin="anonymous"></script>
+
+<style>
+  code.code-math {
+      background-color: transparent;
+  }
+</style>
+
+<script>
+  'use strict';
+
+  const macros = {
+    // '\\foo': '42',
+    // '\\bar': '\\operatorname{bar}^{#1}',
+    '\\halfopen': '[#1, #2)',
+    '\\floor': '\\lfloor #1\\rfloor',
+    '\\ceil': '\\lceil #1\\rceil',
+    '\\rounded': '\\lfloor #1\\rceil',
+    '\\Floor': '\\left\\lfloor #1\\right\\rfloor',
+    '\\Ceil': '\\left\\lceil #1\\right\\rceil',
+    '\\Rounded': '\\left\\lfloor #1\\right\\rceil',
+    '\\angled': '\\langle #1\\rangle',
+    '\\Angled': '\\left\\langle #1\\right\\rangle',
+    '\\lcm': '\\operatorname*{lcm}',
+    '\\gcd': '\\operatorname*{gcd}',
+    '\\poly': '\\operatorname{poly}',
+    '\\polylog': '\\operatorname{polylog}',
+    '\\concat': '\\mathrel{+\\!\\!+}',
+    '\\mex': '\\operatorname*{mex}',
+    '\\qed': '\\square',
+    '\\Q': '\\mathbb{Q}',
+    '\\dd': '\\mathrm{d}',
+    '\\ForallL': '{}^{\\forall}#1.\\:#2',
+    '\\Forall': '{}^{\\forall}#1.\\,\\left[#2\\right]',
+    '\\ExistsL': '{}^{\\exists}#1.\\:#2',
+    '\\Exists': '{}^{\\exists}#1.\\,\\left[#2\\right]',
+    '\\roundp': '(\\kern-.2em[#1]\\kern-.2em)',
+    '\\bigroundp': '\\big(\\kern-.25em\\big[#1\\big]\\kern-.25em\\big)',
+    '\\Bigroundp': '\\Big(\\kern-.3em\\Big[#1\\Big]\\kern-.3em\\Big)',
+    '\\biggroundp': '\\bigg(\\kern-.3em\\bigg[#1\\bigg]\\kern-.3em\\bigg)',
+    '\\Biggroundp': '\\Bigg(\\kern-.35em\\Bigg[#1\\Bigg]\\kern-.35em\\Bigg)',
+    '\\hfloor': '\\lfloor\\hspace{-.25em}\\lfloor#1\\rfloor\\hspace{-.25em}\\rfloor',
+    '\\xgets': '\\xleftarrow{#1}',
+    '\\eod': '\\blacksquare', // end of \<details\>
+    '\\lldot': '\\mathop{.\\,.}',
+    '\\dp': '\\mathrm{dp}',
+    '\\subtype': '\\mathrel{\\lt:}',
+    '\\lifetime': '{}^{\\triangledown}\\text{\\texttt{#1}}',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const codes = Array.from(document.getElementsByTagName('code'));
+    for (const elt of codes) {
+      if (elt.classList.contains('language-math')) continue;
+      if (elt.classList.contains('language-inline-math')) {
+        katex.render(elt.innerText, elt, { macros });
+        continue;
+      }
+
+      const parent = elt.parentNode;
+      if (parent.nodeName.toLowerCase() === 'pre') {
+        continue;
+      }
+
+      parent.style.overflowX = 'unset';
+      const content = parent.outerHTML.replaceAll(
+        /\$<code>([^<]*?)<\/code>\$/g,
+        ((match, inner) => {
+          return `<code class="code-math">${katex.renderToString(inner, { macros })}</code>`;
+        }),
+      );
+
+      try {
+        parent.outerHTML = content;
+      } catch (DOMException) {
+        continue;
+      }
+    }
+
+    const maths = document.getElementsByClassName('language-math');
+    for (const elt of maths) {
+      katex.render(elt.innerText, elt, { displayMode: true, macros });
+    }
+  });
+</script>
+
+<script>
+  'use strict';
+
+  const cratesLs = {
+    "algo": [
+      "bisect",
+      "frac_approx",
+      "incremental_fn_table",
+      "tortoise_hare",
+      "twosat"
+    ],
+    "corro": [
+      "array_insertion",
+      "array_removal",
+      "array_rotation",
+      "borrow"
+    ],
+    "discussion": [
+      "decomposable",
+      "dp",
+      "generating_function",
+      "plane-sweep",
+      "probability",
+      "ptr-ds"
+    ],
+    "draft": [
+      "rs01dict_runtime",
+      "rs01dict_tree"
+    ],
+    "ds": [
+      "btree_seq",
+      "fibonacci_heap",
+      "foldable_deque",
+      "foldable_queue",
+      "interval_map",
+      "interval_set",
+      "n1_rmq",
+      "rs01_dict",
+      "sqrt_bucket",
+      "union-find",
+      "vec_lazy_segtree",
+      "vec_segtree",
+      "wavelet_matrix"
+    ],
+    "fmt": [
+      "str_sep",
+      "yes_no"
+    ],
+    "graph": [
+      "bfs01",
+      "dijkstra",
+      "lowlink",
+      "scc",
+      "tree_cata"
+    ],
+    "inner": [],
+    "integer": [
+      "bin_iter",
+      "digits_iter",
+      "pdep_pext",
+      "word_set"
+    ],
+    "io": [
+      "input",
+      "readable"
+    ],
+    "macros": [],
+    "math": [
+      "convolution",
+      "divisors",
+      "factorial_table",
+      "factors",
+      "garner",
+      "gcd",
+      "gcd_recip",
+      "linear_sieve",
+      "matrix",
+      "modint",
+      "polynomial",
+      "primality",
+      "stern_brocot"
+    ],
+    "naive": [
+      "assoc-list",
+      "bit-vector",
+      "concat-monoid",
+      "disjoint-set"
+    ],
+    "ops": [
+      "has_maximum",
+      "has_minimum",
+      "has_one",
+      "has_zero",
+      "monoid",
+      "monoid_action",
+      "op_add",
+      "op_add_deg1",
+      "op_affine",
+      "op_affine_on_op_add_deg1",
+      "op_max",
+      "op_min",
+      "usize_bounds"
+    ],
+    "poc": [
+      "katex-support",
+      "nested_mod"
+    ],
+    "random": [
+      "randgen"
+    ],
+    "seq": [
+      "inversion",
+      "lis",
+      "majority_vote",
+      "opmph",
+      "suffix_array"
+    ],
+    "snippet": [
+      "proconio"
+    ],
+    "uslice": [
+      "bucket_sort",
+      "permutation"
+    ],
+    "word": [
+      "binom",
+      "small_rank_select"
+    ]
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const crates = [...document.getElementsByClassName('block crate')][0];
+
+    const links = new Map([...crates.querySelectorAll('a')].map((e) => [
+      e.innerText,
+      {
+        name: e.innerText,
+        href: e.href,
+        current: e.parentNode.classList.contains('current'),
+      },
+    ]));
+
+    const tree = new Map();
+    for (const mod of Object.keys(cratesLs)) {
+      for (const crate of cratesLs[mod]) {
+        const crate_ = crate.replaceAll('-', '_');
+        if (!links.has(crate_)) continue;
+
+        if (!tree.has(mod)) {
+          tree.set(mod, []);
+        }
+
+        tree.get(mod).push(links.get(crate_));
+      }
+    }
+
+    const cratesElt = document.createElement('ul');
+    cratesElt.classList.add('block');
+    cratesElt.classList.add('crate');
+    for (const [modName, mod] of tree) {
+      {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        const link = links.get(modName);
+        a.href = link.href;
+        if (link.current) li.classList.add('current');
+        a.innerText = link.name;
+        li.appendChild(a);
+        cratesElt.appendChild(li);
+      }
+
+      const ul = document.createElement('ul');
+      for (const crate of mod) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = crate.href;
+        if (crate.current) li.classList.add('current');
+        a.innerText = crate.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      cratesElt.appendChild(ul);
+    }
+
+    crates.outerHTML = cratesElt.outerHTML;
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+
+<style>
+.lato-thin {
+  font-family: "Lato", sans-serif;
+  font-weight: 100;
+  font-style: normal;
+}
+
+.lato-light {
+  font-family: "Lato", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.lato-regular {
+  font-family: "Lato", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.lato-bold {
+  font-family: "Lato", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.lato-black {
+  font-family: "Lato", sans-serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.lato-thin-italic {
+  font-family: "Lato", sans-serif;
+  font-weight: 100;
+  font-style: italic;
+}
+
+.lato-light-italic {
+  font-family: "Lato", sans-serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.lato-regular-italic {
+  font-family: "Lato", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.lato-bold-italic {
+  font-family: "Lato", sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.lato-black-italic {
+  font-family: "Lato", sans-serif;
+  font-weight: 900;
+  font-style: italic;
+}
+</style>
+
+</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../probability/index.html">probability</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/probability/lib.rs.html#1-116">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
+<h3 id="definitions"><a class="doc-anchor" href="#definitions">§</a>Definitions</h3>
+<p>TODO: 書く。
+$<code>\gdef\P{\mathbb{P}}</code>$
+$<code>\gdef\F{\mathcal{F}}</code>$
+$<code>\gdef\E{\mathbb{E}}</code>$</p>
+<p>$<code>(\Omega, \F, \P)</code>$, $<code>\P(\Omega) = 1</code>$</p>
+<p>$<code>\E[X]</code>$</p>
+<h3 id="lemmata"><a class="doc-anchor" href="#lemmata">§</a>Lemmata</h3>
+<p>TODO: 書く。</p>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3><h4 id="markov-chain"><a class="doc-anchor" href="#markov-chain">§</a>Markov chain</h4>
+<p>有限個の状態からなる集合 $<code>Q = \{q_0, q_1, \dots, q_{n-1}\}</code>$ を考える。
+時刻 $<code>t</code>$ に状態 $<code>q_i</code>$ にいるとき、時刻 $<code>t+1</code>$ に確率 $<code>p_{i, j}</code>$ で
+$<code>q_j</code>$ に遷移する。各 $<code>i</code>$ に対して $<code>\sum_j p_{i, j} = 1</code>$ が成り立つ。
+各遷移は独立に行われるものとする。</p>
+<p>状態 $<code>q_0</code>$ にいる状態から開始し、初めて $<code>q_{n-1}</code>$ に到達する時刻の期待値を求めよ、という問題を考える。</p>
+<p>まず、$<code>j \le i \implies p_{i, j} = 0</code>$ の問題設定について考える。
+時刻 $<code>0</code>$ に状態 $<code>q_i</code>$ にいるとき、初めて状態 $<code>q_{n-1}</code>$ に到達する時刻を $<code>X_i</code>$
+とする。最終的な答えは $<code>\E[X_0]</code>$ である。</p>
+<p>定義から明らかに $<code>\E[X_{n-1}] = 0</code>$ である。時刻 $<code>0</code>$ に状態 $<code>q_i</code>$
+にいるとし、時刻 $<code>1</code>$ に各状態にいる確率を考えることで</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E[X_i] &amp;= 1 + \sum_{j=0}^{n-1} p_{i, j}\cdot \E[X_j] \\
+&amp;= 1 + \sum_{j=0}^i 0\cdot \E[X_j] + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j] \\
+&amp;= 1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j] \\
+\end{aligned}</code></pre></div>
+<p>を得る。すなわち、$<code>\E[X_i]</code>$ の計算のために必要な値は $<code>i \lt j</code>$ なる $<code>j</code>$ における
+$<code>\E[X_j]</code>$ と $<code>p_{i, j}</code>$ のみであるため、$<code>i</code>$ の降順に計算することで $<code>\E[X_0]</code>$
+を求められる。</p>
+<p>続いて、$<code>j \lt i \implies p_{i, j} = 0</code>$ かつ $<code>i\lt n-1\implies p_{i, i} \in[0\lldot 1)</code>$
+の問題設定について考える。$<code>X_i</code>$ の定義は先ほどと同様とする。</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E[X_i] &amp;= 1 + \sum_{j=0}^{n-1} p_{i, j}\cdot \E[X_j] \\
+&amp;= 1 + \sum_{j=0}^{i-1} 0\cdot \E[X_j] + \sum_{j=i}^{n-1} p_{i, j}\cdot \E[X_j] \\
+&amp;= 1 + p_{i, i}\cdot \E[X_i] + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j], \\
+(1-p_{i, i})\cdot \E[X_i] &amp;= 1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j], \\
+\E[X_i] &amp;= \frac1{1-p_{i, i}}\cdot\left(1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j]\right) \\
+\end{aligned}</code></pre></div>
+<p>よって、先ほどと同様に $<code>i</code>$ の降順に計算して $<code>E[X_0]</code>$ を求められる。</p>
+<p>続いて、一般の場合について考える。ただし、任意の $<code>i</code>$ について、状態 $<code>q_i</code>$
+から開始して有限時間で状態 $<code>q_{n-1}</code>$ に遷移できるような遷移の仕方が存在するものとする。各
+$<code>i\lt n-1</code>$ についての $<code>\E[X_i] = 1 + \sum_j p_{i, j}\cdot \E[X_j]</code>$ を線形方程式系と見なせるので</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\left(\begin{matrix}
+1-p_{0, 0} &amp; -p_{0, 1} &amp; \cdots &amp; -p_{0, n-2} &amp; -p_{0, n-1} \\
+-p_{1, 0} &amp; 1-p_{1, 1} &amp; \cdots &amp; -p_{1, n-2} &amp; -p_{1, n-1} \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots &amp; \vdots \\
+-p_{n-2, 0} &amp; -p_{n-2, 1} &amp; \cdots &amp; 1-p_{n-2,n-2} &amp; -p_{n-2,n-1}
+\end{matrix}\right)
+\times
+\left(\begin{matrix}
+\E[X_0] \\
+\E[X_1] \\
+\vdots \\
+\E[X_{n-2}] \\
+0
+\end{matrix}\right)
+=
+\left(\begin{matrix}
+\;0\; \\
+0 \\
+\vdots \\
+0
+\end{matrix}\right),
+\end{aligned}</code></pre></div>
+<p>すなわち</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\left(\begin{matrix}
+1-p_{0, 0} &amp; -p_{0, 1} &amp; \cdots &amp; -p_{0, n-2} \\
+-p_{1, 0} &amp; 1-p_{1, 1} &amp; \cdots &amp; -p_{1, n-2} \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+-p_{n-2, 0} &amp; -p_{n-2, 1} &amp; \cdots &amp; 1-p_{n-2,n-2}
+\end{matrix}\right)
+\times
+\left(\begin{matrix}
+\E[X_0] \\
+\E[X_1] \\
+\vdots \\
+\E[X_{n-2}]
+\end{matrix}\right)
+=
+\left(\begin{matrix}
+\;0\; \\
+0 \\
+\vdots \\
+0
+\end{matrix}\right)
+\end{aligned}</code></pre></div>
+<p>を解けば（あるいは、解けないことを示せば）よい。
+対角成分が正、それ以外が非正であることからなにかが言える？</p>
+<p>行列が特殊な形をしている場合は、掃き出し法などを介さずとも前述のように解くことができる。
+See also <a href="https://atcoder.jp/contests/abc189/tasks/abc189_f">ABC 189 F</a>.</p>
+</div></details></section></div></main></body></html>

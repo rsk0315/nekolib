@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["alias_model","decomposable","dp","generating_function","maybe_uninit","plane_sweep","ptr_ds","rawptr","variance"]};
+window.SIDEBAR_ITEMS = {"mod":["alias_model","decomposable","dp","generating_function","maybe_uninit","plane_sweep","probability","ptr_ds","rawptr","variance"]};
