@@ -5,5 +5,6 @@ doc_inline_reexport! {
     dp,
     generating_function,
     plane_sweep,
+    probability,
     ptr_ds,
 }
