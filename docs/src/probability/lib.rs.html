@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/discussion/probability/src/lib.rs`."><title>lib.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="probability" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (5db7f4be8 2026-09-01)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/nekolib/nekolib/main/nekolib-src/discussion/probability/src/lib.rs`."><title>lib.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="probability" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (2e2b193f8 2026-09-02)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
 <script defer src="https://rsk0315.github.io/KaTeX/dist/katex.min.js" integrity="sha384-uTtSJt9XPLiqIUfRVfOITjgIvmh5bzXv8CWqNvlv0Gd5jXgLOUU0grHCGKhXhMD/" crossorigin="anonymous"></script>
 
 <style>
@@ -347,112 +347,174 @@
 <a href=#6 id=6 data-nosnippet>6</a>//! $`\gdef\P{\mathbb{P}}`$
 <a href=#7 id=7 data-nosnippet>7</a>//! $`\gdef\F{\mathcal{F}}`$
 <a href=#8 id=8 data-nosnippet>8</a>//! $`\gdef\E{\mathbb{E}}`$
-<a href=#9 id=9 data-nosnippet>9</a>//!
-<a href=#10 id=10 data-nosnippet>10</a>//! $`(\Omega, \F, \P)`$, $`\P(\Omega) = 1`$
+<a href=#9 id=9 data-nosnippet>9</a></span><span class="comment">// $`\gdef\Pr{\mathrm{Pr}}`$
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="doccomment">//! $`\gdef\Pr{\P}`$
 <a href=#11 id=11 data-nosnippet>11</a>//!
-<a href=#12 id=12 data-nosnippet>12</a>//! $`\E[X]`$
+<a href=#12 id=12 data-nosnippet>12</a>//! $`(\Omega, \F, \P)`$, $`\P(\Omega) = 1`$
 <a href=#13 id=13 data-nosnippet>13</a>//!
-<a href=#14 id=14 data-nosnippet>14</a>//! ## Lemmata
+<a href=#14 id=14 data-nosnippet>14</a>//! $`\E[X]`$
 <a href=#15 id=15 data-nosnippet>15</a>//!
-<a href=#16 id=16 data-nosnippet>16</a>//! TODO: 書く。
+<a href=#16 id=16 data-nosnippet>16</a>//! ## Lemmata
 <a href=#17 id=17 data-nosnippet>17</a>//!
-<a href=#18 id=18 data-nosnippet>18</a>//! ## Examples
+<a href=#18 id=18 data-nosnippet>18</a>//! TODO: 書く。
 <a href=#19 id=19 data-nosnippet>19</a>//!
-<a href=#20 id=20 data-nosnippet>20</a>//! ### Markov chain
+<a href=#20 id=20 data-nosnippet>20</a>//! ## Examples
 <a href=#21 id=21 data-nosnippet>21</a>//!
-<a href=#22 id=22 data-nosnippet>22</a>//! 有限個の状態からなる集合 $`Q = \{q_0, q_1, \dots, q_{n-1}\}`$ を考える。
-<a href=#23 id=23 data-nosnippet>23</a>//! 時刻 $`t`$ に状態 $`q_i`$ にいるとき、時刻 $`t+1`$ に確率 $`p_{i, j}`$ で
-<a href=#24 id=24 data-nosnippet>24</a>//! $`q_j`$ に遷移する。各 $`i`$ に対して $`\sum_j p_{i, j} = 1`$ が成り立つ。
-<a href=#25 id=25 data-nosnippet>25</a>//! 各遷移は独立に行われるものとする。
-<a href=#26 id=26 data-nosnippet>26</a>//!
-<a href=#27 id=27 data-nosnippet>27</a>//! 状態 $`q_0`$ にいる状態から開始し、初めて $`q_{n-1}`$ に到達する時刻の期待値を求めよ、という問題を考える。
+<a href=#22 id=22 data-nosnippet>22</a>//! ### Markov chain
+<a href=#23 id=23 data-nosnippet>23</a>//!
+<a href=#24 id=24 data-nosnippet>24</a>//! 有限個の状態からなる集合 $`Q = \{q_0, q_1, \dots, q_{n-1}\}`$ を考える。
+<a href=#25 id=25 data-nosnippet>25</a>//! 時刻 $`t`$ に状態 $`q_i`$ にいるとき、時刻 $`t+1`$ に確率 $`p_{i, j}`$ で
+<a href=#26 id=26 data-nosnippet>26</a>//! $`q_j`$ に遷移する。各 $`i`$ に対して $`\sum_j p_{i, j} = 1`$ が成り立つ。
+<a href=#27 id=27 data-nosnippet>27</a>//! 各遷移は独立に行われるものとする。
 <a href=#28 id=28 data-nosnippet>28</a>//!
-<a href=#29 id=29 data-nosnippet>29</a>//! まず、$`j \le i \implies p_{i, j} = 0`$ の問題設定について考える。
-<a href=#30 id=30 data-nosnippet>30</a>//! 時刻 $`0`$ に状態 $`q_i`$ にいるとき、初めて状態 $`q_{n-1}`$ に到達する時刻を $`X_i`$
-<a href=#31 id=31 data-nosnippet>31</a>//! とする。最終的な答えは $`\E[X_0]`$ である。
-<a href=#32 id=32 data-nosnippet>32</a>//!
-<a href=#33 id=33 data-nosnippet>33</a>//! 定義から明らかに $`\E[X_{n-1}] = 0`$ である。時刻 $`0`$ に状態 $`q_i`$
-<a href=#34 id=34 data-nosnippet>34</a>//! にいるとし、時刻 $`1`$ に各状態にいる確率を考えることで
-<a href=#35 id=35 data-nosnippet>35</a>//! ```math
-<a href=#36 id=36 data-nosnippet>36</a>//! \begin{aligned}
-<a href=#37 id=37 data-nosnippet>37</a>//! \E[X_i] &amp;= 1 + \sum_{j=0}^{n-1} p_{i, j}\cdot \E[X_j] \\
-<a href=#38 id=38 data-nosnippet>38</a>//! &amp;= 1 + \sum_{j=0}^i 0\cdot \E[X_j] + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j] \\
-<a href=#39 id=39 data-nosnippet>39</a>//! &amp;= 1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j] \\
-<a href=#40 id=40 data-nosnippet>40</a>//! \end{aligned}
-<a href=#41 id=41 data-nosnippet>41</a>//! ```
-<a href=#42 id=42 data-nosnippet>42</a>//! を得る。すなわち、$`\E[X_i]`$ の計算のために必要な値は $`i \lt j`$ なる $`j`$ における
-<a href=#43 id=43 data-nosnippet>43</a>//! $`\E[X_j]`$ と $`p_{i, j}`$ のみであるため、$`i`$ の降順に計算することで $`\E[X_0]`$
-<a href=#44 id=44 data-nosnippet>44</a>//! を求められる。
-<a href=#45 id=45 data-nosnippet>45</a>//!
-<a href=#46 id=46 data-nosnippet>46</a>//! 続いて、$`j \lt i \implies p_{i, j} = 0`$ かつ $`i\lt n-1\implies p_{i, i} \in[0\lldot 1)`$
-<a href=#47 id=47 data-nosnippet>47</a>//! の問題設定について考える。$`X_i`$ の定義は先ほどと同様とする。
-<a href=#48 id=48 data-nosnippet>48</a>//! ```math
-<a href=#49 id=49 data-nosnippet>49</a>//! \begin{aligned}
-<a href=#50 id=50 data-nosnippet>50</a>//! \E[X_i] &amp;= 1 + \sum_{j=0}^{n-1} p_{i, j}\cdot \E[X_j] \\
-<a href=#51 id=51 data-nosnippet>51</a>//! &amp;= 1 + \sum_{j=0}^{i-1} 0\cdot \E[X_j] + \sum_{j=i}^{n-1} p_{i, j}\cdot \E[X_j] \\
-<a href=#52 id=52 data-nosnippet>52</a>//! &amp;= 1 + p_{i, i}\cdot \E[X_i] + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j], \\
-<a href=#53 id=53 data-nosnippet>53</a>//! (1-p_{i, i})\cdot \E[X_i] &amp;= 1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j], \\
-<a href=#54 id=54 data-nosnippet>54</a>//! \E[X_i] &amp;= \frac1{1-p_{i, i}}\cdot\left(1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j]\right) \\
-<a href=#55 id=55 data-nosnippet>55</a>//! \end{aligned}
-<a href=#56 id=56 data-nosnippet>56</a>//! ```
-<a href=#57 id=57 data-nosnippet>57</a>//! よって、先ほどと同様に $`i`$ の降順に計算して $`E[X_0]`$ を求められる。
-<a href=#58 id=58 data-nosnippet>58</a>//!
-<a href=#59 id=59 data-nosnippet>59</a>//! 続いて、一般の場合について考える。ただし、任意の $`i`$ について、状態 $`q_i`$
-<a href=#60 id=60 data-nosnippet>60</a>//! から開始して有限時間で状態 $`q_{n-1}`$ に遷移できるような遷移の仕方が存在するものとする。各
-<a href=#61 id=61 data-nosnippet>61</a>//! $`i\lt n-1`$ についての $`\E[X_i] = 1 + \sum_j p_{i, j}\cdot \E[X_j]`$ を線形方程式系と見なせるので
-<a href=#62 id=62 data-nosnippet>62</a>//! ```math
-<a href=#63 id=63 data-nosnippet>63</a>//! \begin{aligned}
-<a href=#64 id=64 data-nosnippet>64</a>//! \left(\begin{matrix}
-<a href=#65 id=65 data-nosnippet>65</a>//! 1-p_{0, 0} &amp; -p_{0, 1} &amp; \cdots &amp; -p_{0, n-2} &amp; -p_{0, n-1} \\
-<a href=#66 id=66 data-nosnippet>66</a>//! -p_{1, 0} &amp; 1-p_{1, 1} &amp; \cdots &amp; -p_{1, n-2} &amp; -p_{1, n-1} \\
-<a href=#67 id=67 data-nosnippet>67</a>//! \vdots &amp; \vdots &amp; \ddots &amp; \vdots &amp; \vdots \\
-<a href=#68 id=68 data-nosnippet>68</a>//! -p_{n-2, 0} &amp; -p_{n-2, 1} &amp; \cdots &amp; 1-p_{n-2,n-2} &amp; -p_{n-2,n-1}
-<a href=#69 id=69 data-nosnippet>69</a>//! \end{matrix}\right)
-<a href=#70 id=70 data-nosnippet>70</a>//! \times
-<a href=#71 id=71 data-nosnippet>71</a>//! \left(\begin{matrix}
-<a href=#72 id=72 data-nosnippet>72</a>//! \E[X_0] \\
-<a href=#73 id=73 data-nosnippet>73</a>//! \E[X_1] \\
-<a href=#74 id=74 data-nosnippet>74</a>//! \vdots \\
-<a href=#75 id=75 data-nosnippet>75</a>//! \E[X_{n-2}] \\
-<a href=#76 id=76 data-nosnippet>76</a>//! 0
-<a href=#77 id=77 data-nosnippet>77</a>//! \end{matrix}\right)
-<a href=#78 id=78 data-nosnippet>78</a>//! =
-<a href=#79 id=79 data-nosnippet>79</a>//! \left(\begin{matrix}
-<a href=#80 id=80 data-nosnippet>80</a>//! \;0\; \\
-<a href=#81 id=81 data-nosnippet>81</a>//! 0 \\
-<a href=#82 id=82 data-nosnippet>82</a>//! \vdots \\
-<a href=#83 id=83 data-nosnippet>83</a>//! 0
-<a href=#84 id=84 data-nosnippet>84</a>//! \end{matrix}\right),
-<a href=#85 id=85 data-nosnippet>85</a>//! \end{aligned}
-<a href=#86 id=86 data-nosnippet>86</a>//! ```
-<a href=#87 id=87 data-nosnippet>87</a>//! すなわち
-<a href=#88 id=88 data-nosnippet>88</a>//! ```math
-<a href=#89 id=89 data-nosnippet>89</a>//! \begin{aligned}
-<a href=#90 id=90 data-nosnippet>90</a>//! \left(\begin{matrix}
-<a href=#91 id=91 data-nosnippet>91</a>//! 1-p_{0, 0} &amp; -p_{0, 1} &amp; \cdots &amp; -p_{0, n-2} \\
-<a href=#92 id=92 data-nosnippet>92</a>//! -p_{1, 0} &amp; 1-p_{1, 1} &amp; \cdots &amp; -p_{1, n-2} \\
-<a href=#93 id=93 data-nosnippet>93</a>//! \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
-<a href=#94 id=94 data-nosnippet>94</a>//! -p_{n-2, 0} &amp; -p_{n-2, 1} &amp; \cdots &amp; 1-p_{n-2,n-2}
-<a href=#95 id=95 data-nosnippet>95</a>//! \end{matrix}\right)
-<a href=#96 id=96 data-nosnippet>96</a>//! \times
-<a href=#97 id=97 data-nosnippet>97</a>//! \left(\begin{matrix}
-<a href=#98 id=98 data-nosnippet>98</a>//! \E[X_0] \\
-<a href=#99 id=99 data-nosnippet>99</a>//! \E[X_1] \\
-<a href=#100 id=100 data-nosnippet>100</a>//! \vdots \\
-<a href=#101 id=101 data-nosnippet>101</a>//! \E[X_{n-2}]
-<a href=#102 id=102 data-nosnippet>102</a>//! \end{matrix}\right)
-<a href=#103 id=103 data-nosnippet>103</a>//! =
-<a href=#104 id=104 data-nosnippet>104</a>//! \left(\begin{matrix}
-<a href=#105 id=105 data-nosnippet>105</a>//! \;0\; \\
-<a href=#106 id=106 data-nosnippet>106</a>//! 0 \\
-<a href=#107 id=107 data-nosnippet>107</a>//! \vdots \\
-<a href=#108 id=108 data-nosnippet>108</a>//! 0
-<a href=#109 id=109 data-nosnippet>109</a>//! \end{matrix}\right)
-<a href=#110 id=110 data-nosnippet>110</a>//! \end{aligned}
-<a href=#111 id=111 data-nosnippet>111</a>//! ```
-<a href=#112 id=112 data-nosnippet>112</a>//! を解けば（あるいは、解けないことを示せば）よい。
-<a href=#113 id=113 data-nosnippet>113</a>//! 対角成分が正、それ以外が非正であることからなにかが言える？
-<a href=#114 id=114 data-nosnippet>114</a>//!
-<a href=#115 id=115 data-nosnippet>115</a>//! 行列が特殊な形をしている場合は、掃き出し法などを介さずとも前述のように解くことができる。
-<a href=#116 id=116 data-nosnippet>116</a>//! See also [ABC 189 F](https://atcoder.jp/contests/abc189/tasks/abc189_f).
+<a href=#29 id=29 data-nosnippet>29</a>//! 状態 $`q_0`$ にいる状態から開始し、初めて $`q_{n-1}`$ に到達する時刻の期待値を求めよ、という問題を考える。
+<a href=#30 id=30 data-nosnippet>30</a>//!
+<a href=#31 id=31 data-nosnippet>31</a>//! まず、$`j \le i \implies p_{i, j} = 0`$ の問題設定について考える。
+<a href=#32 id=32 data-nosnippet>32</a>//! 時刻 $`0`$ に状態 $`q_i`$ にいるとき、初めて状態 $`q_{n-1}`$ に到達する時刻を $`X_i`$
+<a href=#33 id=33 data-nosnippet>33</a>//! とする。最終的な答えは $`\E[X_0]`$ である。
+<a href=#34 id=34 data-nosnippet>34</a>//!
+<a href=#35 id=35 data-nosnippet>35</a>//! 定義から明らかに $`\E[X_{n-1}] = 0`$ である。時刻 $`0`$ に状態 $`q_i`$
+<a href=#36 id=36 data-nosnippet>36</a>//! にいるとし、時刻 $`1`$ に各状態にいる確率を考えることで
+<a href=#37 id=37 data-nosnippet>37</a>//! ```math
+<a href=#38 id=38 data-nosnippet>38</a>//! \begin{aligned}
+<a href=#39 id=39 data-nosnippet>39</a>//! \E[X_i] &amp;= 1 + \sum_{j=0}^{n-1} p_{i, j}\cdot \E[X_j] \\
+<a href=#40 id=40 data-nosnippet>40</a>//! &amp;= 1 + \sum_{j=0}^i 0\cdot \E[X_j] + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j] \\
+<a href=#41 id=41 data-nosnippet>41</a>//! &amp;= 1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j] \\
+<a href=#42 id=42 data-nosnippet>42</a>//! \end{aligned}
+<a href=#43 id=43 data-nosnippet>43</a>//! ```
+<a href=#44 id=44 data-nosnippet>44</a>//! を得る。すなわち、$`\E[X_i]`$ の計算のために必要な値は $`i \lt j`$ なる $`j`$ における
+<a href=#45 id=45 data-nosnippet>45</a>//! $`\E[X_j]`$ と $`p_{i, j}`$ のみであるため、$`i`$ の降順に計算することで $`\E[X_0]`$
+<a href=#46 id=46 data-nosnippet>46</a>//! を求められる。
+<a href=#47 id=47 data-nosnippet>47</a>//!
+<a href=#48 id=48 data-nosnippet>48</a>//! 続いて、$`j \lt i \implies p_{i, j} = 0`$ かつ $`i\lt n-1\implies p_{i, i} \in[0\lldot 1)`$
+<a href=#49 id=49 data-nosnippet>49</a>//! の問題設定について考える。$`X_i`$ の定義は先ほどと同様とする。
+<a href=#50 id=50 data-nosnippet>50</a>//! ```math
+<a href=#51 id=51 data-nosnippet>51</a>//! \begin{aligned}
+<a href=#52 id=52 data-nosnippet>52</a>//! \E[X_i] &amp;= 1 + \sum_{j=0}^{n-1} p_{i, j}\cdot \E[X_j] \\
+<a href=#53 id=53 data-nosnippet>53</a>//! &amp;= 1 + \sum_{j=0}^{i-1} 0\cdot \E[X_j] + \sum_{j=i}^{n-1} p_{i, j}\cdot \E[X_j] \\
+<a href=#54 id=54 data-nosnippet>54</a>//! &amp;= 1 + p_{i, i}\cdot \E[X_i] + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j], \\
+<a href=#55 id=55 data-nosnippet>55</a>//! (1-p_{i, i})\cdot \E[X_i] &amp;= 1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j], \\
+<a href=#56 id=56 data-nosnippet>56</a>//! \E[X_i] &amp;= \frac1{1-p_{i, i}}\cdot\left(1 + \sum_{j=i+1}^{n-1} p_{i, j}\cdot \E[X_j]\right) \\
+<a href=#57 id=57 data-nosnippet>57</a>//! \end{aligned}
+<a href=#58 id=58 data-nosnippet>58</a>//! ```
+<a href=#59 id=59 data-nosnippet>59</a>//! よって、先ほどと同様に $`i`$ の降順に計算して $`E[X_0]`$ を求められる。
+<a href=#60 id=60 data-nosnippet>60</a>//!
+<a href=#61 id=61 data-nosnippet>61</a>//! 続いて、一般の場合について考える。ただし、任意の $`i`$ について、状態 $`q_i`$
+<a href=#62 id=62 data-nosnippet>62</a>//! から開始して有限時間で状態 $`q_{n-1}`$ に遷移できるような遷移の仕方が存在するものとする。各
+<a href=#63 id=63 data-nosnippet>63</a>//! $`i\lt n-1`$ についての $`\E[X_i] = 1 + \sum_j p_{i, j}\cdot \E[X_j]`$ を線形方程式系と見なせるので
+<a href=#64 id=64 data-nosnippet>64</a>//! ```math
+<a href=#65 id=65 data-nosnippet>65</a>//! \begin{aligned}
+<a href=#66 id=66 data-nosnippet>66</a>//! \left(\begin{matrix}
+<a href=#67 id=67 data-nosnippet>67</a>//! 1-p_{0, 0} &amp; -p_{0, 1} &amp; \cdots &amp; -p_{0, n-2} &amp; -p_{0, n-1} \\
+<a href=#68 id=68 data-nosnippet>68</a>//! -p_{1, 0} &amp; 1-p_{1, 1} &amp; \cdots &amp; -p_{1, n-2} &amp; -p_{1, n-1} \\
+<a href=#69 id=69 data-nosnippet>69</a>//! \vdots &amp; \vdots &amp; \ddots &amp; \vdots &amp; \vdots \\
+<a href=#70 id=70 data-nosnippet>70</a>//! -p_{n-2, 0} &amp; -p_{n-2, 1} &amp; \cdots &amp; 1-p_{n-2,n-2} &amp; -p_{n-2,n-1}
+<a href=#71 id=71 data-nosnippet>71</a>//! \end{matrix}\right)
+<a href=#72 id=72 data-nosnippet>72</a>//! \times
+<a href=#73 id=73 data-nosnippet>73</a>//! \left(\begin{matrix}
+<a href=#74 id=74 data-nosnippet>74</a>//! \E[X_0] \\
+<a href=#75 id=75 data-nosnippet>75</a>//! \E[X_1] \\
+<a href=#76 id=76 data-nosnippet>76</a>//! \vdots \\
+<a href=#77 id=77 data-nosnippet>77</a>//! \E[X_{n-2}] \\
+<a href=#78 id=78 data-nosnippet>78</a>//! 0
+<a href=#79 id=79 data-nosnippet>79</a>//! \end{matrix}\right)
+<a href=#80 id=80 data-nosnippet>80</a>//! =
+<a href=#81 id=81 data-nosnippet>81</a>//! \left(\begin{matrix}
+<a href=#82 id=82 data-nosnippet>82</a>//! \;0\; \\
+<a href=#83 id=83 data-nosnippet>83</a>//! 0 \\
+<a href=#84 id=84 data-nosnippet>84</a>//! \vdots \\
+<a href=#85 id=85 data-nosnippet>85</a>//! 0
+<a href=#86 id=86 data-nosnippet>86</a>//! \end{matrix}\right),
+<a href=#87 id=87 data-nosnippet>87</a>//! \end{aligned}
+<a href=#88 id=88 data-nosnippet>88</a>//! ```
+<a href=#89 id=89 data-nosnippet>89</a>//! すなわち
+<a href=#90 id=90 data-nosnippet>90</a>//! ```math
+<a href=#91 id=91 data-nosnippet>91</a>//! \begin{aligned}
+<a href=#92 id=92 data-nosnippet>92</a>//! \left(\begin{matrix}
+<a href=#93 id=93 data-nosnippet>93</a>//! 1-p_{0, 0} &amp; -p_{0, 1} &amp; \cdots &amp; -p_{0, n-2} \\
+<a href=#94 id=94 data-nosnippet>94</a>//! -p_{1, 0} &amp; 1-p_{1, 1} &amp; \cdots &amp; -p_{1, n-2} \\
+<a href=#95 id=95 data-nosnippet>95</a>//! \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+<a href=#96 id=96 data-nosnippet>96</a>//! -p_{n-2, 0} &amp; -p_{n-2, 1} &amp; \cdots &amp; 1-p_{n-2,n-2}
+<a href=#97 id=97 data-nosnippet>97</a>//! \end{matrix}\right)
+<a href=#98 id=98 data-nosnippet>98</a>//! \times
+<a href=#99 id=99 data-nosnippet>99</a>//! \left(\begin{matrix}
+<a href=#100 id=100 data-nosnippet>100</a>//! \E[X_0] \\
+<a href=#101 id=101 data-nosnippet>101</a>//! \E[X_1] \\
+<a href=#102 id=102 data-nosnippet>102</a>//! \vdots \\
+<a href=#103 id=103 data-nosnippet>103</a>//! \E[X_{n-2}]
+<a href=#104 id=104 data-nosnippet>104</a>//! \end{matrix}\right)
+<a href=#105 id=105 data-nosnippet>105</a>//! =
+<a href=#106 id=106 data-nosnippet>106</a>//! \left(\begin{matrix}
+<a href=#107 id=107 data-nosnippet>107</a>//! \;0\; \\
+<a href=#108 id=108 data-nosnippet>108</a>//! 0 \\
+<a href=#109 id=109 data-nosnippet>109</a>//! \vdots \\
+<a href=#110 id=110 data-nosnippet>110</a>//! 0
+<a href=#111 id=111 data-nosnippet>111</a>//! \end{matrix}\right)
+<a href=#112 id=112 data-nosnippet>112</a>//! \end{aligned}
+<a href=#113 id=113 data-nosnippet>113</a>//! ```
+<a href=#114 id=114 data-nosnippet>114</a>//! を解けば（あるいは、解けないことを示せば）よい。
+<a href=#115 id=115 data-nosnippet>115</a>//! 対角成分が正、それ以外が非正であることからなにかが言える？
+<a href=#116 id=116 data-nosnippet>116</a>//!
+<a href=#117 id=117 data-nosnippet>117</a>//! 行列が特殊な形をしている場合は、掃き出し法などを介さずとも前述のように解くことができる。
+<a href=#118 id=118 data-nosnippet>118</a>//! See also [ABC 189 F](https://atcoder.jp/contests/abc189/tasks/abc189_f).
+<a href=#119 id=119 data-nosnippet>119</a>//!
+<a href=#120 id=120 data-nosnippet>120</a>//! ## Techniques
+<a href=#121 id=121 data-nosnippet>121</a>//!
+<a href=#122 id=122 data-nosnippet>122</a>//! ### Probability
+<a href=#123 id=123 data-nosnippet>123</a>//!
+<a href=#124 id=124 data-nosnippet>124</a>//! 何らかの条件を満たすまで、ある操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。
+<a href=#125 id=125 data-nosnippet>125</a>//!
+<a href=#126 id=126 data-nosnippet>126</a>//! $`i`$ 回目の操作が行われるとき $`X_i = 1`$、そうでないとき $`X_i = 0`$ なる確率変数 $`X_i`$
+<a href=#127 id=127 data-nosnippet>127</a>//! を考える。高々 $`n`$ 回で完了する確率を $`p(n)`$ とすると、求める期待値は
+<a href=#128 id=128 data-nosnippet>128</a>//! ```math
+<a href=#129 id=129 data-nosnippet>129</a>//! \begin{aligned}
+<a href=#130 id=130 data-nosnippet>130</a>//! \E{\left[\sum_{i=1}^{\infty} X_i\right]}
+<a href=#131 id=131 data-nosnippet>131</a>//! &amp;= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
+<a href=#132 id=132 data-nosnippet>132</a>//! \end{aligned}
+<a href=#133 id=133 data-nosnippet>133</a>//! ```
+<a href=#134 id=134 data-nosnippet>134</a>//! である。
+<a href=#135 id=135 data-nosnippet>135</a>//!
+<a href=#136 id=136 data-nosnippet>136</a>//! See also [ABC 331 G](https://atcoder.jp/contests/abc331/tasks/abc331_g).
+<a href=#137 id=137 data-nosnippet>137</a>//!
+<a href=#138 id=138 data-nosnippet>138</a>//! また、非負整数の値を取る確率変数 $`X`$ に対して、
+<a href=#139 id=139 data-nosnippet>139</a>//! ```math
+<a href=#140 id=140 data-nosnippet>140</a>//! \begin{aligned}
+<a href=#141 id=141 data-nosnippet>141</a>//! \E[X] &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
+<a href=#142 id=142 data-nosnippet>142</a></span><span class="comment">// &amp;= \sum_{i=1}^{\infty} \sum_{j=i}^{\infty} \Pr(X=j) \\
+<a href=#143 id=143 data-nosnippet>143</a></span><span class="doccomment">//! &amp;= \sum_{i=0}^{\infty} i\cdot(\Pr(X\ge i) - \Pr(X\gt i)) \\
+<a href=#144 id=144 data-nosnippet>144</a>//! &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i+1) \\
+<a href=#145 id=145 data-nosnippet>145</a>//! &amp;= \sum_{i=1}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=1}^{\infty} {(i-1)\cdot\Pr(X\ge i)} \\
+<a href=#146 id=146 data-nosnippet>146</a>//! &amp;= \sum_{i=1}^{\infty} \Pr(X\ge i)
+<a href=#147 id=147 data-nosnippet>147</a>//! \end{aligned}
+<a href=#148 id=148 data-nosnippet>148</a>//! ```
+<a href=#149 id=149 data-nosnippet>149</a>//! が成り立ち、$`\Pr(X = i)`$ を求める問題から $`\Pr(x\ge i)`$ を求める問題に帰着できる。
+<a href=#150 id=150 data-nosnippet>150</a>//!
+<a href=#151 id=151 data-nosnippet>151</a>//! ### Powers
+<a href=#152 id=152 data-nosnippet>152</a>//!
+<a href=#153 id=153 data-nosnippet>153</a>//! 各 $`i\in\Lambda_n`$ に対して $`X_i \in \{0, 1\}`$ となるような確率変数 $`X_i`$
+<a href=#154 id=154 data-nosnippet>154</a>//! を考える。ただし、各 $`X_i`$ 同士は独立とは限らないとする。これに対し、
+<a href=#155 id=155 data-nosnippet>155</a>//! ```math
+<a href=#156 id=156 data-nosnippet>156</a>//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+<a href=#157 id=157 data-nosnippet>157</a>//! ```
+<a href=#158 id=158 data-nosnippet>158</a>//! を求めたいとする。
+<a href=#159 id=159 data-nosnippet>159</a>//! ```math
+<a href=#160 id=160 data-nosnippet>160</a>//! \begin{aligned}
+<a href=#161 id=161 data-nosnippet>161</a>//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+<a href=#162 id=162 data-nosnippet>162</a>//! &amp;= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
+<a href=#163 id=163 data-nosnippet>163</a>//! &amp;= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
+<a href=#164 id=164 data-nosnippet>164</a>//! &amp;= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
+<a href=#165 id=165 data-nosnippet>165</a>//! \end{aligned}
+<a href=#166 id=166 data-nosnippet>166</a>//! ```
+<a href=#167 id=167 data-nosnippet>167</a>//! より、$`\sum_{0\le i\lt n} \Pr(X_i = 1)`$ や $`\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)`$
+<a href=#168 id=168 data-nosnippet>168</a>//! を求める問題に帰着できる。より一般には、$`\E[(\sum_{i=0}^{n-1} X_i)^M]`$ は、各
+<a href=#169 id=169 data-nosnippet>169</a>//! $`1\le m\le M`$ に対して
+<a href=#170 id=170 data-nosnippet>170</a>//! ```math
+<a href=#171 id=171 data-nosnippet>171</a>//! \sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}
+<a href=#172 id=172 data-nosnippet>172</a>//! ```
+<a href=#173 id=173 data-nosnippet>173</a>//! を求める問題に帰着できる。係数は Stirling partition number になる。
+<a href=#174 id=174 data-nosnippet>174</a>//!
+<a href=#175 id=175 data-nosnippet>175</a>//! DP などで、任意の $`0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n`$ にわたる
+<a href=#176 id=176 data-nosnippet>176</a>//! $`\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)`$ の総和を求められる場合は、これを利用するのがよいであろう。
+<a href=#177 id=177 data-nosnippet>177</a>//!
+<a href=#178 id=178 data-nosnippet>178</a>//! See also [ABC 277 G](https://atcoder.jp/contests/abc277/tasks/abc277_g).
 </span></code></pre></div></section></main></body></html>

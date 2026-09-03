@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="確率。"><title>discussion::probability - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (5db7f4be8 2026-09-01)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../crates.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="確率。"><title>discussion::probability - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="discussion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.100.0-nightly (2e2b193f8 2026-09-02)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../crates.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><link rel="stylesheet" href="https://rsk0315.github.io/KaTeX/dist/katex.min.css" integrity="sha384-h4/xDgXNao+EQ+xvZ0a/7QRoxZo9huqoHfvb1LFx/zbFh1aBxP9Al8yIzgcLYEsM" crossorigin="anonymous">
 <script defer src="https://rsk0315.github.io/KaTeX/dist/katex.min.js" integrity="sha384-uTtSJt9XPLiqIUfRVfOITjgIvmh5bzXv8CWqNvlv0Gd5jXgLOUU0grHCGKhXhMD/" crossorigin="anonymous"></script>
 
 <style>
@@ -339,12 +339,13 @@
 }
 </style>
 
-</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">discussion</a></div><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/probability/lib.rs.html#1-116">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
+</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li><li><a href="#techniques" title="Techniques">Techniques</a><ul><li><a href="#probability" title="Probability">Probability</a></li><li><a href="#powers" title="Powers">Powers</a></li></ul></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">discussion</a></div><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/probability/lib.rs.html#1-178">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
 <h3 id="definitions"><a class="doc-anchor" href="#definitions">§</a>Definitions</h3>
 <p>TODO: 書く。
 $<code>\gdef\P{\mathbb{P}}</code>$
 $<code>\gdef\F{\mathcal{F}}</code>$
-$<code>\gdef\E{\mathbb{E}}</code>$</p>
+$<code>\gdef\E{\mathbb{E}}</code>$
+$<code>\gdef\Pr{\P}</code>$</p>
 <p>$<code>(\Omega, \F, \P)</code>$, $<code>\P(\Omega) = 1</code>$</p>
 <p>$<code>\E[X]</code>$</p>
 <h3 id="lemmata"><a class="doc-anchor" href="#lemmata">§</a>Lemmata</h3>
@@ -431,4 +432,42 @@ $<code>i\lt n-1</code>$ についての $<code>\E[X_i] = 1 + \sum_j p_{i, j}\cdo
 対角成分が正、それ以外が非正であることからなにかが言える？</p>
 <p>行列が特殊な形をしている場合は、掃き出し法などを介さずとも前述のように解くことができる。
 See also <a href="https://atcoder.jp/contests/abc189/tasks/abc189_f">ABC 189 F</a>.</p>
+<h3 id="techniques"><a class="doc-anchor" href="#techniques">§</a>Techniques</h3><h4 id="probability"><a class="doc-anchor" href="#probability">§</a>Probability</h4>
+<p>何らかの条件を満たすまで、ある操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。</p>
+<p>$<code>i</code>$ 回目の操作が行われるとき $<code>X_i = 1</code>$、そうでないとき $<code>X_i = 0</code>$ なる確率変数 $<code>X_i</code>$
+を考える。高々 $<code>n</code>$ 回で完了する確率を $<code>p(n)</code>$ とすると、求める期待値は</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E{\left[\sum_{i=1}^{\infty} X_i\right]}
+&amp;= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
+\end{aligned}</code></pre></div>
+<p>である。</p>
+<p>See also <a href="https://atcoder.jp/contests/abc331/tasks/abc331_g">ABC 331 G</a>.</p>
+<p>また、非負整数の値を取る確率変数 $<code>X</code>$ に対して、</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E[X] &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
+&amp;= \sum_{i=0}^{\infty} i\cdot(\Pr(X\ge i) - \Pr(X\gt i)) \\
+&amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i+1) \\
+&amp;= \sum_{i=1}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=1}^{\infty} {(i-1)\cdot\Pr(X\ge i)} \\
+&amp;= \sum_{i=1}^{\infty} \Pr(X\ge i)
+\end{aligned}</code></pre></div>
+<p>が成り立ち、$<code>\Pr(X = i)</code>$ を求める問題から $<code>\Pr(x\ge i)</code>$ を求める問題に帰着できる。</p>
+<h4 id="powers"><a class="doc-anchor" href="#powers">§</a>Powers</h4>
+<p>各 $<code>i\in\Lambda_n</code>$ に対して $<code>X_i \in \{0, 1\}</code>$ となるような確率変数 $<code>X_i</code>$
+を考える。ただし、各 $<code>X_i</code>$ 同士は独立とは限らないとする。これに対し、</p>
+<div class="example-wrap"><pre class="language-math"><code>\E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}</code></pre></div>
+<p>を求めたいとする。</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+&amp;= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
+&amp;= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
+&amp;= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
+\end{aligned}</code></pre></div>
+<p>より、$<code>\sum_{0\le i\lt n} \Pr(X_i = 1)</code>$ や $<code>\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)</code>$
+を求める問題に帰着できる。より一般には、$<code>\E[(\sum_{i=0}^{n-1} X_i)^M]</code>$ は、各
+$<code>1\le m\le M</code>$ に対して</p>
+<div class="example-wrap"><pre class="language-math"><code>\sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}</code></pre></div>
+<p>を求める問題に帰着できる。係数は Stirling partition number になる。</p>
+<p>DP などで、任意の $<code>0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n</code>$ にわたる
+$<code>\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)</code>$ の総和を求められる場合は、これを利用するのがよいであろう。</p>
+<p>See also <a href="https://atcoder.jp/contests/abc277/tasks/abc277_g">ABC 277 G</a>.</p>
 </div></details></section></div></main></body></html>
