@@ -6,6 +6,8 @@
 //! $`\gdef\P{\mathbb{P}}`$
 //! $`\gdef\F{\mathcal{F}}`$
 //! $`\gdef\E{\mathbb{E}}`$
+// $`\gdef\Pr{\mathrm{Pr}}`$
+//! $`\gdef\Pr{\P}`$
 //!
 //! $`(\Omega, \F, \P)`$, $`\P(\Omega) = 1`$
 //!
@@ -114,3 +116,63 @@
 //!
 //! 行列が特殊な形をしている場合は、掃き出し法などを介さずとも前述のように解くことができる。
 //! See also [ABC 189 F](https://atcoder.jp/contests/abc189/tasks/abc189_f).
+//!
+//! ## Techniques
+//!
+//! ### Probability
+//!
+//! 何らかの条件を満たすまで、ある操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。
+//!
+//! $`i`$ 回目の操作が行われるとき $`X_i = 1`$、そうでないとき $`X_i = 0`$ なる確率変数 $`X_i`$
+//! を考える。高々 $`n`$ 回で完了する確率を $`p(n)`$ とすると、求める期待値は
+//! ```math
+//! \begin{aligned}
+//! \E{\left[\sum_{i=1}^{\infty} X_i\right]}
+//! &= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
+//! \end{aligned}
+//! ```
+//! である。
+//!
+//! See also [ABC 331 G](https://atcoder.jp/contests/abc331/tasks/abc331_g).
+//!
+//! また、非負整数の値を取る確率変数 $`X`$ に対して、
+//! ```math
+//! \begin{aligned}
+//! \E[X] &= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
+// &= \sum_{i=1}^{\infty} \sum_{j=i}^{\infty} \Pr(X=j) \\
+//! &= \sum_{i=0}^{\infty} i\cdot(\Pr(X\ge i) - \Pr(X\gt i)) \\
+//! &= \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i+1) \\
+//! &= \sum_{i=1}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=1}^{\infty} {(i-1)\cdot\Pr(X\ge i)} \\
+//! &= \sum_{i=1}^{\infty} \Pr(X\ge i)
+//! \end{aligned}
+//! ```
+//! が成り立ち、$`\Pr(X = i)`$ を求める問題から $`\Pr(x\ge i)`$ を求める問題に帰着できる。
+//!
+//! ### Powers
+//!
+//! 各 $`i\in\Lambda_n`$ に対して $`X_i \in \{0, 1\}`$ となるような確率変数 $`X_i`$
+//! を考える。ただし、各 $`X_i`$ 同士は独立とは限らないとする。これに対し、
+//! ```math
+//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+//! ```
+//! を求めたいとする。
+//! ```math
+//! \begin{aligned}
+//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+//! &= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
+//! &= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
+//! &= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
+//! \end{aligned}
+//! ```
+//! より、$`\sum_{0\le i\lt n} \Pr(X_i = 1)`$ や $`\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)`$
+//! を求める問題に帰着できる。より一般には、$`\E[(\sum_{i=0}^{n-1} X_i)^M]`$ は、各
+//! $`1\le m\le M`$ に対して
+//! ```math
+//! \sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}
+//! ```
+//! を求める問題に帰着できる。係数は Stirling partition number になる。
+//!
+//! DP などで、任意の $`0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n`$ にわたる
+//! $`\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)`$ の総和を求められる場合は、これを利用するのがよいであろう。
+//!
+//! See also [ABC 277 G](https://atcoder.jp/contests/abc277/tasks/abc277_g).
