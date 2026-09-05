@@ -339,7 +339,7 @@
 }
 </style>
 
-</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a><ul><li><a href="#probability-spaces" title="Probability spaces">Probability spaces</a></li><li><a href="#random-variables" title="Random variables">Random variables</a></li><li><a href="#independence" title="Independence">Independence</a></li><li><a href="#expectation" title="Expectation">Expectation</a></li></ul></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li><li><a href="#techniques" title="Techniques">Techniques</a><ul><li><a href="#probability" title="Probability">Probability</a></li><li><a href="#powers" title="Powers">Powers</a></li></ul></li><li><a href="#references" title="References">References</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">discussion</a></div><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/probability/lib.rs.html#1-296">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
+</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../discussion/index.html">discussion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a><ul><li><a href="#probability-spaces" title="Probability spaces">Probability spaces</a></li><li><a href="#random-variables" title="Random variables">Random variables</a></li><li><a href="#independence" title="Independence">Independence</a></li><li><a href="#expectation" title="Expectation">Expectation</a></li></ul></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li><li><a href="#techniques" title="Techniques">Techniques</a><ul><li><a href="#probability" title="Probability">Probability</a></li><li><a href="#powers" title="Powers">Powers</a></li></ul></li><li><a href="#references" title="References">References</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">discussion</a></div><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/probability/lib.rs.html#1-310">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
 <h3 id="definitions"><a class="doc-anchor" href="#definitions">§</a>Definitions</h3>
 <p>TODO: 精査する。
 $<code>\gdef\P{\mathbb{P}}</code>$
@@ -514,16 +514,7 @@ $<code>i\lt n-1</code>$ についての $<code>\E[X_i] = 1 + \sum_j p_{i, j}\cdo
 <p>行列が特殊な形をしている場合は、掃き出し法などを介さずとも前述のように解くことができる。
 See also <a href="https://atcoder.jp/contests/abc189/tasks/abc189_f">ABC 189 F</a>.</p>
 <h3 id="techniques"><a class="doc-anchor" href="#techniques">§</a>Techniques</h3><h4 id="probability"><a class="doc-anchor" href="#probability">§</a>Probability</h4>
-<p>何らかの条件を満たすまで、ある操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。</p>
-<p>$<code>i</code>$ 回目の操作が行われるとき $<code>X_i = 1</code>$、そうでないとき $<code>X_i = 0</code>$ なる確率変数 $<code>X_i</code>$
-を考える。高々 $<code>n</code>$ 回で完了する確率を $<code>p(n)</code>$ とすると、求める期待値は</p>
-<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
-\E{\left[\sum_{i=1}^{\infty} X_i\right]}
-&amp;= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
-\end{aligned}</code></pre></div>
-<p>である。</p>
-<p>See also <a href="https://atcoder.jp/contests/abc331/tasks/abc331_g">ABC 331 G</a>.</p>
-<p>また、非負整数の値を取る確率変数 $<code>X</code>$ に対して、</p>
+<p>非負整数の値を取る確率変数 $<code>X</code>$ に対して、</p>
 <div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
 \E[X] &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
 &amp;= \sum_{i=0}^{\infty} i\cdot(\Pr(X\ge i) - \Pr(X\gt i)) \\
@@ -532,22 +523,42 @@ See also <a href="https://atcoder.jp/contests/abc189/tasks/abc189_f">ABC 189 F</
 &amp;= \sum_{i=1}^{\infty} \Pr(X\ge i)
 \end{aligned}</code></pre></div>
 <p>が成り立ち、$<code>\Pr(X = i)</code>$ を求める問題から $<code>\Pr(X\ge i)</code>$ を求める問題に帰着できる。</p>
+<p>また、何らかの条件を満たすまで何らかの操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。</p>
+<p>$<code>i</code>$ 回目の操作が行われるとき $<code>X_i = 1</code>$、そうでないとき $<code>X_i = 0</code>$ となる確率変数 $<code>X_i</code>$
+を考える。高々 $<code>n</code>$ 回で完了する確率を $<code>p(n)</code>$ とすると、求める期待値は</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E{\left[\sum_{i=1}^{\infty} X_i\right]}
+&amp;= \sum_{i=1}^{\infty} \E[X_i] \\
+&amp;= \sum_{i=1}^{\infty} {(0\cdot p(i-1) + 1\cdot(1-p(i-1)))} \\
+&amp;= \sum_{i=0}^{\infty} {(0\cdot p(i) + 1\cdot(1-p(i)))} \\
+&amp;= \sum_{i=0}^{\infty} {(1-p(i))} \\
+\end{aligned}</code></pre></div>
+<p>である。操作回数を表す確率変数を $<code>X</code>$ とすると $<code>\P(X\le i) = p(i)</code>$ なので、先の補題より</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E[X] &amp;= \sum_{i=1}^{\infty} \P(X\ge i) \\
+&amp;= \sum_{i=1}^{\infty} {(1-\P(X\lt i))} \\
+&amp;= \sum_{i=1}^{\infty} {(1-\P(X\le i-1))} \\
+&amp;= \sum_{i=0}^{\infty} {(1-\P(X\le i))} \\
+&amp;= \sum_{i=0}^{\infty} {(1-p(i))} \\
+\end{aligned}</code></pre></div>
+<p>とすることもできる。</p>
+<p>See also <a href="https://atcoder.jp/contests/abc331/tasks/abc331_g">ABC 331 G</a>.</p>
 <h4 id="powers"><a class="doc-anchor" href="#powers">§</a>Powers</h4>
 <p>各 $<code>i\in\Lambda_n</code>$ に対して $<code>X_i \in \{0, 1\}</code>$ となるような確率変数 $<code>X_i</code>$
 を考える。ただし、各 $<code>X_i</code>$ 同士は独立とは限らないとする。これに対し、</p>
-<div class="example-wrap"><pre class="language-math"><code>\E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}</code></pre></div>
+<div class="example-wrap"><pre class="language-math"><code>\E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\,\right]}</code></pre></div>
 <p>を求めたいとする。</p>
 <div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
-\E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+\E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\,\right]}
 &amp;= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
 &amp;= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
 &amp;= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
 \end{aligned}</code></pre></div>
 <p>より、$<code>\sum_{0\le i\lt n} \Pr(X_i = 1)</code>$ や $<code>\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)</code>$
 を求める問題に帰着できる。より一般には、$<code>\E[(\sum_{i=0}^{n-1} X_i)^M]</code>$ は、各
-$<code>1\le m\le M</code>$ に対して</p>
+$<code>1\le m\le M</code>$ に対する</p>
 <div class="example-wrap"><pre class="language-math"><code>\sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}</code></pre></div>
-<p>を求める問題に帰着できる。係数は Stirling partition number になる。</p>
+<p>の線形和を求める問題に帰着できる。係数は Stirling partition number になる。</p>
 <p>DP などで、任意の $<code>0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n</code>$ にわたる
 $<code>\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)</code>$ の総和を求められる場合は、これを利用するのがよいであろう。</p>
 <p>See also <a href="https://atcoder.jp/contests/abc277/tasks/abc277_g">ABC 277 G</a>.</p>

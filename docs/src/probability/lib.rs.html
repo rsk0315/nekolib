@@ -576,63 +576,77 @@
 <a href=#235 id=235 data-nosnippet>235</a>//!
 <a href=#236 id=236 data-nosnippet>236</a>//! ### Probability
 <a href=#237 id=237 data-nosnippet>237</a>//!
-<a href=#238 id=238 data-nosnippet>238</a>//! 何らかの条件を満たすまで、ある操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。
-<a href=#239 id=239 data-nosnippet>239</a>//!
-<a href=#240 id=240 data-nosnippet>240</a>//! $`i`$ 回目の操作が行われるとき $`X_i = 1`$、そうでないとき $`X_i = 0`$ なる確率変数 $`X_i`$
-<a href=#241 id=241 data-nosnippet>241</a>//! を考える。高々 $`n`$ 回で完了する確率を $`p(n)`$ とすると、求める期待値は
-<a href=#242 id=242 data-nosnippet>242</a>//! ```math
-<a href=#243 id=243 data-nosnippet>243</a>//! \begin{aligned}
-<a href=#244 id=244 data-nosnippet>244</a>//! \E{\left[\sum_{i=1}^{\infty} X_i\right]}
-<a href=#245 id=245 data-nosnippet>245</a>//! &amp;= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
-<a href=#246 id=246 data-nosnippet>246</a>//! \end{aligned}
-<a href=#247 id=247 data-nosnippet>247</a>//! ```
-<a href=#248 id=248 data-nosnippet>248</a>//! である。
-<a href=#249 id=249 data-nosnippet>249</a>//!
-<a href=#250 id=250 data-nosnippet>250</a>//! See also [ABC 331 G](https://atcoder.jp/contests/abc331/tasks/abc331_g).
-<a href=#251 id=251 data-nosnippet>251</a>//!
-<a href=#252 id=252 data-nosnippet>252</a>//! また、非負整数の値を取る確率変数 $`X`$ に対して、
-<a href=#253 id=253 data-nosnippet>253</a>//! ```math
-<a href=#254 id=254 data-nosnippet>254</a>//! \begin{aligned}
-<a href=#255 id=255 data-nosnippet>255</a>//! \E[X] &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
-<a href=#256 id=256 data-nosnippet>256</a></span><span class="comment">// &amp;= \sum_{i=1}^{\infty} \sum_{j=i}^{\infty} \Pr(X=j) \\
-<a href=#257 id=257 data-nosnippet>257</a></span><span class="doccomment">//! &amp;= \sum_{i=0}^{\infty} i\cdot(\Pr(X\ge i) - \Pr(X\gt i)) \\
-<a href=#258 id=258 data-nosnippet>258</a>//! &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i+1) \\
-<a href=#259 id=259 data-nosnippet>259</a>//! &amp;= \sum_{i=1}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=1}^{\infty} {(i-1)\cdot\Pr(X\ge i)} \\
-<a href=#260 id=260 data-nosnippet>260</a>//! &amp;= \sum_{i=1}^{\infty} \Pr(X\ge i)
-<a href=#261 id=261 data-nosnippet>261</a>//! \end{aligned}
-<a href=#262 id=262 data-nosnippet>262</a>//! ```
-<a href=#263 id=263 data-nosnippet>263</a>//! が成り立ち、$`\Pr(X = i)`$ を求める問題から $`\Pr(X\ge i)`$ を求める問題に帰着できる。
-<a href=#264 id=264 data-nosnippet>264</a>//!
-<a href=#265 id=265 data-nosnippet>265</a>//! ### Powers
-<a href=#266 id=266 data-nosnippet>266</a>//!
-<a href=#267 id=267 data-nosnippet>267</a>//! 各 $`i\in\Lambda_n`$ に対して $`X_i \in \{0, 1\}`$ となるような確率変数 $`X_i`$
-<a href=#268 id=268 data-nosnippet>268</a>//! を考える。ただし、各 $`X_i`$ 同士は独立とは限らないとする。これに対し、
-<a href=#269 id=269 data-nosnippet>269</a>//! ```math
-<a href=#270 id=270 data-nosnippet>270</a>//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
-<a href=#271 id=271 data-nosnippet>271</a>//! ```
-<a href=#272 id=272 data-nosnippet>272</a>//! を求めたいとする。
-<a href=#273 id=273 data-nosnippet>273</a>//! ```math
-<a href=#274 id=274 data-nosnippet>274</a>//! \begin{aligned}
-<a href=#275 id=275 data-nosnippet>275</a>//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
-<a href=#276 id=276 data-nosnippet>276</a>//! &amp;= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
-<a href=#277 id=277 data-nosnippet>277</a>//! &amp;= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
-<a href=#278 id=278 data-nosnippet>278</a>//! &amp;= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
-<a href=#279 id=279 data-nosnippet>279</a>//! \end{aligned}
-<a href=#280 id=280 data-nosnippet>280</a>//! ```
-<a href=#281 id=281 data-nosnippet>281</a>//! より、$`\sum_{0\le i\lt n} \Pr(X_i = 1)`$ や $`\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)`$
-<a href=#282 id=282 data-nosnippet>282</a>//! を求める問題に帰着できる。より一般には、$`\E[(\sum_{i=0}^{n-1} X_i)^M]`$ は、各
-<a href=#283 id=283 data-nosnippet>283</a>//! $`1\le m\le M`$ に対して
-<a href=#284 id=284 data-nosnippet>284</a>//! ```math
-<a href=#285 id=285 data-nosnippet>285</a>//! \sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}
-<a href=#286 id=286 data-nosnippet>286</a>//! ```
-<a href=#287 id=287 data-nosnippet>287</a>//! を求める問題に帰着できる。係数は Stirling partition number になる。
-<a href=#288 id=288 data-nosnippet>288</a>//!
-<a href=#289 id=289 data-nosnippet>289</a>//! DP などで、任意の $`0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n`$ にわたる
-<a href=#290 id=290 data-nosnippet>290</a>//! $`\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)`$ の総和を求められる場合は、これを利用するのがよいであろう。
-<a href=#291 id=291 data-nosnippet>291</a>//!
-<a href=#292 id=292 data-nosnippet>292</a>//! See also [ABC 277 G](https://atcoder.jp/contests/abc277/tasks/abc277_g).
-<a href=#293 id=293 data-nosnippet>293</a>//!
-<a href=#294 id=294 data-nosnippet>294</a>//! ## References
-<a href=#295 id=295 data-nosnippet>295</a>//!
-<a href=#296 id=296 data-nosnippet>296</a>//! - Roch, Sébastien. *Modern Discrete Probability: An Essential Toolkit*. of *Cambridge Series in Statistical and Probabilistic Mathematics*. Cambridge: Cambridge University Press, 2024. &lt;https://doi.org/10.1017/9781009305129&gt;.
+<a href=#238 id=238 data-nosnippet>238</a>//! 非負整数の値を取る確率変数 $`X`$ に対して、
+<a href=#239 id=239 data-nosnippet>239</a>//! ```math
+<a href=#240 id=240 data-nosnippet>240</a>//! \begin{aligned}
+<a href=#241 id=241 data-nosnippet>241</a>//! \E[X] &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
+<a href=#242 id=242 data-nosnippet>242</a></span><span class="comment">// &amp;= \sum_{i=1}^{\infty} \sum_{j=i}^{\infty} \Pr(X=j) \\
+<a href=#243 id=243 data-nosnippet>243</a></span><span class="doccomment">//! &amp;= \sum_{i=0}^{\infty} i\cdot(\Pr(X\ge i) - \Pr(X\gt i)) \\
+<a href=#244 id=244 data-nosnippet>244</a>//! &amp;= \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=0}^{\infty} i\cdot\Pr(X\ge i+1) \\
+<a href=#245 id=245 data-nosnippet>245</a>//! &amp;= \sum_{i=1}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=1}^{\infty} {(i-1)\cdot\Pr(X\ge i)} \\
+<a href=#246 id=246 data-nosnippet>246</a>//! &amp;= \sum_{i=1}^{\infty} \Pr(X\ge i)
+<a href=#247 id=247 data-nosnippet>247</a>//! \end{aligned}
+<a href=#248 id=248 data-nosnippet>248</a>//! ```
+<a href=#249 id=249 data-nosnippet>249</a>//! が成り立ち、$`\Pr(X = i)`$ を求める問題から $`\Pr(X\ge i)`$ を求める問題に帰着できる。
+<a href=#250 id=250 data-nosnippet>250</a>//!
+<a href=#251 id=251 data-nosnippet>251</a>//! また、何らかの条件を満たすまで何らかの操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。
+<a href=#252 id=252 data-nosnippet>252</a>//!
+<a href=#253 id=253 data-nosnippet>253</a>//! $`i`$ 回目の操作が行われるとき $`X_i = 1`$、そうでないとき $`X_i = 0`$ となる確率変数 $`X_i`$
+<a href=#254 id=254 data-nosnippet>254</a>//! を考える。高々 $`n`$ 回で完了する確率を $`p(n)`$ とすると、求める期待値は
+<a href=#255 id=255 data-nosnippet>255</a>//! ```math
+<a href=#256 id=256 data-nosnippet>256</a>//! \begin{aligned}
+<a href=#257 id=257 data-nosnippet>257</a>//! \E{\left[\sum_{i=1}^{\infty} X_i\right]}
+<a href=#258 id=258 data-nosnippet>258</a></span><span class="comment">// &amp;= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
+<a href=#259 id=259 data-nosnippet>259</a></span><span class="doccomment">//! &amp;= \sum_{i=1}^{\infty} \E[X_i] \\
+<a href=#260 id=260 data-nosnippet>260</a>//! &amp;= \sum_{i=1}^{\infty} {(0\cdot p(i-1) + 1\cdot(1-p(i-1)))} \\
+<a href=#261 id=261 data-nosnippet>261</a>//! &amp;= \sum_{i=0}^{\infty} {(0\cdot p(i) + 1\cdot(1-p(i)))} \\
+<a href=#262 id=262 data-nosnippet>262</a>//! &amp;= \sum_{i=0}^{\infty} {(1-p(i))} \\
+<a href=#263 id=263 data-nosnippet>263</a>//! \end{aligned}
+<a href=#264 id=264 data-nosnippet>264</a>//! ```
+<a href=#265 id=265 data-nosnippet>265</a>//! である。操作回数を表す確率変数を $`X`$ とすると $`\P(X\le i) = p(i)`$ なので、先の補題より
+<a href=#266 id=266 data-nosnippet>266</a>//! ```math
+<a href=#267 id=267 data-nosnippet>267</a>//! \begin{aligned}
+<a href=#268 id=268 data-nosnippet>268</a>//! \E[X] &amp;= \sum_{i=1}^{\infty} \P(X\ge i) \\
+<a href=#269 id=269 data-nosnippet>269</a>//! &amp;= \sum_{i=1}^{\infty} {(1-\P(X\lt i))} \\
+<a href=#270 id=270 data-nosnippet>270</a>//! &amp;= \sum_{i=1}^{\infty} {(1-\P(X\le i-1))} \\
+<a href=#271 id=271 data-nosnippet>271</a>//! &amp;= \sum_{i=0}^{\infty} {(1-\P(X\le i))} \\
+<a href=#272 id=272 data-nosnippet>272</a>//! &amp;= \sum_{i=0}^{\infty} {(1-p(i))} \\
+<a href=#273 id=273 data-nosnippet>273</a>//! \end{aligned}
+<a href=#274 id=274 data-nosnippet>274</a>//! ```
+<a href=#275 id=275 data-nosnippet>275</a>//! とすることもできる。
+<a href=#276 id=276 data-nosnippet>276</a>//!
+<a href=#277 id=277 data-nosnippet>277</a>//! See also [ABC 331 G](https://atcoder.jp/contests/abc331/tasks/abc331_g).
+<a href=#278 id=278 data-nosnippet>278</a>//!
+<a href=#279 id=279 data-nosnippet>279</a>//! ### Powers
+<a href=#280 id=280 data-nosnippet>280</a>//!
+<a href=#281 id=281 data-nosnippet>281</a>//! 各 $`i\in\Lambda_n`$ に対して $`X_i \in \{0, 1\}`$ となるような確率変数 $`X_i`$
+<a href=#282 id=282 data-nosnippet>282</a>//! を考える。ただし、各 $`X_i`$ 同士は独立とは限らないとする。これに対し、
+<a href=#283 id=283 data-nosnippet>283</a>//! ```math
+<a href=#284 id=284 data-nosnippet>284</a>//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\,\right]}
+<a href=#285 id=285 data-nosnippet>285</a>//! ```
+<a href=#286 id=286 data-nosnippet>286</a>//! を求めたいとする。
+<a href=#287 id=287 data-nosnippet>287</a>//! ```math
+<a href=#288 id=288 data-nosnippet>288</a>//! \begin{aligned}
+<a href=#289 id=289 data-nosnippet>289</a>//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\,\right]}
+<a href=#290 id=290 data-nosnippet>290</a>//! &amp;= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
+<a href=#291 id=291 data-nosnippet>291</a>//! &amp;= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
+<a href=#292 id=292 data-nosnippet>292</a>//! &amp;= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
+<a href=#293 id=293 data-nosnippet>293</a>//! \end{aligned}
+<a href=#294 id=294 data-nosnippet>294</a>//! ```
+<a href=#295 id=295 data-nosnippet>295</a>//! より、$`\sum_{0\le i\lt n} \Pr(X_i = 1)`$ や $`\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)`$
+<a href=#296 id=296 data-nosnippet>296</a>//! を求める問題に帰着できる。より一般には、$`\E[(\sum_{i=0}^{n-1} X_i)^M]`$ は、各
+<a href=#297 id=297 data-nosnippet>297</a>//! $`1\le m\le M`$ に対する
+<a href=#298 id=298 data-nosnippet>298</a>//! ```math
+<a href=#299 id=299 data-nosnippet>299</a>//! \sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}
+<a href=#300 id=300 data-nosnippet>300</a>//! ```
+<a href=#301 id=301 data-nosnippet>301</a>//! の線形和を求める問題に帰着できる。係数は Stirling partition number になる。
+<a href=#302 id=302 data-nosnippet>302</a>//!
+<a href=#303 id=303 data-nosnippet>303</a>//! DP などで、任意の $`0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n`$ にわたる
+<a href=#304 id=304 data-nosnippet>304</a>//! $`\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)`$ の総和を求められる場合は、これを利用するのがよいであろう。
+<a href=#305 id=305 data-nosnippet>305</a>//!
+<a href=#306 id=306 data-nosnippet>306</a>//! See also [ABC 277 G](https://atcoder.jp/contests/abc277/tasks/abc277_g).
+<a href=#307 id=307 data-nosnippet>307</a>//!
+<a href=#308 id=308 data-nosnippet>308</a>//! ## References
+<a href=#309 id=309 data-nosnippet>309</a>//!
+<a href=#310 id=310 data-nosnippet>310</a>//! - Roch, Sébastien. *Modern Discrete Probability: An Essential Toolkit*. of *Cambridge Series in Statistical and Probabilistic Mathematics*. Cambridge: Cambridge University Press, 2024. &lt;https://doi.org/10.1017/9781009305129&gt;.
 </span></code></pre></div></section></main></body></html>
