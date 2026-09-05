@@ -250,22 +250,53 @@ pub trait ModInt:
     fn get(self) -> u32;
     fn pow(self, exp: impl BinIter) -> Self;
     fn pow_table(self, n: usize) -> Vec<Self> {
-        (0..=n)
-            .scan(Self::new(1), |state, _| {
-                let res = *state;
-                *state *= self;
-                Some(res)
-            })
-            .collect()
+        let mut res = vec![Self::new(1); n + 1];
+        for i in 0..n {
+            res[i + 1] = res[i] * self;
+        }
+        res
     }
-    fn perm_table(self, n: usize) -> Vec<Self> {
-        (0..=n)
-            .scan(Self::new(1), |state, x| {
-                let res = *state;
-                *state *= self - Self::new(x);
-                Some(res)
-            })
-            .collect()
+    fn rising_table(self, n: usize) -> Vec<Self> {
+        let mut res = vec![Self::new(1); n + 1];
+        for i in 0..n {
+            res[i + 1] = res[i] * (self + Self::new(i));
+        }
+        res
+    }
+    fn falling_table(self, n: usize) -> Vec<Self> {
+        let mut res = vec![Self::new(1); n + 1];
+        for i in 0..n {
+            res[i + 1] = res[i] * (self - Self::new(i));
+        }
+        res
+    }
+    fn perm_table(self, n: usize) -> Vec<Self> { self.falling_table(n) }
+    fn map_recip(vals: &[Self]) -> Vec<Self> {
+        // [x, y, z]
+        // [x, xy, xyz]
+        let mut res = vals.to_owned();
+        let n = res.len();
+        for i in 1..n {
+            let tmp = res[i - 1];
+            res[i] *= tmp;
+        }
+        res[n - 1] = res[n - 1].recip();
+        for i in (1..n).rev() {
+            let xyz_recip = res[i];
+            let xy = res[i - 1];
+            let z = vals[i];
+            let z_recip = xyz_recip * xy;
+            let xy_recip = xyz_recip * z;
+            res[i] = z_recip;
+            res[i - 1] = xy_recip;
+        }
+        res
+    }
+    fn binom_table(self, n: usize) -> Vec<Self> {
+        let num = self.falling_table(n);
+        let den = Self::new(1).rising_table(n);
+        let den_recip = Self::map_recip(&den);
+        num.into_iter().zip(den_recip).map(|(x, y)| x * y).collect()
     }
     fn recip(self) -> Self;
     fn checked_recip(self) -> Option<Self>;
@@ -311,10 +342,15 @@ fn recip_table() {
     type Mi = ModInt998244353;
 
     let n = 100;
-    let recip_table = Mi::recip_table(n);
+
+    let recip_1 = Mi::recip_table(n);
     for i in 1..=n {
-        assert_eq!(recip_table[i] * Mi::new(i), Mi::new(1));
+        assert_eq!(recip_1[i] * Mi::new(i), Mi::new(1));
     }
+
+    let iota: Vec<_> = (1..=n).map(Mi::new).collect();
+    let recip_2 = Mi::map_recip(&iota);
+    assert_eq!(recip_1[1..], recip_2);
 }
 
 #[test]
