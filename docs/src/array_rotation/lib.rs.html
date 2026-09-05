@@ -453,13 +453,13 @@
 <a href=#112 id=112 data-nosnippet>112</a>        </span><span class="kw">let </span>count = left_diff;
 <a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">let </span>src = right[..count].as_ptr();
 <a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">let </span>dst = left[leftlen_old..][..count].as_mut_ptr();
-<a href=#115 id=115 data-nosnippet>115</a>        ptr::copy_nonoverlapping(src, dst, count);
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">unsafe </span>{ ptr::copy_nonoverlapping(src, dst, count) };
 <a href=#116 id=116 data-nosnippet>116</a>        <span class="comment">// [A, B, C, D, E] ++ [_, _, F, G, H, I]
 <a href=#117 id=117 data-nosnippet>117</a>        </span><span class="kw">let </span>count = rightlen_new;
 <a href=#118 id=118 data-nosnippet>118</a>        <span class="kw">let </span>dst = right[..count].as_mut_ptr();
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="comment">// Overlapping `src` should be after `dst` for Stacked Borrows.
 <a href=#120 id=120 data-nosnippet>120</a>        </span><span class="kw">let </span>src = right[left_diff..][..count].as_ptr();
-<a href=#121 id=121 data-nosnippet>121</a>        ptr::copy(src, dst, count);
+<a href=#121 id=121 data-nosnippet>121</a>        <span class="kw">unsafe </span>{ ptr::copy(src, dst, count) };
 <a href=#122 id=122 data-nosnippet>122</a>        <span class="comment">// [A, B, C, D, E] ++ [F, G, H, I]
 <a href=#123 id=123 data-nosnippet>123</a>    </span>} <span class="kw">else if </span>leftlen_old &gt; leftlen_new {
 <a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>right_diff = rightlen_new - rightlen_old;
@@ -467,12 +467,12 @@
 <a href=#126 id=126 data-nosnippet>126</a>        </span><span class="kw">let </span>count = rightlen_old;
 <a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">let </span>dst = right[right_diff..][..count].as_mut_ptr();
 <a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">let </span>src = right[..count].as_ptr();
-<a href=#129 id=129 data-nosnippet>129</a>        ptr::copy(src, dst, count);
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">unsafe </span>{ ptr::copy(src, dst, count) };
 <a href=#130 id=130 data-nosnippet>130</a>        <span class="comment">// [A, B, C, D, E, F] ++ [_, _, G, H, I]
 <a href=#131 id=131 data-nosnippet>131</a>        </span><span class="kw">let </span>count = right_diff;
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">let </span>src = left[leftlen_new..][..count].as_ptr();
 <a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span>dst = right[..count].as_mut_ptr();
-<a href=#134 id=134 data-nosnippet>134</a>        ptr::copy_nonoverlapping(src, dst, count);
+<a href=#134 id=134 data-nosnippet>134</a>        <span class="kw">unsafe </span>{ ptr::copy_nonoverlapping(src, dst, count) };
 <a href=#135 id=135 data-nosnippet>135</a>        <span class="comment">// [A, B, C, D] ++ [E, F, G, H, I]
 <a href=#136 id=136 data-nosnippet>136</a>    </span>}
 <a href=#137 id=137 data-nosnippet>137</a>    rightlen_new
@@ -509,7 +509,7 @@
 <a href=#168 id=168 data-nosnippet>168</a>        <span class="kw">let </span>count = left_diff - <span class="number">1</span>;
 <a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">let </span>src = right[..count].as_ptr();
 <a href=#170 id=170 data-nosnippet>170</a>        <span class="kw">let </span>dst = left[leftlen_old + <span class="number">1</span>..][..count].as_mut_ptr();
-<a href=#171 id=171 data-nosnippet>171</a>        ptr::copy_nonoverlapping(src, dst, count);
+<a href=#171 id=171 data-nosnippet>171</a>        <span class="kw">unsafe </span>{ ptr::copy_nonoverlapping(src, dst, count) };
 <a href=#172 id=172 data-nosnippet>172</a>        <span class="comment">// [A, B, C, D, E, F] ++ [_] ++ [_, _, G, H, I, J, K, L]
 <a href=#173 id=173 data-nosnippet>173</a>        </span><span class="kw">let </span>new_mid_elt = <span class="kw">unsafe </span>{ right[left_diff - <span class="number">1</span>].assume_init_read() };
 <a href=#174 id=174 data-nosnippet>174</a>        mid.write(new_mid_elt);
@@ -517,7 +517,7 @@
 <a href=#176 id=176 data-nosnippet>176</a>        </span><span class="kw">let </span>count = rightlen_new;
 <a href=#177 id=177 data-nosnippet>177</a>        <span class="kw">let </span>dst = right[..count].as_mut_ptr();
 <a href=#178 id=178 data-nosnippet>178</a>        <span class="kw">let </span>src = right[left_diff..][..count].as_ptr();
-<a href=#179 id=179 data-nosnippet>179</a>        ptr::copy(src, dst, count);
+<a href=#179 id=179 data-nosnippet>179</a>        <span class="kw">unsafe </span>{ ptr::copy(src, dst, count) };
 <a href=#180 id=180 data-nosnippet>180</a>        <span class="comment">// [A, B, C, D, E, F] ++ [G] ++ [H, I, J, K, L]
 <a href=#181 id=181 data-nosnippet>181</a>    </span>} <span class="kw">else if </span>leftlen_old &gt; leftlen_new {
 <a href=#182 id=182 data-nosnippet>182</a>        <span class="kw">let </span>mid_elt = <span class="kw">unsafe </span>{ mid.assume_init_read() };
@@ -526,14 +526,14 @@
 <a href=#185 id=185 data-nosnippet>185</a>        <span class="kw">let </span>count = rightlen_old;
 <a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">let </span>dst = right[right_diff..][..count].as_mut_ptr();
 <a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span>src = right[..count].as_ptr();
-<a href=#188 id=188 data-nosnippet>188</a>        ptr::copy(src, dst, count);
+<a href=#188 id=188 data-nosnippet>188</a>        <span class="kw">unsafe </span>{ ptr::copy(src, dst, count) };
 <a href=#189 id=189 data-nosnippet>189</a>        <span class="comment">// [A, B, C, D, E, F, G, H] ++ [I] ++ [_, _, _, J, K, L]
 <a href=#190 id=190 data-nosnippet>190</a>        </span>right[right_diff - <span class="number">1</span>].write(mid_elt);
 <a href=#191 id=191 data-nosnippet>191</a>        <span class="comment">// [A, B, C, D, E, F, G, H] ++ [_] ++ [_, _, I, J, K, L]
 <a href=#192 id=192 data-nosnippet>192</a>        </span><span class="kw">let </span>count = right_diff - <span class="number">1</span>;
 <a href=#193 id=193 data-nosnippet>193</a>        <span class="kw">let </span>src = left[leftlen_new + <span class="number">1</span>..][..count].as_ptr();
 <a href=#194 id=194 data-nosnippet>194</a>        <span class="kw">let </span>dst = right[..count].as_mut_ptr();
-<a href=#195 id=195 data-nosnippet>195</a>        ptr::copy_nonoverlapping(src, dst, count);
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">unsafe </span>{ ptr::copy_nonoverlapping(src, dst, count) };
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="comment">// [A, B, C, D, E, F] ++ [_] ++ [G, H, I, J, K, L]
 <a href=#197 id=197 data-nosnippet>197</a>        </span><span class="kw">let </span>new_mid_elt = <span class="kw">unsafe </span>{ left[leftlen_new].assume_init_read() };
 <a href=#198 id=198 data-nosnippet>198</a>        mid.write(new_mid_elt);

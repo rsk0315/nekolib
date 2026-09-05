@@ -421,7 +421,7 @@
 <a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">let </span>dst = array[i + <span class="number">1</span>..][..count].as_mut_ptr();
 <a href=#81 id=81 data-nosnippet>81</a>    <span class="comment">// `src` should be after `dst` for Stacked Borrows.
 <a href=#82 id=82 data-nosnippet>82</a>    </span><span class="kw">let </span>src = array[i..][..count].as_ptr();
-<a href=#83 id=83 data-nosnippet>83</a>    ptr::copy(src, dst, count);
+<a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">unsafe </span>{ ptr::copy(src, dst, count) };
 <a href=#84 id=84 data-nosnippet>84</a>    array[i].write(elt);
 <a href=#85 id=85 data-nosnippet>85</a>}
 <a href=#86 id=86 data-nosnippet>86</a>
@@ -444,10 +444,10 @@
 <a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">let </span>count = dst_len - i;
 <a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">let </span>dst_ptr = dst[i + src_len..][..count].as_mut_ptr();
 <a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">let </span>src_ptr = dst[i..][..count].as_ptr();
-<a href=#106 id=106 data-nosnippet>106</a>    ptr::copy(src_ptr, dst_ptr, count);
+<a href=#106 id=106 data-nosnippet>106</a>    <span class="kw">unsafe </span>{ ptr::copy(src_ptr, dst_ptr, count) };
 <a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">let </span>count = src_len;
 <a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">let </span>src_ptr = src[..count].as_ptr();
 <a href=#109 id=109 data-nosnippet>109</a>    <span class="kw">let </span>dst_ptr = dst[i..][..count].as_mut_ptr();
-<a href=#110 id=110 data-nosnippet>110</a>    ptr::copy_nonoverlapping(src_ptr, dst_ptr, count);
+<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">unsafe </span>{ ptr::copy_nonoverlapping(src_ptr, dst_ptr, count) };
 <a href=#111 id=111 data-nosnippet>111</a>}
 </code></pre></div></section></main></body></html>
