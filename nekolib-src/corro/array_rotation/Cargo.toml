@@ -2,5 +2,6 @@
 name = "array_rotation"
 version = "0.1.0"
 style_edition = "2024"
+edition = "2024"
 
 [dependencies]

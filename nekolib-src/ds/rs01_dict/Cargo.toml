@@ -2,6 +2,7 @@
 name = "rs01_dict"
 version = "0.1.0"
 style_edition = "2024"
+edition = "2024"
 
 [dependencies]
 usize_bounds = { path = "../../ops/usize_bounds" }
