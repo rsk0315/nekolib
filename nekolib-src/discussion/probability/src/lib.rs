@@ -235,21 +235,7 @@
 //!
 //! ### Probability
 //!
-//! 何らかの条件を満たすまで、ある操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。
-//!
-//! $`i`$ 回目の操作が行われるとき $`X_i = 1`$、そうでないとき $`X_i = 0`$ なる確率変数 $`X_i`$
-//! を考える。高々 $`n`$ 回で完了する確率を $`p(n)`$ とすると、求める期待値は
-//! ```math
-//! \begin{aligned}
-//! \E{\left[\sum_{i=1}^{\infty} X_i\right]}
-//! &= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
-//! \end{aligned}
-//! ```
-//! である。
-//!
-//! See also [ABC 331 G](https://atcoder.jp/contests/abc331/tasks/abc331_g).
-//!
-//! また、非負整数の値を取る確率変数 $`X`$ に対して、
+//! 非負整数の値を取る確率変数 $`X`$ に対して、
 //! ```math
 //! \begin{aligned}
 //! \E[X] &= \sum_{i=0}^{\infty} i\cdot\Pr(X = i) \\
@@ -262,17 +248,45 @@
 //! ```
 //! が成り立ち、$`\Pr(X = i)`$ を求める問題から $`\Pr(X\ge i)`$ を求める問題に帰着できる。
 //!
+//! また、何らかの条件を満たすまで何らかの操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。
+//!
+//! $`i`$ 回目の操作が行われるとき $`X_i = 1`$、そうでないとき $`X_i = 0`$ となる確率変数 $`X_i`$
+//! を考える。高々 $`n`$ 回で完了する確率を $`p(n)`$ とすると、求める期待値は
+//! ```math
+//! \begin{aligned}
+//! \E{\left[\sum_{i=1}^{\infty} X_i\right]}
+// &= \E{\left[\sum_{i=0}^{\infty} {(1-p(i))}\right]}
+//! &= \sum_{i=1}^{\infty} \E[X_i] \\
+//! &= \sum_{i=1}^{\infty} {(0\cdot p(i-1) + 1\cdot(1-p(i-1)))} \\
+//! &= \sum_{i=0}^{\infty} {(0\cdot p(i) + 1\cdot(1-p(i)))} \\
+//! &= \sum_{i=0}^{\infty} {(1-p(i))} \\
+//! \end{aligned}
+//! ```
+//! である。操作回数を表す確率変数を $`X`$ とすると $`\P(X\le i) = p(i)`$ なので、先の補題より
+//! ```math
+//! \begin{aligned}
+//! \E[X] &= \sum_{i=1}^{\infty} \P(X\ge i) \\
+//! &= \sum_{i=1}^{\infty} {(1-\P(X\lt i))} \\
+//! &= \sum_{i=1}^{\infty} {(1-\P(X\le i-1))} \\
+//! &= \sum_{i=0}^{\infty} {(1-\P(X\le i))} \\
+//! &= \sum_{i=0}^{\infty} {(1-p(i))} \\
+//! \end{aligned}
+//! ```
+//! とすることもできる。
+//!
+//! See also [ABC 331 G](https://atcoder.jp/contests/abc331/tasks/abc331_g).
+//!
 //! ### Powers
 //!
 //! 各 $`i\in\Lambda_n`$ に対して $`X_i \in \{0, 1\}`$ となるような確率変数 $`X_i`$
 //! を考える。ただし、各 $`X_i`$ 同士は独立とは限らないとする。これに対し、
 //! ```math
-//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\,\right]}
 //! ```
 //! を求めたいとする。
 //! ```math
 //! \begin{aligned}
-//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\right]}
+//! \E{\left[\left(\sum_{i=0}^{n-1} X_i\right)^2\,\right]}
 //! &= \E{\left[\sum_{i=0}^{n-1} X_i^2 + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} X_i X_j\right]} \\
 //! &= \sum_{i=0}^{n-1} \E{\left[X_i^2\right]} + 2 \sum_{i=0}^{n-1} \sum_{j=i+1}^{n-1} {\E[X_i X_j]} \\
 //! &= \sum_{0\le i\lt n} \Pr(X_i = 1) + 2 \sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)
@@ -280,11 +294,11 @@
 //! ```
 //! より、$`\sum_{0\le i\lt n} \Pr(X_i = 1)`$ や $`\sum_{0\le i\lt j\lt n} \Pr(X_i = X_j = 1)`$
 //! を求める問題に帰着できる。より一般には、$`\E[(\sum_{i=0}^{n-1} X_i)^M]`$ は、各
-//! $`1\le m\le M`$ に対して
+//! $`1\le m\le M`$ に対する
 //! ```math
 //! \sum_{(i_0, \dots, i_{m-1}) \in \binom{\Lambda_n}{m}} \Pr{\left(\bigwedge_{j=0}^{m-1} X_{i_j} = 1\right)}
 //! ```
-//! を求める問題に帰着できる。係数は Stirling partition number になる。
+//! の線形和を求める問題に帰着できる。係数は Stirling partition number になる。
 //!
 //! DP などで、任意の $`0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n`$ にわたる
 //! $`\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)`$ の総和を求められる場合は、これを利用するのがよいであろう。
