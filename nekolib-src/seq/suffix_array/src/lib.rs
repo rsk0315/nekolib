@@ -20,11 +20,12 @@ impl<T: Ord> From<Vec<T>> for SuffixArray<T> {
     }
 }
 
-impl From<String> for SuffixArray<char> {
-    fn from(buf: String) -> Self {
-        let buf: Vec<_> = buf.chars().collect();
-        Self::from_chars(buf)
-    }
+impl From<&'static [u8]> for SuffixArray<u8> {
+    fn from(buf: &'static [u8]) -> Self { Self::from_bytes(buf.to_vec()) }
+}
+
+impl<const N: usize> From<&'static [u8; N]> for SuffixArray<u8> {
+    fn from(buf: &'static [u8; N]) -> Self { Self::from_bytes(buf.to_vec()) }
 }
 
 impl SuffixArray<u8> {
@@ -320,10 +321,12 @@ impl<T: Ord> SuffixArray<T> {
     pub fn into_inner(self) -> Vec<usize> { self.sa }
 }
 
-impl SuffixArray<char> {
-    pub fn search_str(&self, pat: &str) -> impl Iterator<Item = usize> + '_ {
-        let pat: Vec<_> = pat.chars().collect();
-        self.search(&pat)
+impl SuffixArray<u8> {
+    pub fn search_bytes(
+        &self,
+        pat: &'static [u8],
+    ) -> impl Iterator<Item = usize> + '_ {
+        self.search(pat)
     }
 }
 
@@ -334,22 +337,22 @@ impl<T: Ord> Index<usize> for SuffixArray<T> {
 
 #[test]
 fn sanity_check() {
-    let buf = b"abracadabra".to_vec();
-    let sa = SuffixArray::from_bytes(buf);
+    let buf = b"abracadabra";
+    let sa = SuffixArray::from(buf);
     assert_eq!(sa.sa, [11, 10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2]);
 }
 
 #[test]
 fn empty_text() {
-    let sa = SuffixArray::from("".to_owned());
-    assert!(sa.search_str("").eq(Some(0)));
-    assert!(sa.search_str("_").eq(None));
+    let sa = SuffixArray::from(b"");
+    assert!(sa.search_bytes(b"").eq(Some(0)));
+    assert!(sa.search_bytes(b"_").eq(None));
 }
 
 #[test]
 fn empty_pattern() {
-    let sa = SuffixArray::from("empty".to_owned());
-    assert!(sa.search_str("").eq([5, 0, 1, 2, 3, 4]));
+    let sa = SuffixArray::from(b"empty");
+    assert!(sa.search_bytes(b"").eq([5, 0, 1, 2, 3, 4]));
 }
 
 #[test]

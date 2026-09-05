@@ -112,13 +112,13 @@ pub unsafe fn array_rotate_2<T, const N: usize>(
         let count = left_diff;
         let src = right[..count].as_ptr();
         let dst = left[leftlen_old..][..count].as_mut_ptr();
-        ptr::copy_nonoverlapping(src, dst, count);
+        unsafe { ptr::copy_nonoverlapping(src, dst, count) };
         // [A, B, C, D, E] ++ [_, _, F, G, H, I]
         let count = rightlen_new;
         let dst = right[..count].as_mut_ptr();
         // Overlapping `src` should be after `dst` for Stacked Borrows.
         let src = right[left_diff..][..count].as_ptr();
-        ptr::copy(src, dst, count);
+        unsafe { ptr::copy(src, dst, count) };
         // [A, B, C, D, E] ++ [F, G, H, I]
     } else if leftlen_old > leftlen_new {
         let right_diff = rightlen_new - rightlen_old;
@@ -126,12 +126,12 @@ pub unsafe fn array_rotate_2<T, const N: usize>(
         let count = rightlen_old;
         let dst = right[right_diff..][..count].as_mut_ptr();
         let src = right[..count].as_ptr();
-        ptr::copy(src, dst, count);
+        unsafe { ptr::copy(src, dst, count) };
         // [A, B, C, D, E, F] ++ [_, _, G, H, I]
         let count = right_diff;
         let src = left[leftlen_new..][..count].as_ptr();
         let dst = right[..count].as_mut_ptr();
-        ptr::copy_nonoverlapping(src, dst, count);
+        unsafe { ptr::copy_nonoverlapping(src, dst, count) };
         // [A, B, C, D] ++ [E, F, G, H, I]
     }
     rightlen_new
@@ -168,7 +168,7 @@ pub unsafe fn array_rotate_3<T, const N: usize>(
         let count = left_diff - 1;
         let src = right[..count].as_ptr();
         let dst = left[leftlen_old + 1..][..count].as_mut_ptr();
-        ptr::copy_nonoverlapping(src, dst, count);
+        unsafe { ptr::copy_nonoverlapping(src, dst, count) };
         // [A, B, C, D, E, F] ++ [_] ++ [_, _, G, H, I, J, K, L]
         let new_mid_elt = unsafe { right[left_diff - 1].assume_init_read() };
         mid.write(new_mid_elt);
@@ -176,7 +176,7 @@ pub unsafe fn array_rotate_3<T, const N: usize>(
         let count = rightlen_new;
         let dst = right[..count].as_mut_ptr();
         let src = right[left_diff..][..count].as_ptr();
-        ptr::copy(src, dst, count);
+        unsafe { ptr::copy(src, dst, count) };
         // [A, B, C, D, E, F] ++ [G] ++ [H, I, J, K, L]
     } else if leftlen_old > leftlen_new {
         let mid_elt = unsafe { mid.assume_init_read() };
@@ -185,14 +185,14 @@ pub unsafe fn array_rotate_3<T, const N: usize>(
         let count = rightlen_old;
         let dst = right[right_diff..][..count].as_mut_ptr();
         let src = right[..count].as_ptr();
-        ptr::copy(src, dst, count);
+        unsafe { ptr::copy(src, dst, count) };
         // [A, B, C, D, E, F, G, H] ++ [I] ++ [_, _, _, J, K, L]
         right[right_diff - 1].write(mid_elt);
         // [A, B, C, D, E, F, G, H] ++ [_] ++ [_, _, I, J, K, L]
         let count = right_diff - 1;
         let src = left[leftlen_new + 1..][..count].as_ptr();
         let dst = right[..count].as_mut_ptr();
-        ptr::copy_nonoverlapping(src, dst, count);
+        unsafe { ptr::copy_nonoverlapping(src, dst, count) };
         // [A, B, C, D, E, F] ++ [_] ++ [G, H, I, J, K, L]
         let new_mid_elt = unsafe { left[leftlen_new].assume_init_read() };
         mid.write(new_mid_elt);

@@ -45,10 +45,10 @@ pub unsafe fn array_remove<T, const N: usize>(
     len: usize,
 ) -> T {
     debug_assert!(i < len && len <= N);
-    let elt = array[i].assume_init_read();
+    let elt = unsafe { array[i].assume_init_read() };
     let count = len - i - 1;
     let dst = array[i..][..count].as_mut_ptr();
     let src = array[i + 1..][..count].as_ptr();
-    ptr::copy(src, dst, count);
+    unsafe { ptr::copy(src, dst, count) };
     elt
 }

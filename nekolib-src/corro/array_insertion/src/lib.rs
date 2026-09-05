@@ -80,7 +80,7 @@ pub unsafe fn array_insert<T, const N: usize>(
     let dst = array[i + 1..][..count].as_mut_ptr();
     // `src` should be after `dst` for Stacked Borrows.
     let src = array[i..][..count].as_ptr();
-    ptr::copy(src, dst, count);
+    unsafe { ptr::copy(src, dst, count) };
     array[i].write(elt);
 }
 
@@ -103,9 +103,9 @@ pub unsafe fn array_splice<T, const N: usize>(
     let count = dst_len - i;
     let dst_ptr = dst[i + src_len..][..count].as_mut_ptr();
     let src_ptr = dst[i..][..count].as_ptr();
-    ptr::copy(src_ptr, dst_ptr, count);
+    unsafe { ptr::copy(src_ptr, dst_ptr, count) };
     let count = src_len;
     let src_ptr = src[..count].as_ptr();
     let dst_ptr = dst[i..][..count].as_mut_ptr();
-    ptr::copy_nonoverlapping(src_ptr, dst_ptr, count);
+    unsafe { ptr::copy_nonoverlapping(src_ptr, dst_ptr, count) };
 }

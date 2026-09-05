@@ -99,8 +99,8 @@ impl<T> LeafNode<T> {
 
 impl<T> InternalNode<T> {
     unsafe fn init(this: *mut Self) {
-        LeafNode::init(ptr::addr_of_mut!((*this).data));
-        ptr::addr_of_mut!((*this).treelen).write(0);
+        unsafe { LeafNode::init(ptr::addr_of_mut!((*this).data)) };
+        unsafe { ptr::addr_of_mut!((*this).treelen).write(0) };
     }
     /// # Safety
     /// An invariant of internal nodes is that they have at least one
@@ -242,7 +242,7 @@ impl<BorrowType: Traversable, T>
                 for i in 0..=init_len {
                     let child = internal.child(i).unwrap();
                     if idx <= child.treelen() {
-                        return child.select_leaf(idx);
+                        return unsafe { child.select_leaf(idx) };
                     } else {
                         idx -= child.treelen() + 1;
                     }
@@ -268,7 +268,7 @@ impl<BorrowType: Traversable, T>
                 for i in 0..=init_len {
                     let child = internal.child(i).unwrap();
                     if idx < child.treelen() {
-                        return child.select_value(idx);
+                        return unsafe { child.select_value(idx) };
                     } else if idx == child.treelen() {
                         return Handle {
                             node: internal.forget_type(),
@@ -310,13 +310,15 @@ impl<BorrowType: Traversable, T>
                     if predicate(&elt) {
                         rank += child.treelen() + 1;
                     } else {
-                        return rank + child.bisect_index(predicate);
+                        return rank + unsafe { child.bisect_index(predicate) };
                     }
                 }
-                rank + internal
-                    .child(init_len as _)
-                    .unwrap()
-                    .bisect_index(predicate)
+                unsafe {
+                    rank + internal
+                        .child(init_len as _)
+                        .unwrap()
+                        .bisect_index(predicate)
+                }
             }
         }
     }
@@ -634,7 +636,7 @@ impl<T> OwnedNodeRef<T> {
     /// `i <= self.treelen()`
     unsafe fn split_off(mut self, i: usize) -> [Option<Self>; 2] {
         debug_assert!(i <= self.treelen());
-        self.borrow_mut().select_leaf(i).split()
+        unsafe { self.borrow_mut().select_leaf(i).split() }
     }
     /// # Safety
     /// `self.treelen() == 1`
@@ -775,7 +777,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
             if let Some(Handle { node: mut parent, idx: par_i, .. }) =
                 new_parent
             {
-                parent.insert(par_i, orphan)
+                unsafe { parent.insert(par_i, orphan) }
             } else {
                 Some(orphan)
             }
@@ -860,7 +862,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                         Some(self.promote().forget_type())
                     }
                 } else {
-                    parent.underflow()
+                    unsafe { parent.underflow() }
                 }
             }
             [_, Some(right)] => {
@@ -872,7 +874,7 @@ impl<'a, T> MutLeafNodeRef<'a, T> {
                         Some(self.promote().forget_type())
                     }
                 } else {
-                    parent.underflow()
+                    unsafe { parent.underflow() }
                 }
             }
             [None, None] => unreachable!(),
@@ -1011,7 +1013,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
             if let Some(Handle { node: mut parent, idx: par_i, .. }) =
                 new_parent
             {
-                parent.insert(par_i, orphan)
+                unsafe { parent.insert(par_i, orphan) }
             } else {
                 Some(orphan)
             }
@@ -1127,7 +1129,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
                         Some(self.promote().forget_type())
                     }
                 } else {
-                    parent.underflow()
+                    unsafe { parent.underflow() }
                 }
             }
             [_, Some(right)] => {
@@ -1139,7 +1141,7 @@ impl<'a, T> MutInternalNodeRef<'a, T> {
                         Some(self.promote().forget_type())
                     }
                 } else {
-                    parent.underflow()
+                    unsafe { parent.underflow() }
                 }
             }
             [None, None] => unreachable!(),
@@ -1294,7 +1296,7 @@ impl<'a, T: 'a, NodeType>
     unsafe fn get(&self) -> &'a T {
         let Self { node, idx, .. } = self;
         let ptr = node.node.as_ptr();
-        debug_assert!(*idx < usize::from((*ptr).buflen));
+        debug_assert!(*idx < usize::from(unsafe { (*ptr).buflen }));
         unsafe { (*ptr).buf[*idx].assume_init_ref() }
     }
 }
@@ -1304,7 +1306,7 @@ impl<'a, T: 'a, NodeType>
     unsafe fn get_mut(&self) -> &'a mut T {
         let Self { node, idx, .. } = self;
         let ptr = node.node.as_ptr();
-        debug_assert!(*idx < usize::from((*ptr).buflen));
+        debug_assert!(*idx < usize::from(unsafe { (*ptr).buflen }));
         unsafe { (*ptr).buf[*idx].assume_init_mut() }
     }
 }
