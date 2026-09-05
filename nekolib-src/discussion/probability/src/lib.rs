@@ -3,6 +3,7 @@
 //! ## Definitions
 //!
 //! TODO: 精査する。
+//! <span style="font-size: 75%">たぶん、確率や期待値について考えるだけなら、$`(S, \Sigma, \mu)`$ とは書かずに $`(\Omega, \mathcal F, \mathbb P)`$ に統一して書いてもいいかも。$`\sigma`$-代数に踏み込む必要もない？</span>
 //! $`\gdef\P{\mathbb{P}}`$
 //! $`\gdef\F{\mathcal{F}}`$
 //! $`\gdef\E{\mathbb{E}}`$
@@ -108,7 +109,7 @@
 //! $`(\Omega, \F, \P)`$ を確率空間とする。非負の確率変数 $`X`$ に対し、$`P`$ 上の $`X`$
 //! の積分を $`\E[X]`$ と書き $`X`$ の **期待値** (*expectation*)
 //! という。一般に、$`\E[X^+] + \E[X^-] \lt +\infty`$ のとき
-//! $`\E[X] = \E[X^+] - \E[X^-]`$ と定義する。そのような **積分可能な確率変数**
+//! $`\E[X] = \E[X^+] - \E[X^-]`$ と定義する。そのような **可積分な確率変数**
 //! (*integrable random variables*) 全体からなる集合を $`L^1(\Omega, \F, \P)`$ と書く。
 //!
 //! $`X\colon\Omega\to\R_{\ge 0}`$ が
