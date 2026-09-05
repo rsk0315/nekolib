@@ -339,7 +339,7 @@
 }
 </style>
 
-</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../nekolib_doc/index.html">nekolib_<wbr>doc</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a><ul><li><a href="#probability-spaces" title="Probability spaces">Probability spaces</a></li><li><a href="#random-variables" title="Random variables">Random variables</a></li><li><a href="#independence" title="Independence">Independence</a></li><li><a href="#expectation" title="Expectation">Expectation</a></li></ul></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li><li><a href="#techniques" title="Techniques">Techniques</a><ul><li><a href="#probability" title="Probability">Probability</a></li><li><a href="#powers" title="Powers">Powers</a></li></ul></li><li><a href="#references" title="References">References</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In nekolib_<wbr>doc::<wbr>discussion</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">nekolib_doc</a>::<wbr><a href="../index.html">discussion</a></div><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/probability/lib.rs.html#1-311">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
+</head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate probability</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../nekolib_doc/index.html">nekolib_<wbr>doc</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#definitions" title="Definitions">Definitions</a><ul><li><a href="#probability-spaces" title="Probability spaces">Probability spaces</a></li><li><a href="#random-variables" title="Random variables">Random variables</a></li><li><a href="#independence" title="Independence">Independence</a></li><li><a href="#expectation" title="Expectation">Expectation</a></li></ul></li><li><a href="#lemmata" title="Lemmata">Lemmata</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#markov-chain" title="Markov chain">Markov chain</a></li></ul></li><li><a href="#techniques" title="Techniques">Techniques</a><ul><li><a href="#probability" title="Probability">Probability</a></li><li><a href="#powers" title="Powers">Powers</a></li><li><a href="#re-markov-chain" title="Re: Markov chain">Re: Markov chain</a></li></ul></li><li><a href="#references" title="References">References</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In nekolib_<wbr>doc::<wbr>discussion</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">nekolib_doc</a>::<wbr><a href="../index.html">discussion</a></div><h1>Crate <span>probability</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/probability/lib.rs.html#1-349">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>確率。</p>
 <h3 id="definitions"><a class="doc-anchor" href="#definitions">§</a>Definitions</h3>
 <p>TODO: 精査する。
 <span style="font-size: 75%">たぶん、確率や期待値について考えるだけなら、$<code>(S, \Sigma, \mu)</code>$ とは書かずに $<code>(\Omega, \mathcal F, \mathbb P)</code>$ に統一して書いてもいいかも。$<code>\sigma</code>$-代数に踏み込む必要もない？</span>
@@ -437,6 +437,7 @@ $<code>\E[X] = \E[X^+] - \E[X^-]</code>$ と定義する。そのような <stro
 時刻 $<code>t</code>$ に状態 $<code>q_i</code>$ にいるとき、時刻 $<code>t+1</code>$ に確率 $<code>p_{i, j}</code>$ で
 $<code>q_j</code>$ に遷移する。各 $<code>i</code>$ に対して $<code>\sum_j p_{i, j} = 1</code>$ が成り立つ。
 各遷移は独立に行われるものとする。</p>
+<p><span style="font-size: 75%">$<code>p_{i, j}\gt 0</code>$ のときに頂点 $<code>q_i</code>$ から $<code>q_j</code>$ に重み $<code>p_{i, j}</code>$ の有向辺が張られるようなグラフをイメージするとよい。</span></p>
 <p>状態 $<code>q_0</code>$ にいる状態から開始し、初めて $<code>q_{n-1}</code>$ に到達する時刻の期待値を求めよ、という問題を考える。</p>
 <p>まず、$<code>j \le i \implies p_{i, j} = 0</code>$ の問題設定について考える。
 時刻 $<code>0</code>$ に状態 $<code>q_i</code>$ にいるとき、初めて状態 $<code>q_{n-1}</code>$ に到達する時刻を $<code>X_i</code>$
@@ -523,7 +524,8 @@ See also <a href="https://atcoder.jp/contests/abc189/tasks/abc189_f">ABC 189 F</
 &amp;= \sum_{i=1}^{\infty} i\cdot\Pr(X\ge i) - \sum_{i=1}^{\infty} {(i-1)\cdot\Pr(X\ge i)} \\
 &amp;= \sum_{i=1}^{\infty} \Pr(X\ge i)
 \end{aligned}</code></pre></div>
-<p>が成り立ち、$<code>\Pr(X = i)</code>$ を求める問題から $<code>\Pr(X\ge i)</code>$ を求める問題に帰着できる。</p>
+<p>が成り立ち、$<code>\Pr(X = i)</code>$ を求める問題から $<code>\Pr(X\ge i)</code>$ を求める問題に帰着できる。
+<span style="font-size: 75%">無限和の入れ替えについては？</span></p>
 <p>また、何らかの条件を満たすまで何らかの操作を繰り返すことを考える。操作を完了するまでの回数の期待値を求めたい。</p>
 <p>$<code>i</code>$ 回目の操作が行われるとき $<code>X_i = 1</code>$、そうでないとき $<code>X_i = 0</code>$ となる確率変数 $<code>X_i</code>$
 を考える。高々 $<code>n</code>$ 回で完了する確率を $<code>p(n)</code>$ とすると、求める期待値は</p>
@@ -563,6 +565,31 @@ $<code>1\le m\le M</code>$ に対する</p>
 <p>DP などで、任意の $<code>0\le i_0\lt i_1\lt \dots \lt i_{m-1}\lt n</code>$ にわたる
 $<code>\Pr(X_{i_0} = X_{i_1} = \dots = X_{i_{m-1}} = 1)</code>$ の総和を求められる場合は、これを利用するのがよいであろう。</p>
 <p>See also <a href="https://atcoder.jp/contests/abc277/tasks/abc277_g">ABC 277 G</a>.</p>
+<h4 id="re-markov-chain"><a class="doc-anchor" href="#re-markov-chain">§</a>Re: Markov chain</h4>
+<p>$<code>j \lt i \implies p_{i, j} = 0</code>$ かつ $<code>i\lt n-1\implies p_{i, i} \in[0\lldot 1)</code>$
+で、状態 $<code>q_0</code>$ から開始して $<code>q_{n-1}</code>$ に到達する時刻の期待値について再度考える。</p>
+<p>時刻 $<code>0</code>$ に状態 $<code>q_i</code>$ から開始して、状態 $<code>q_i</code>$ 以外に到達する時刻を $<code>T_i</code>$ とおく。
+$<code>\P(T_i\ge t) = p_{i, i}^{t-1}</code>$ であるから、先の補題より</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E[T_i] &amp;= \sum_{t=1}^{\infty} \P(T_i\ge t) \\
+&amp;= \sum_{t=1}^{\infty} p_{i, i}^{t-1} \\
+&amp;= \frac1{1-p_{i, i}}
+\end{aligned}</code></pre></div>
+<p>が成り立つ。</p>
+<p>各 $<code>0\le i\lt n-1</code>$ に対して、状態 $<code>q_i</code>$ から遷移する回数を表す確率変数を $<code>X_i</code>$
+とする。すなわち、時刻 $<code>t</code>$ に $<code>q_i</code>$ にいるような $<code>t</code>$ 全体からなる集合の要素数が
+$<code>X_i</code>$ となる。このとき、$<code>q_{n-1}</code>$ に到達する時刻を $<code>X</code>$ とおくと
+$<code>X = \sum_{i=0}^{n-2} X_i</code>$ が成り立つ。
+時刻 $<code>t</code>$ に、初めて $<code>q_i</code>$ に遷移したとき $<code>Y_{t, i} = 1</code>$、そうでないとき
+$<code>Y_{t, i} = 0</code>$ となる確率変数 $<code>Y_{t, i}</code>$ を考えると、</p>
+<div class="example-wrap"><pre class="language-math"><code>\begin{aligned}
+\E[X] &amp;= \E{\left[\sum_{i=0}^{n-2} X_i\right]} \\
+&amp;= \sum_{i=0}^{n-2} \E[X_i] \\
+&amp;= \sum_{i=0}^{n-2} \sum_{t=0}^{\infty} \P(Y_{t, i} = 1) \cdot \E[T_i] \\
+&amp;= \sum_{i=0}^{n-2} \frac1{1-p_{i, i}} \cdot \P{\left(\ExistsL{t\ge 0}{Y_{t, i} = 1}\right)}
+\end{aligned}</code></pre></div>
+<p>となる。すなわち、各 $<code>i</code>$ に対して状態 $<code>q_i</code>$ に一度でも遷移する確率を求める問題に帰着できる。局所的に $<code>p_{i, j}</code>$ を変えた場合の $<code>\E[X]</code>$ を答えられる状況もある。See also <a href="https://atcoder.jp/contests/abc144/tasks/abc144_f">ABC 144 F</a>.</p>
+<p><span style="font-size: 75%">$<code>j\lt i</code>$ で $<code>p_{i, j} = 0</code>$ が成り立たないときは、状態 $<code>q_i</code>$ 自身からの遷移を除いて時刻 $<code>t</code>$ に $<code>q_i</code>$ に到達するとき $<code>1</code>$ となる確率変数を考える必要があるため、$<code>\P(\ExistsL{t}{Y_{t, i}=1})</code>$ と置き換えることができなくなる。これを求めるにあたって掃き出し法などが必要になりそう。</span></p>
 <h3 id="references"><a class="doc-anchor" href="#references">§</a>References</h3>
 <ul>
 <li>Roch, Sébastien. <em>Modern Discrete Probability: An Essential Toolkit</em>. of <em>Cambridge Series in Statistical and Probabilistic Mathematics</em>. Cambridge: Cambridge University Press, 2024. <a href="https://doi.org/10.1017/9781009305129">https://doi.org/10.1017/9781009305129</a>.</li>
