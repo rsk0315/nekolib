@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["StaticModInt"],"trait":["ModInt","RemEuclidU32"],"type":["ModInt1000000007","ModInt998244353"]};
+window.SIDEBAR_ITEMS = {"fn":["primitive_root"],"struct":["StaticModInt"],"trait":["ModInt","RemEuclidU32"],"type":["ModInt1000000007","ModInt998244353"]};

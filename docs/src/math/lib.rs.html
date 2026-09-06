@@ -154,6 +154,7 @@
     ],
     "macros": [],
     "math": [
+      "bsgs",
       "convolution",
       "divisors",
       "factorial_table",
@@ -166,6 +167,7 @@
       "modint",
       "polynomial",
       "primality",
+      "rat_convert_query",
       "stern_brocot"
     ],
     "naive": [
@@ -343,18 +345,20 @@
 </head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">math/</div>lib.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>inner::doc_inline_reexport;
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="macro">doc_inline_reexport!</span> {
-<a href=#4 id=4 data-nosnippet>4</a>    convolution,
-<a href=#5 id=5 data-nosnippet>5</a>    divisors,
-<a href=#6 id=6 data-nosnippet>6</a>    factorial_table,
-<a href=#7 id=7 data-nosnippet>7</a>    factors,
-<a href=#8 id=8 data-nosnippet>8</a>    garner,
-<a href=#9 id=9 data-nosnippet>9</a>    gcd,
-<a href=#10 id=10 data-nosnippet>10</a>    gcd_recip,
-<a href=#11 id=11 data-nosnippet>11</a>    linear_sieve,
-<a href=#12 id=12 data-nosnippet>12</a>    matrix,
-<a href=#13 id=13 data-nosnippet>13</a>    modint,
-<a href=#14 id=14 data-nosnippet>14</a>    polynomial,
-<a href=#15 id=15 data-nosnippet>15</a>    primality,
-<a href=#16 id=16 data-nosnippet>16</a>    stern_brocot,
-<a href=#17 id=17 data-nosnippet>17</a>}
+<a href=#4 id=4 data-nosnippet>4</a>    bsgs,
+<a href=#5 id=5 data-nosnippet>5</a>    convolution,
+<a href=#6 id=6 data-nosnippet>6</a>    divisors,
+<a href=#7 id=7 data-nosnippet>7</a>    factorial_table,
+<a href=#8 id=8 data-nosnippet>8</a>    factors,
+<a href=#9 id=9 data-nosnippet>9</a>    garner,
+<a href=#10 id=10 data-nosnippet>10</a>    gcd,
+<a href=#11 id=11 data-nosnippet>11</a>    gcd_recip,
+<a href=#12 id=12 data-nosnippet>12</a>    linear_sieve,
+<a href=#13 id=13 data-nosnippet>13</a>    matrix,
+<a href=#14 id=14 data-nosnippet>14</a>    modint,
+<a href=#15 id=15 data-nosnippet>15</a>    polynomial,
+<a href=#16 id=16 data-nosnippet>16</a>    primality,
+<a href=#17 id=17 data-nosnippet>17</a>    rat_convert_query,
+<a href=#18 id=18 data-nosnippet>18</a>    stern_brocot,
+<a href=#19 id=19 data-nosnippet>19</a>}
 </code></pre></div></section></main></body></html>
