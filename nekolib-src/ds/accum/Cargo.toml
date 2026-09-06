@@ -1,0 +1,13 @@
+[package]
+name = "accum"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+monoid = { path = "../../ops/monoid" }
+usize_bounds = { path = "../../ops/usize_bounds" }
+
+[dev-dependencies]
+op_add = { path = "../../ops/op_add" }
+op_affine = { path = "../../ops/op_affine" }
+modint = { path = "../../math/modint" }

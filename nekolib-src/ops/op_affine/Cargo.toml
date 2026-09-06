@@ -7,3 +7,6 @@ edition = "2024"
 monoid = { path = "../monoid" }
 has_zero = { path = "../has_zero" }
 has_one = { path = "../has_one" }
+
+[dev-dependencies]
+modint = { path = "../../math/modint" }

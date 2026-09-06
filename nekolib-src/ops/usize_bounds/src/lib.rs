@@ -1,6 +1,6 @@
 use std::ops::{
     Bound::{Excluded, Included, Unbounded},
-    Range, RangeBounds,
+    Range, RangeBounds, RangeFull, RangeTo, RangeToInclusive,
 };
 
 #[derive(Debug)]
@@ -80,3 +80,9 @@ impl<R: RangeBounds<usize>> UsizeBounds for R {
         }
     }
 }
+
+pub trait PrefixRange {}
+impl PrefixRange for Range<usize> {}
+impl PrefixRange for RangeTo<usize> {}
+impl PrefixRange for RangeToInclusive<usize> {}
+impl PrefixRange for RangeFull {}
