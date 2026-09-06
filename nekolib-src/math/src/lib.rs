@@ -1,6 +1,7 @@
 use inner::doc_inline_reexport;
 
 doc_inline_reexport! {
+    bsgs,
     convolution,
     divisors,
     factorial_table,
@@ -13,5 +14,6 @@ doc_inline_reexport! {
     modint,
     polynomial,
     primality,
+    rat_convert_query,
     stern_brocot,
 }

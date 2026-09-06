@@ -1,7 +1,9 @@
 use std::sync::OnceLock;
 
 use garner::{CrtMod as CrtModInternal, CrtWrapping};
-use modint::{ModInt, ModInt998244353, RemEuclidU32, StaticModInt};
+use modint::{
+    ModInt, ModInt998244353, RemEuclidU32, StaticModInt, primitive_root,
+};
 
 pub struct ButterflyCache<M: NttFriendly> {
     root: Vec<M>,
@@ -10,67 +12,6 @@ pub struct ButterflyCache<M: NttFriendly> {
     irate2: Vec<M>,
     rate3: Vec<M>,
     irate3: Vec<M>,
-}
-
-const fn primitive_root(p: u32) -> u32 {
-    if p == 2 {
-        return 1;
-    }
-
-    // 2*3*5*7*11*13*17*19*23*29 > 2**32
-    let mut divs = [0; 10];
-    divs[0] = 2;
-    let mut index = 1;
-    let mut x = (p - 1) / 2;
-    while x % 2 == 0 {
-        x /= 2;
-    }
-    let mut d = 3;
-    while d <= x / d {
-        if x % d == 0 {
-            divs[index] = d;
-            index += 1;
-            while x % d == 0 {
-                x /= d;
-            }
-        }
-        d += 2;
-    }
-    if x > 1 {
-        divs[index] = x;
-        index += 1;
-    }
-
-    let mut g = 2;
-    loop {
-        let mut ok = true;
-        let mut i = 0;
-        while i < index {
-            if mod_pow(g, (p - 1) / divs[i], p) == 1 {
-                ok = false;
-                break;
-            }
-            i += 1;
-        }
-        if ok {
-            return g;
-        }
-        g += 1;
-    }
-}
-
-const fn mod_pow(a: u32, mut e: u32, m: u32) -> u32 {
-    let mut res = 1;
-    let mut a = a as u64;
-    let m = m as u64;
-    while e > 0 {
-        if e & 1 != 0 {
-            res = res * a % m;
-        }
-        a = a * a % m;
-        e >>= 1;
-    }
-    res as u32
 }
 
 pub trait NttFriendly: ModInt {

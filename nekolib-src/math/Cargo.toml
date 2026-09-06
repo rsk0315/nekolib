@@ -20,3 +20,5 @@ factorial_table = { path = "factorial_table" }
 polynomial = { path = "polynomial" }
 primality = { path = "primality" }
 matrix = { path = "matrix" }
+rat_convert_query = { path = "rat_convert_query" }
+bsgs = { path = "bsgs" }
