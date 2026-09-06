@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["UsizeOob"],"trait":["UsizeBounds"]};
+window.SIDEBAR_ITEMS = {"enum":["UsizeOob"],"trait":["PrefixRange","UsizeBounds"]};
