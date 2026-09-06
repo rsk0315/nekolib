@@ -15,6 +15,10 @@ use factorial_table::FactorialTable;
 #[derive(Clone, Eq, PartialEq)]
 pub struct Polynomial<M: NttFriendly>(Vec<M>);
 
+impl<M: NttFriendly + 'static> Default for Polynomial<M> {
+    fn default() -> Self { Self::const_0() }
+}
+
 impl<M: NttFriendly> fmt::Display for Polynomial<M> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.0.is_empty() {
@@ -507,21 +511,51 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         res.into()
     }
 
-    pub fn multieval<I: Into<M>>(&self, _xs: &[I]) -> Vec<M> { todo!() }
+    pub fn multieval<I: Copy + Into<M>>(&self, xs: &[I]) -> Vec<M> {
+        let xs: Vec<M> = xs.into_iter().map(|&x| x.into()).collect();
+        let m = xs.len();
+        let m2 = m.next_power_of_two();
+        let mut g = vec![Self::const_1(); 2 * m2];
+        for i in 0..m {
+            g[m2 + i] = Self::from([-xs[i], M::new(1)]); // (x - xi)
+        }
+        for i in (1..m2).rev() {
+            g[i] = &g[2 * i] * &g[2 * i + 1];
+        }
+        g[1] = self % &g[1];
+        for i in 2..m2 + m {
+            g[i] = &g[i >> 1] % &g[i];
+        }
+        let ys: Vec<_> = (0..m).map(|i| g[m2 + i].get(0)).collect();
+        ys
+    }
 
-    pub fn interpolate<I: Into<M>>(_ys: &[I]) -> Self { todo!() }
+    pub fn interpolate<I: Copy + Into<M>>(xys: &[(I, I)]) -> Self {
+        let xs: Vec<M> = xys.into_iter().map(|&(x, _)| x.into()).collect();
+        let ys: Vec<M> = xys.into_iter().map(|&(_, y)| y.into()).collect();
+        let n = xs.len();
+        let n2 = n.next_power_of_two();
+        let mut mul = vec![Self::const_1(); 2 * n2];
+        for i in 0..n {
+            mul[n2 + i] = Self::from([-xs[i], M::new(1)]); // (x - xi)
+        }
+        for i in (1..n2).rev() {
+            mul[i] = &mul[2 * i] * &mul[2 * i + 1];
+        }
 
-    pub fn interpolate_arithmetic<I1, I2, I3>(
-        _x0: I1,
-        _d: I2,
-        _ys: &[I3],
-    ) -> Vec<M>
-    where
-        I1: Into<M>,
-        I2: Into<M>,
-        I3: Into<M>,
-    {
-        todo!()
+        let f = mul[1].clone().differential();
+        let mut g = vec![Self::const_0(); n2 + n2];
+        g[1] = f % &mul[1];
+        for i in 2..n2 + n {
+            g[i] = &g[i / 2] % &mul[i];
+        }
+        for i in 0..n {
+            g[n2 + i] = [ys[i] / g[n2 + i].get(0)].into();
+        }
+        for i in (1..n2).rev() {
+            g[i] = &g[2 * i] * &mul[2 * i + 1] + &g[2 * i + 1] * &mul[2 * i];
+        }
+        g.swap_remove(1)
     }
 }
 
@@ -619,6 +653,10 @@ impl<'a, M: NttFriendly + 'static> DivAssign<&'a Polynomial<M>>
 
 impl<M: NttFriendly + 'static> DivAssign for Polynomial<M> {
     fn div_assign(&mut self, mut other: Polynomial<M>) {
+        if self.0.len() < other.0.len() {
+            self.0.clear();
+            return;
+        }
         let deg = self.0.len() - other.0.len();
         self.reverse();
         other.reverse();
@@ -994,4 +1032,29 @@ fn egf() {
     });
     assert_eq!(u, t);
     assert_eq!((&z * t.exp(n)).truncated(n), t);
+}
+
+#[test]
+fn multieval() {
+    type Poly = Polynomial<modint::ModInt998244353>;
+
+    let f: Poly = [31, 41, 59, 26, 53, 58, 97].into();
+    let xs = [5, 77, 21, 56, 64, 90, 15, 32];
+
+    let actual = f.multieval(&xs);
+    let expected: Vec<_> = xs.iter().map(|&x| f.eval(x)).collect();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn interpolate() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+
+    let xs = [31, 41, 59, 26, 53, 58, 97].map(Mi::new);
+    let ys = [27, 18, 28, 18, 28, 45, 90].map(Mi::new);
+    let xys: Vec<_> = xs.iter().copied().zip(ys.iter().copied()).collect();
+
+    let f = Poly::interpolate(&xys);
+    assert_eq!(f.multieval(&xs), ys);
 }
