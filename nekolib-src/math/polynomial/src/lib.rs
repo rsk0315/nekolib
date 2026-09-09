@@ -557,6 +557,50 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         }
         g.swap_remove(1)
     }
+
+    pub fn relaxed_mul<I: Copy + Into<M>>(
+        f: impl Fn(usize, &[M]) -> I,
+        g: impl Fn(usize, &[M]) -> I,
+        n: usize,
+    ) -> ((Self, Self), Self) {
+        let mut f_vec = vec![M::new(0); n];
+        let mut g_vec = vec![M::new(0); n];
+        let mut fg_vec = vec![M::new(0); 2 * n - 1];
+        f_vec[0] = f(0, &[]).into();
+        g_vec[0] = g(0, &[]).into();
+        fg_vec[0] = f_vec[0] * g_vec[0];
+        for i in 1..n {
+            if i < n {
+                f_vec[i] = f(i, &fg_vec[..i]).into();
+                g_vec[i] = g(i, &fg_vec[..i]).into();
+            }
+            let mut k = 2 * (i + 2);
+            let mut p = 0;
+            while k % 2 == 0 {
+                k /= 2;
+                let p1 = (1 << p) - 1;
+                let p2 = (2 << p) - 1;
+                let kp1 = ((k - 1) << p) - 1;
+                let kp2 = (k << p) - 1;
+                let fg_slice = &mut fg_vec[kp2 - 1..];
+                let tmp =
+                    Self::from(&f_vec[p1..p2]) * Self::from(&g_vec[kp1..kp2]);
+                for i in 0..p2 {
+                    fg_slice[i] += tmp.get(i);
+                }
+                if k == 2 {
+                    break;
+                }
+                let tmp =
+                    Self::from(&f_vec[kp1..kp2]) * Self::from(&g_vec[p1..p2]);
+                for i in 0..p2 {
+                    fg_slice[i] += tmp.get(i);
+                }
+                p += 1;
+            }
+        }
+        ((f_vec.into(), g_vec.into()), fg_vec.into())
+    }
 }
 
 impl<I: Copy + Into<M>, M: NttFriendly + 'static> From<Vec<I>>
@@ -1057,4 +1101,28 @@ fn interpolate() {
 
     let f = Poly::interpolate(&xys);
     assert_eq!(f.multieval(&xs), ys);
+}
+
+#[test]
+fn relaxed_mul() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+
+    let n = 500000;
+    let recip = Mi::recip_table(n);
+
+    // e^{\phi} = \int \phi' e^{\phi}
+    // \phi = x
+    let f = |i: usize, _: &[Mi]| {
+        if i == 0 { Mi::new(1) } else { Mi::new(0) }
+    };
+    let g = |i: usize, fg: &[Mi]| {
+        if i == 0 { recip[1] } else { fg[i - 1] * recip[i] }
+    };
+
+    let ((f, g), fg) = Poly::relaxed_mul(f, g, n);
+
+    assert_eq!(g, fg);
+    assert_eq!(f, Poly::const_1());
+    assert_eq!(g, Poly::const_x().exp(n));
 }
