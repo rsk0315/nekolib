@@ -3,6 +3,8 @@
 //! ## Notations
 //!
 //! $`n`$ 次多項式 $`f(x) = \sum_{i=0}^n a_ix^i`$ に対し、$`[x^i]\, f(x) = a_i`$ とする。
+//! $`\gdef\e{\mathrm e}`$
+//! $`\gdef\d{\mathrm d}`$
 //!
 //! ## Basics
 //!
@@ -69,7 +71,7 @@
 //! \log(1-f(x)) = -\sum_{n=1}^{\infty} \frac{f(x)^n}n.
 //! ```
 //!
-//! $`\tfrac{\mathrm d}{\mathrm dx} \log(f(x)) = f'(x)\cdot f(x)^{-1}`$ や
+//! $`\tfrac{\d}{\d x} \log(f(x)) = f'(x)\cdot f(x)^{-1}`$ や
 //! $`\log(f(x)\cdot g(x)) = \log(f(x)) + \log(g(x))`$ などが成り立つ。
 //!
 //! ### Power
@@ -102,6 +104,59 @@
 //!
 //! $`y' \equiv f(y, x) \pmod{x^k}`$ を満たす $`y(x)`$ を求める。
 //! $`(y, k) \mapsto (f(y, x) \bmod x^k, f'(y, x) \bmod x^k)`$ の oracle を用いる。
+//!
+//! ### Relaxed multiplication
+//!
+//! $`f(x)`$ と $`g(x)`$ に対し、$`(f\cdot g)(x) = f(x)\cdot g(x)`$ を求める。ただし、$`[x^i]\, f(x)`$
+//! や $`[x^i]\, g(x)`$ は、各 $`0\le j\lt i`$ における $`[x^j]\, (f\cdot g)(x)`$
+//! を用いて計算されるとする。
+//!
+//! たとえば、与えられた $`\varphi`$ に対して $`\e^{\varphi}`$ を求めるのは、下記の微分方程式を解くことに帰着できる。
+//! ```math
+//! \e^{\varphi} = \int \varphi' \e^{\varphi}.
+//! ```
+//! $`f = \varphi'`$ かつ $`g = \e^{\varphi}`$ として relaxed multiplication を行い、 $`i\gt 0`$
+//! に対して $`[x^i]\, g(x) = i^{-1}\cdot [x^{i-1}]\, (f\cdot g)(x)`$ とすればよい。
+//!
+//! $`\mathrm C_n \mathrm H_{2n+1} \mathrm{OH}`$ の形で表されるアルコールの立体異性体の個数は
+//! ```math
+//! s(z) = 1 + z\cdot \frac{s(z)^3 + 2s(z^3)}3
+//! ```
+//! として $`[z^n]\, s(z)`$ として表せることが Pólya によって示されている。$`[z^0]\, s(z)^3 = 1`$
+//! であり、$`i\gt 0`$ に対して
+//! ```math
+//! \begin{aligned}
+//! [z^i]\, s(z) &= [z^{i-1}] \left(3^{-1}\cdot s(z)^3 + 2\cdot 3^{-1}\cdot s(z^3)\right) \\
+//! &= 3^{-1}\cdot [z^{i-1}]\, s(z)^3 + 2\cdot 3^{-1}\cdot [z^{i-1}]\, s(z^3) \\
+//! &= 3^{-1}\cdot [z^{i-1}]\, s(z)^3 + 2\cdot 3^{-1}\cdot [z^{(i-1)/3}]\, s(z) \\
+//! \end{aligned}
+//! ```
+//! なので…？
+//!
+//! ```math
+//! f(z) = z\cdot\left(1+f{\left(\frac z{1+z}\right)} - z^4 f'(z)^2\right)
+//! ```
+//! が $`O(n\log(n)^3\log(\log(n)))`$ 時間で解けるらしい。
+//! ```math
+//! f(z) = z + f(z^2+z^3)
+//! ```
+//! が $`\tilde O(n)`$ 時間？で解けるらしい。
+//! ```math
+//! f(z) = z + f(z f(z) + z^2 f'(z)) + z^4\exp(z f''(z))
+//! ```
+//! が $`O(n^{3/2}\log(n)^{5/2}\log(\log(n)))`$ 時間で解けるらしい。
+//!
+//! ### Power projection
+//!
+//! ### Composition
+//!
+//! ### Reversion
+//!
+//! ### Transposition principle
+//!
+//! ### General-order derivative equation
+//!
+//! ### General functional equation
 //!
 //! ## See also
 //!
