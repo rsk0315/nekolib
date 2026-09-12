@@ -994,6 +994,45 @@ impl<M: NttFriendly + 'static> Product<Polynomial<M>> for Polynomial<M> {
     }
 }
 
+pub trait PolyIterator: Iterator {
+    fn truncated_product<P>(self, len: usize) -> P
+    where
+        Self: Sized,
+        P: TruncatedProduct<Self::Item>,
+    {
+        TruncatedProduct::truncated_product(self, len)
+    }
+}
+
+impl<M: NttFriendly, I: Iterator<Item = Polynomial<M>>> PolyIterator for I {}
+
+pub trait TruncatedProduct<A = Self>: Sized {
+    fn truncated_product<I: Iterator<Item = A>>(iter: I, len: usize) -> Self;
+}
+
+impl<M: NttFriendly + 'static> TruncatedProduct<Polynomial<M>>
+    for Polynomial<M>
+{
+    fn truncated_product<I: Iterator<Item = Polynomial<M>>>(
+        iter: I,
+        len: usize,
+    ) -> Self {
+        if len == 0 {
+            return Self::const_0();
+        }
+
+        let mut q: VecDeque<_> = iter.map(|f| f.truncated(len)).collect();
+        while let Some(lhs) = q.pop_front() {
+            if let Some(rhs) = q.pop_front() {
+                q.push_back((lhs * rhs).truncated(len));
+            } else {
+                return lhs;
+            }
+        }
+        return [M::new(1)].into();
+    }
+}
+
 #[test]
 fn conversion() {
     type Mi = modint::ModInt998244353;
