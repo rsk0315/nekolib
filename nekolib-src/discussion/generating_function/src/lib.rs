@@ -160,6 +160,36 @@
 //!
 //! ### Lagrange inversion theorem
 //!
+//! ### Log-exp
+//!
+//! $`\log(1-f(x))`$ は下記として定義される（再掲）。
+//! ```math
+//! \log(1-f(x)) = -\sum_{n=1}^{\infty} \frac{f(x)^n}n.
+//! ```
+//!
+//! $`\prod\varphi = \exp(\log(\prod\varphi)) = \exp(\sum \log(\varphi))`$
+//! を用いて式変形できる場合がある。
+//!
+//! たとえば次のような例がある。
+//! ```math
+//! \begin{aligned}
+//! &\phantom{{}={}} \prod_{i=1}^{n} {(1+x^i+x^{2i}+\dots+x^{i\cdot a_i})} \\
+//! &= \prod_{i=1}^n {\left(\frac1{1-x^i}-\frac{x^{i\cdot(a_i+1)}}{1-x^i}\right)} \\
+//! &= \prod_{i=1}^n {\frac{1-x^{i\cdot(a_i+1)}}{1-x^i}} \\
+//! &= {\exp}{\left({\log}{\left(\prod_{i=1}^n {\frac{1-x^{i\cdot(a_i+1)}}{1-x^i}}\right)}\right)} \\
+//! &= {\exp}{\left(\sum_{i=1}^n {{\log}{\left(\frac{1-x^{i\cdot(a_i+1)}}{1-x^i}\right)}}\right)} \\
+//! &= {\exp}{\left(\sum_{i=1}^n {{\log}{\left(\frac{1-x^{i\cdot(a_i+1)}}{1-x^i}\right)}}\right)} \\
+//! &= {\exp}{\left(\sum_{i=1}^n {{\log}{\left(1-x^{i\cdot(a_i+1)}\right)} - \sum_{i=1}^n {{\log}{\left({1-x^i}\right)}}}\right)} \\
+//! &= {\exp}{\left(\sum_{i=1}^n {\left(-\sum_{j=1}^{\infty} \frac{x^{i\cdot(a_i+1)\cdot j}}j\right)} - \sum_{i=1}^n {\left(-\sum_{j=1}^{\infty} \frac{x^{i\cdot j}}j\right)}\right)} \\
+//! &= {\exp}{\left(-\sum_{i=1}^n {\left(\sum_{j=1}^{\infty} \frac{x^{i\cdot(a_i+1)\cdot j}}j\right)} + \sum_{i=1}^n {\left(\sum_{j=1}^{\infty} \frac{x^{i\cdot j}}j\right)}\right)} \\
+//! &= {\exp}{\left(\sum_{i=1}^n {\left(\sum_{j=1}^{\infty} \frac{x^{i\cdot j}}j\right)} -\sum_{i=1}^n {\left(\sum_{j=1}^{\infty} \frac{x^{i\cdot(a_i+1)\cdot j}}j\right)}\right)}, \\
+//! &\phantom{{}={}} [x^n]\, {\exp}{\left(\sum_{i=1}^n {\left(\sum_{j=1}^{\infty} \frac{x^{i\cdot j}}j\right)} -\sum_{i=1}^n {\left(\sum_{j=1}^{\infty} \frac{x^{i\cdot(a_i+1)\cdot j}}j\right)}\right)} \\
+//! &= [x^n]\, {\exp}{\left(\sum_{i=1}^n {\left(\sum_{j=1}^{\floor{n/i}} \frac{x^{i\cdot j}}j\right)} -\sum_{i=1}^n {\left(\sum_{j=1}^{\floor{n/i}} \frac{x^{i\cdot(a_i+1)\cdot j}}j\right)}\right)}.
+//! \end{aligned}
+//! ```
+//! 調和級数に関する計算量解析により、$`\exp`$ の引数は $`O(n\log(n))`$ 時間で計算できる。See
+//! also [FPS-24 N](https://atcoder.jp/contests/fps-24/tasks/fps_24_n).
+//!
 //! ## See also
 //!
 //! - Taylor shift ([ABC 215 G](https://atcoder.jp/contests/abc215/editorial/2529))
