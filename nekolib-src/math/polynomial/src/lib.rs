@@ -601,6 +601,27 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         }
         ((f_vec.into(), g_vec.into()), fg_vec.into())
     }
+
+    pub fn sum_pow<I: Copy + Into<M>>(xs: &[I], len: usize) -> Self {
+        if len == 0 {
+            return Self::const_0();
+        }
+        let mut q: VecDeque<_> = xs
+            .iter()
+            .map(|&x| (Self::const_1(), Self::from([M::new(1), -x.into()])))
+            .collect();
+
+        while let Some(lhs) = q.pop_front() {
+            if let Some(rhs) = q.pop_front() {
+                let num = &lhs.0 * &rhs.1 + &rhs.0 * &lhs.1;
+                let den = &lhs.1 * &rhs.1;
+                q.push_back((num.truncated(len), den.truncated(len)));
+            } else {
+                return (lhs.0 * lhs.1.recip(len)).truncated(len);
+            }
+        }
+        unreachable!();
+    }
 }
 
 impl<I: Copy + Into<M>, M: NttFriendly + 'static> From<Vec<I>>
@@ -1164,4 +1185,18 @@ fn relaxed_mul() {
     assert_eq!(g, fg);
     assert_eq!(f, Poly::const_1());
     assert_eq!(g, Poly::const_x().exp(n));
+}
+
+#[test]
+fn sum_pow() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+
+    let xs = [31, 41, 59, 26, 53].map(Mi::new);
+    let len = 10;
+    let f = Poly::sum_pow(&xs, len);
+
+    for i in 0..len {
+        assert_eq!(f.get(i), xs.map(|x| x.pow(i)).iter().sum());
+    }
 }
