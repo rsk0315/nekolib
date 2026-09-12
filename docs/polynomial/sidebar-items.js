@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Polynomial"]};
+window.SIDEBAR_ITEMS = {"struct":["Polynomial"],"trait":["PolyIterator","TruncatedProduct"]};
