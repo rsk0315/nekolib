@@ -158,6 +158,8 @@
 //!
 //! ### General functional equation
 //!
+//! ### Lagrange inversion theorem
+//!
 //! ## See also
 //!
 //! - Taylor shift ([ABC 215 G](https://atcoder.jp/contests/abc215/editorial/2529))
