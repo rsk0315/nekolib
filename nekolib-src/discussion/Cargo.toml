@@ -1,4 +1,4 @@
-workspace = { members = [ "decomposable", "dp", "generating_function","plane-sweep", "probability", "ptr-ds"] }
+workspace = { members = [ "decomposable", "dp", "generating_function", "iter_methods","plane-sweep", "probability", "ptr-ds"] }
 [package]
 name = "discussion"
 version = "0.1.0"
@@ -14,3 +14,4 @@ decomposable = { path = "decomposable" }
 ptr-ds = { path = "ptr-ds" }
 generating_function = { path = "generating_function" }
 probability = { path = "probability" }
+iter_methods = { path = "iter_methods" }
