@@ -606,21 +606,10 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         if len == 0 {
             return Self::const_0();
         }
-        let mut q: VecDeque<_> = xs
-            .iter()
-            .map(|&x| (Self::const_1(), Self::from([M::new(1), -x.into()])))
-            .collect();
 
-        while let Some(lhs) = q.pop_front() {
-            if let Some(rhs) = q.pop_front() {
-                let num = &lhs.0 * &rhs.1 + &rhs.0 * &lhs.1;
-                let den = &lhs.1 * &rhs.1;
-                q.push_back((num.truncated(len), den.truncated(len)));
-            } else {
-                return (lhs.0 * lhs.1.recip(len)).truncated(len);
-            }
-        }
-        unreachable!();
+        let f: Self =
+            xs.iter().map(|&x| Self::from([M::new(1), -x.into()])).product();
+        Self::from([M::new(xs.len())]) - (f.log(len).differential() << 1)
     }
 }
 
