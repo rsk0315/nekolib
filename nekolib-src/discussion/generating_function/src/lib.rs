@@ -97,8 +97,9 @@
 //!
 //! ### Polynomial equation
 //!
-//! $`f(y) \equiv 0 \pmod{x^k}`$ なる $`y`$ を求める。
-//! $`(y, k) \mapsto f(y)\cdot f'(y)^{-1} \bmod x^k`$ の oracle を用いる。
+//! $`\varphi(y) \equiv 0 \pmod{x^k}`$ なる $`y`$ を求める。
+//! $`(y, k) \mapsto \varphi(y)\cdot \left(\tfrac{\d}{\d y}\varphi(y)\right)^{-1} \bmod x^k`$ の
+//! oracle を用いる。$`\tfrac{\d x}{\d y} = 0`$ として考えるっぽい。
 //!
 //! ### First-order derivative equation
 //!
@@ -189,6 +190,44 @@
 //! ```
 //! 調和級数に関する計算量解析により、$`\exp`$ の引数は $`O(n\log(n))`$ 時間で計算できる。See
 //! also [FPS-24 N](https://atcoder.jp/contests/fps-24/tasks/fps_24_n).
+//!
+//! ### Sum of powers
+//!
+//! 与えられた $`a = (a_0, a_1, \dots, a_{m-1})`$ に対し、各 $`i\ge 0`$ について
+//! $`\sum_{j=0}^{m-1} a_j^i`$ を求めたいとする。
+//!
+//! ```math
+//! \begin{aligned}
+//! &\phantom{{}={}} -\frac{\d}{\d x}{\log}{\left(\prod_{j=0}^{m-1} {(1-a_j x)}\right)} \\
+//! &= -\frac{\d}{\d x} \sum_{j=0}^{m-1} {\log(1-a_j x)} \\
+//! &= -\sum_{j=0}^{m-1} {\frac{\d}{\d x} \log(1-a_j x)} \\
+//! &= -\sum_{j=0}^{m-1} {\frac{(1-a_j x)'}{1-a_j x}} \\
+//! &= -\sum_{j=0}^{m-1} {-\frac{a_j}{1-a_j x}} \\
+//! &= \sum_{j=0}^{m-1} {\frac{a_j}{1-a_j x}} \\
+//! &= \sum_{j=0}^{m-1} \sum_{i=0}^{\infty} a_j^{i+1} x^i \\
+//! &= \sum_{i=0}^{\infty} \sum_{j=0}^{m-1} a_j^{i+1} x^i \\
+//! \end{aligned}
+//! ```
+//! より、
+//! ```math
+//! [x^n]\, \left(-\frac{\d}{\d x}{\log}{\left(\prod_{j=0}^{m-1} {(1-a_j x)}\right)}\right)
+//! = \sum_{j=0}^{m-1} a_j^{i+1}
+//! ```
+//! や
+//! ```math
+//! \sum_{i=0}^{\infty} \sum_{j=0}^{m-1} a_j^i x^i
+//! = m - x \cdot \left(\frac{\d}{\d x}{\log}{\left(\prod_{j=0}^{m-1} {(1-a_j x)}\right)}\right)
+//! ```
+//! が成り立つ。
+//!
+//! あるいは、
+//! ```math
+//! \frac{P_1(x)}{Q_1(x)} + \frac{P_2(x)}{Q_2(x)}
+//! = \frac{(P_1\cdot Q_2 + P_2\cdot Q_1)(x)}{(Q_1\cdot Q_2)(x)}
+//! ```
+//! より、各 $`i`$ に対して $`P_i(x) = 1`$ かつ $`Q_i(x) = 1-a_i x`$
+//! として（適切に分割統治を用いて）総和を求めることで、対応する有理式を $`O(n\log(n)^2)`$
+//! 時間で求めることもできる。
 //!
 //! ## See also
 //!

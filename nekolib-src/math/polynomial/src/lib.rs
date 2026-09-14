@@ -322,14 +322,11 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
     }
 
     pub fn polyeqn(
-        mut self,
+        self,
         n: usize,
         f_over_df: impl Fn(&Self, usize) -> Self, // f(y0)/f'(y0)
     ) -> Self {
-        if self.0.is_empty() {
-            self.0.push(M::new(0));
-        }
-        let mut d = self.0.len();
+        let mut d = self.0.len().max(1);
         let mut y = self;
         while d < n {
             d *= 2;
@@ -339,14 +336,11 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
     }
 
     pub fn fode(
-        mut self,
+        self,
         n: usize,
         f_df: impl Fn(&Self, usize) -> (Self, Self),
     ) -> Self {
-        if self.0.is_empty() {
-            self.0.push(M::new(0))
-        }
-        let mut d = self.0.len();
+        let mut d = self.0.len().max(1);
         let mut y = self;
         while d < n {
             d *= 2;
@@ -465,10 +459,10 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         (q, r)
     }
 
-    pub fn div_nth(&self, other: &Self, mut n: usize) -> M {
+    pub fn div_nth(&self, other: &Self, n: impl BinIter) -> M {
         let mut p = self.clone();
         let mut q = other.clone();
-        while n > 0 {
+        for bit in n.bin_iter() {
             let d = (2 * q.0.len() - 1).next_power_of_two();
             p.fft_butterfly(d);
             q.fft_butterfly(d);
@@ -478,10 +472,10 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
             let [mut pq_, mut qq_]: [Self; 2] = [pq_.into(), qq_.into()];
             pq_.fft_inv_butterfly(d);
             qq_.fft_inv_butterfly(d / 2);
-            let u: Vec<_> = (n % 2..d).step_by(2).map(|i| pq_.get(i)).collect();
+            let u: Vec<_> =
+                (bit as usize..d).step_by(2).map(|i| pq_.get(i)).collect();
             p = u.into();
             q = qq_.into();
-            n /= 2;
         }
         p.get(0)
     }
@@ -610,6 +604,24 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
         let f: Self =
             xs.iter().map(|&x| Self::from([M::new(1), -x.into()])).product();
         Self::from([M::new(xs.len())]) - (f.log(len).differential() << 1)
+    }
+
+    pub fn sum_pow_frac<I: Copy + Into<M>>(xs: &[I]) -> (Self, Self) {
+        let mut q: VecDeque<_> = xs
+            .iter()
+            .map(|&x| (Self::const_1(), Self::from([M::new(1), -x.into()])))
+            .collect();
+
+        while let Some(lhs) = q.pop_front() {
+            if let Some(rhs) = q.pop_front() {
+                let num = &lhs.0 * &rhs.1 + &rhs.0 * &lhs.1;
+                let den = &lhs.1 * &rhs.1;
+                q.push_back((num, den));
+            } else {
+                return lhs;
+            }
+        }
+        unreachable!();
     }
 }
 
