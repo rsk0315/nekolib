@@ -605,6 +605,69 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
             xs.iter().map(|&x| Self::from([M::new(1), -x.into()])).product();
         Self::from([M::new(xs.len())]) - (f.log(len).differential() << 1)
     }
+
+    pub fn xy_mul(lhs: &[Self], rhs: &[Self]) -> Vec<Self> {
+        let (h_l, h_r) = (lhs.len(), rhs.len());
+        if h_l == 0 || h_r == 0 {
+            return vec![];
+        }
+        let w_l = lhs.iter().map(|f| f.len()).max().unwrap();
+        let w_r = rhs.iter().map(|f| f.len()).max().unwrap();
+
+        let w = w_l + w_r - 1;
+        let lhs: Vec<_> =
+            (0..h_l).flat_map(|i| (0..w).map(move |j| lhs[i].get(j))).collect();
+        let rhs: Vec<_> =
+            (0..h_r).flat_map(|i| (0..w).map(move |j| rhs[i].get(j))).collect();
+        let [lhs, rhs]: [Self; 2] = [lhs, rhs].map(|x| x.into());
+
+        let mul = (lhs * rhs).into_inner();
+        mul.chunks(w).map(|ch| ch.into()).collect()
+    }
+
+    fn odd_only(self) -> Self {
+        Self(self.0.into_iter().skip(1).step_by(2).collect())
+    }
+    fn even_only(self) -> Self { Self(self.0.into_iter().step_by(2).collect()) }
+    fn x_neg(&self) -> Self {
+        let tmp = self
+            .0
+            .iter()
+            .enumerate()
+            .map(|(i, &x)| if i % 2 == 0 { x } else { -x })
+            .collect();
+        Self(tmp)
+    }
+
+    pub fn power_projection(
+        &self,
+        other: &Self,
+        len: usize,
+        coef_of: usize,
+    ) -> Vec<M> {
+        // P(x, y) = other(x), Q(x, y) = 1 - self(x)*y
+        let mut n = coef_of + 1;
+        let mut p = vec![other.to_owned() << (n.next_power_of_two() - n)];
+        let mut q = vec![Self::const_1(), -self];
+        n = n.next_power_of_two();
+        while n > 1 {
+            let q_: Vec<_> = q.iter().map(|qi| qi.x_neg()).collect();
+            let pq_ = Self::xy_mul(&p, &q_);
+            let qq_ = Self::xy_mul(&q, &q_);
+            p = pq_.into_iter().map(|f| f.odd_only()).collect();
+            q = qq_.into_iter().map(|f| f.even_only()).collect();
+            n /= 2;
+        }
+
+        let p: Vec<_> = p.into_iter().map(|f| f.get(0)).collect();
+        let q: Vec<_> = q.into_iter().map(|f| f.get(0)).collect();
+        let p: Self = p.into();
+        let q: Self = q.into();
+
+        let mut res = (p * q.recip(len)).truncated(len).into_inner();
+        res.resize(len, M::new(0));
+        res
+    }
 }
 
 impl<I: Copy + Into<M>, M: NttFriendly + 'static> From<Vec<I>>
@@ -1240,4 +1303,70 @@ fn frac_sum() {
     for i in 0..len {
         assert_eq!(sum.get(i), a.map(|ai| ai.pow(i)).into_iter().sum());
     }
+}
+
+#[test]
+fn mul_2d() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+
+    let lhs = [
+        [3, 1, 4, 1, 0, 0],
+        [5, 9, 2, 6, 5, 3],
+        [5, 8, 9, 7, 9, 3],
+        [2, 3, 8, 0, 0, 0],
+        [4, 6, 2, 6, 4, 0],
+        [3, 3, 8, 3, 0, 0],
+    ];
+    let rhs = [
+        [2, 7, 1, 0, 0, 0, 0, 0, 0, 0],
+        [8, 2, 8, 1, 8, 2, 8, 4, 5, 0],
+        [9, 0, 4, 5, 2, 3, 5, 3, 6, 0],
+        [2, 8, 7, 0, 0, 0, 0, 0, 0, 0],
+        [4, 7, 1, 3, 5, 0, 0, 0, 0, 0],
+    ];
+    let (h_l, h_r) = (lhs.len(), rhs.len());
+    let (w_l, w_r) = (lhs[0].len(), rhs[0].len());
+    let (h, w) = (h_l + h_r - 1, w_l + w_r - 1);
+
+    let lhs_poly = lhs.map(Poly::from);
+    let rhs_poly = rhs.map(Poly::from);
+
+    let actual = Poly::xy_mul(&lhs_poly, &rhs_poly);
+    let expected = {
+        let mut res = vec![vec![0; w]; h];
+        for il in 0..h_l {
+            for ir in 0..h_r {
+                for jl in 0..w_l {
+                    for jr in 0..w_r {
+                        res[il + ir][jl + jr] += lhs[il][jl] * rhs[ir][jr];
+                    }
+                }
+            }
+        }
+        res
+    };
+
+    for i in 0..h {
+        for j in 0..w {
+            assert_eq!(actual[i].get(j), Mi::new(expected[i][j]));
+        }
+    }
+}
+
+#[test]
+fn pow_proj() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+
+    let f = Poly::from([5, 2, 6, 3, 1, 5, 7, 8, 9, 4, 7, 3, 6, 8, 4, 2, 1]);
+    let g = Poly::from([5, 8, 8, 2, 3, 5, 2, 9, 4, 1, 1, 7, 6, 4, 7]);
+
+    let len = 30;
+    let coef_of = 13;
+    let actual = f.power_projection(&g, len, coef_of);
+
+    let expected: Vec<_> =
+        (0..len).map(|i| (&g * f.pow(i, coef_of + 1)).get(coef_of)).collect();
+    assert_eq!(actual, expected);
 }
