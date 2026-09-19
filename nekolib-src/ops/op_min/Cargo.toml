@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 monoid = { path = "../monoid" }
-has_maximum = { path = "../has_maximum" }
+has_minmax = { path = "../has_minmax" }

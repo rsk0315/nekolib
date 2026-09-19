@@ -1,8 +1,7 @@
 use inner::doc_inline_reexport;
 
 doc_inline_reexport! {
-    has_maximum,
-    has_minimum,
+    has_minmax,
     has_one,
     has_zero,
     monoid,

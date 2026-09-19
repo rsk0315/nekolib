@@ -1,5 +1,5 @@
 [package]
-name = "has_maximum"
+name = "has_minmax"
 version = "0.1.0"
 edition = "2024"
 

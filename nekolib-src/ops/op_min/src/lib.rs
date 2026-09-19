@@ -1,4 +1,4 @@
-use has_maximum::HasMaximum;
+use has_minmax::HasMaximum;
 use monoid::{Associative, BinaryOp, Commutative, Identity};
 
 #[derive(Clone, Debug)]
