@@ -605,24 +605,6 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
             xs.iter().map(|&x| Self::from([M::new(1), -x.into()])).product();
         Self::from([M::new(xs.len())]) - (f.log(len).differential() << 1)
     }
-
-    pub fn sum_pow_frac<I: Copy + Into<M>>(xs: &[I]) -> (Self, Self) {
-        let mut q: VecDeque<_> = xs
-            .iter()
-            .map(|&x| (Self::const_1(), Self::from([M::new(1), -x.into()])))
-            .collect();
-
-        while let Some(lhs) = q.pop_front() {
-            if let Some(rhs) = q.pop_front() {
-                let num = &lhs.0 * &rhs.1 + &rhs.0 * &lhs.1;
-                let den = &lhs.1 * &rhs.1;
-                q.push_back((num, den));
-            } else {
-                return lhs;
-            }
-        }
-        unreachable!();
-    }
 }
 
 impl<I: Copy + Into<M>, M: NttFriendly + 'static> From<Vec<I>>
@@ -1055,6 +1037,46 @@ impl<M: NttFriendly + 'static> TruncatedProduct<Polynomial<M>>
     }
 }
 
+pub trait PolyPairIterator: Iterator {
+    fn fraction_sum<S>(self) -> S
+    where
+        Self: Sized,
+        S: FractionSum<Self::Item>,
+    {
+        FractionSum::fraction_sum(self)
+    }
+}
+
+impl<M: NttFriendly, I: Iterator<Item = (Polynomial<M>, Polynomial<M>)>>
+    PolyPairIterator for I
+{
+}
+
+pub trait FractionSum<A = Self>: Sized {
+    fn fraction_sum<I: Iterator<Item = A>>(iter: I) -> Self;
+}
+
+impl<M: NttFriendly + 'static> FractionSum<(Polynomial<M>, Polynomial<M>)>
+    for (Polynomial<M>, Polynomial<M>)
+{
+    fn fraction_sum<I: Iterator<Item = (Polynomial<M>, Polynomial<M>)>>(
+        iter: I,
+    ) -> Self {
+        let mut q: VecDeque<_> = iter.collect();
+
+        while let Some(lhs) = q.pop_front() {
+            if let Some(rhs) = q.pop_front() {
+                let num = &lhs.0 * &rhs.1 + &rhs.0 * &lhs.1;
+                let den = &lhs.1 * &rhs.1;
+                q.push_back((num, den));
+            } else {
+                return lhs;
+            }
+        }
+        unreachable!();
+    }
+}
+
 #[test]
 fn conversion() {
     type Mi = modint::ModInt998244353;
@@ -1199,5 +1221,23 @@ fn sum_pow() {
 
     for i in 0..len {
         assert_eq!(f.get(i), xs.map(|x| x.pow(i)).iter().sum());
+    }
+}
+
+#[test]
+fn frac_sum() {
+    type Mi = modint::ModInt998244353;
+    type Poly = Polynomial<Mi>;
+    const K1: Mi = Mi::new_const(1);
+
+    let a = [2, 3, 4, 6, 8].map(Mi::new);
+    let f = a.map(|ai| (Poly::const_1(), Poly::from([K1, -ai])));
+    let (num, den): (Poly, Poly) = f.into_iter().fraction_sum();
+
+    let len = 10;
+    let sum = (num * den.recip(len)).truncated(len);
+
+    for i in 0..len {
+        assert_eq!(sum.get(i), a.map(|ai| ai.pow(i)).into_iter().sum());
     }
 }
