@@ -178,8 +178,7 @@
       "disjoint-set"
     ],
     "ops": [
-      "has_maximum",
-      "has_minimum",
+      "has_minmax",
       "has_one",
       "has_zero",
       "monoid",
@@ -343,7 +342,7 @@
 }
 </style>
 
-</head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">op_max/</div>lib.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>has_minimum::HasMinimum;
+</head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">op_max/</div>lib.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>has_minmax::HasMinimum;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>monoid::{Associative, BinaryOp, Commutative, Identity};
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="attr">#[derive(Clone, Debug)]
