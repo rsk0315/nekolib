@@ -654,8 +654,14 @@ impl<M: NttFriendly + 'static> Polynomial<M> {
             let q_: Vec<_> = q.iter().map(|qi| qi.x_neg()).collect();
             let pq_ = Self::xy_mul(&p, &q_);
             let qq_ = Self::xy_mul(&q, &q_);
-            p = pq_.into_iter().map(|f| f.odd_only()).collect();
-            q = qq_.into_iter().map(|f| f.even_only()).collect();
+            p = pq_
+                .into_iter()
+                .map(|f| f.odd_only().truncated(n / 2))
+                .collect();
+            q = qq_
+                .into_iter()
+                .map(|f| f.even_only().truncated(n / 2))
+                .collect();
             n /= 2;
         }
 
